@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -14,7 +13,6 @@
 <!-- ══════════════════════════════════════
      LOGIN SCREEN
 ══════════════════════════════════════ -->
-
 <div id="LS">
 <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;position:relative;overflow:hidden;background:linear-gradient(155deg,#0d2248 0%,#1a3a6e 30%,#2B6CC4 65%,#5b9bd5 85%,#e8f2fb 100%)">
   <div style="position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(45deg,rgba(255,255,255,0.025) 0px,rgba(255,255,255,0.025) 1px,transparent 1px,transparent 40px)"></div>
@@ -25,53 +23,50 @@
       <img src="ElitePhysioLogo.jpg" alt="ElitePhysio" style="position:relative;width:88%;height:88%;object-fit:contain;margin:6%;filter:drop-shadow(0 4px 12px rgba(43,108,196,0.4))">
     </div>
 
-```
-<!-- Clinic name with depth -->
-<div style="font-size:34px;font-weight:900;letter-spacing:1px;margin-bottom:5px;
-  background:linear-gradient(180deg,#ffffff 0%,#c8dff8 100%);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-  filter:drop-shadow(0 3px 8px rgba(0,0,0,0.4))">ElitePhysio</div>
-<div id="l-tagline" style="font-size:11px;color:rgba(255,255,255,0.75);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:28px;text-shadow:0 1px 4px rgba(0,0,0,0.3)"></div>
+    <!-- Clinic name with depth -->
+    <div style="font-size:34px;font-weight:900;letter-spacing:1px;margin-bottom:5px;
+      background:linear-gradient(180deg,#ffffff 0%,#c8dff8 100%);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+      filter:drop-shadow(0 3px 8px rgba(0,0,0,0.4))">ElitePhysio</div>
+    <div id="l-tagline" style="font-size:11px;color:rgba(255,255,255,0.75);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:28px;text-shadow:0 1px 4px rgba(0,0,0,0.3)"></div>
 
-<!-- Patient Login -->
-<div style="background:#fff;border-radius:18px;padding:26px 24px;box-shadow:0 8px 32px rgba(13,34,72,0.15);margin-bottom:14px">
-  <div id="l-welcome" style="font-size:19px;font-weight:700;color:#1a3a6e;margin-bottom:4px"></div>
-  <div id="l-intro" style="font-size:13px;color:#4a6a8a;margin-bottom:20px"></div>
-  <div style="margin-bottom:12px">
-    <div id="l-yn" class="lbl" style="color:#4a6a8a"></div>
-    <input class="inp" id="pnm" placeholder="Full name / שם מלא" onkeydown="if(event.key==='Enter')plog()">
-  </div>
-  <div style="margin-bottom:18px">
-    <div id="l-yp" class="lbl" style="color:#4a6a8a"></div>
-    <input class="inp" id="ppi" type="password" maxlength="4" placeholder="Insert your PIN code" onkeydown="if(event.key==='Enter')plog()">
-  </div>
-  <div id="le2" style="color:#e05050;font-size:13px;margin-bottom:10px;display:none"></div>
-  <button class="btn" style="width:100%;padding:12px;font-size:15px" onclick="plog()">
-    <span id="l-enter"></span>
-  </button>
-  <div style="margin-top:12px;text-align:center">
-    <button id="l-admin-btn" onclick="toggleAdmin()" style="background:none;border:none;color:#4a6a8a;font-size:12px;cursor:pointer;letter-spacing:.5px;text-decoration:underline"></button>
-  </div>
-</div>
+    <!-- Patient Login -->
+    <div style="background:#fff;border-radius:18px;padding:26px 24px;box-shadow:0 8px 32px rgba(13,34,72,0.15);margin-bottom:14px">
+      <div id="l-welcome" style="font-size:19px;font-weight:700;color:#1a3a6e;margin-bottom:4px"></div>
+      <div id="l-intro" style="font-size:13px;color:#4a6a8a;margin-bottom:20px"></div>
+      <div style="margin-bottom:12px">
+        <div id="l-yn" class="lbl" style="color:#4a6a8a"></div>
+        <input class="inp" id="pnm" placeholder="Full name / שם מלא" onkeydown="if(event.key==='Enter')plog()">
+      </div>
+      <div style="margin-bottom:18px">
+        <div id="l-yp" class="lbl" style="color:#4a6a8a"></div>
+        <input class="inp" id="ppi" type="password" maxlength="4" placeholder="Insert your PIN code" onkeydown="if(event.key==='Enter')plog()">
+      </div>
+      <div id="le2" style="color:#e05050;font-size:13px;margin-bottom:10px;display:none"></div>
+      <button class="btn" style="width:100%;padding:12px;font-size:15px" onclick="plog()">
+        <span id="l-enter"></span>
+      </button>
+      <div style="margin-top:12px;text-align:center">
+        <button id="l-admin-btn" onclick="toggleAdmin()" style="background:none;border:none;color:#4a6a8a;font-size:12px;cursor:pointer;letter-spacing:.5px;text-decoration:underline"></button>
+      </div>
+    </div>
 
-<!-- Admin Box -->
-<div id="admin-box" class="hid" style="background:#1a2e50;border-radius:14px;padding:20px 24px;box-shadow:0 8px 32px rgba(13,34,72,0.25);margin-top:0px">
-  <div id="l-al" class="lbl" style="color:rgba(255,255,255,0.7);margin-bottom:8px"></div>
-  <input class="inp" id="apw" type="password" placeholder="Password" style="background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.15);color:#fff;margin-bottom:14px" onkeydown="if(event.key==='Enter')alog()">
-  <div id="le1" style="color:#fca5a5;font-size:13px;margin-bottom:8px;display:none"></div>
-  <div style="display:flex;gap:8px">
-    <button class="btn btng" style="padding:10px 16px" onclick="toggleAdmin()">←</button>
-    <button class="btn" style="flex:1;padding:10px" onclick="alog()">Enter</button>
-  </div>
-</div>
+    <!-- Admin Box -->
+    <div id="admin-box" class="hid" style="background:#1a2e50;border-radius:14px;padding:20px 24px;box-shadow:0 8px 32px rgba(13,34,72,0.25);margin-top:0px">
+      <div id="l-al" class="lbl" style="color:rgba(255,255,255,0.7);margin-bottom:8px"></div>
+      <input class="inp" id="apw" type="password" placeholder="Password" style="background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.15);color:#fff;margin-bottom:14px" onkeydown="if(event.key==='Enter')alog()">
+      <div id="le1" style="color:#fca5a5;font-size:13px;margin-bottom:8px;display:none"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btng" style="padding:10px 16px" onclick="toggleAdmin()">←</button>
+        <button class="btn" style="flex:1;padding:10px" onclick="alog()">Enter</button>
+      </div>
+    </div>
 
-<!-- Language flags -->
-<div style="display:flex;justify-content:center;gap:10px;margin-top:18px">
-  <button id="fle" onclick="setL('en')" style="background:rgba(255,255,255,0.9);border:2.5px solid #fff;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:22px;line-height:1.3;box-shadow:0 2px 8px rgba(0,0,0,0.25)">🇺🇸</button>
-  <button id="flh" onclick="setL('he')" style="background:rgba(255,255,255,0.12);border:2px solid rgba(255,255,255,0.3);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:22px;line-height:1.3;box-shadow:0 2px 8px rgba(0,0,0,0.15)">🇮🇱</button>
-</div>
-```
-
+    <!-- Language flags -->
+    <div style="display:flex;justify-content:center;gap:10px;margin-top:18px">
+      <button id="fle" onclick="setL('en')" style="background:rgba(255,255,255,0.9);border:2.5px solid #fff;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:22px;line-height:1.3;box-shadow:0 2px 8px rgba(0,0,0,0.25)">🇺🇸</button>
+      <button id="flh" onclick="setL('he')" style="background:rgba(255,255,255,0.12);border:2px solid rgba(255,255,255,0.3);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:22px;line-height:1.3;box-shadow:0 2px 8px rgba(0,0,0,0.15)">🇮🇱</button>
+    </div>
   </div>
 </div>
 </div>
@@ -79,7 +74,6 @@
 <!-- ══════════════════════════════════════
      ADMIN SCREEN
 ══════════════════════════════════════ -->
-
 <div id="AS" class="hid">
   <header>
     <div style="display:flex;align-items:center;gap:12px">
@@ -123,7 +117,6 @@
 <!-- ══════════════════════════════════════
      PATIENT SCREEN
 ══════════════════════════════════════ -->
-
 <div id="PS" class="hid">
   <header>
     <div style="display:flex;align-items:center;gap:12px">
@@ -151,16 +144,12 @@
 </div>
 
 <!-- Modal overlay -->
-
 <div class="mbg" id="MB" onclick="if(event.target===this)cm()"><div class="mbox" id="MC"></div></div>
 <!-- File upload (hidden) -->
 <input type="file" id="fi" multiple accept="image/*,.pdf,.doc,.docx" style="display:none" onchange="hf(event)">
 
 <!-- Scripts — order matters: data first, then app logic -->
-
 <script src="data.js"></script>
-
 <script src="app.js"></script>
-
 </body>
 </html>
