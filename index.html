@@ -17,17 +17,16 @@
 <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;position:relative;overflow:hidden;background:linear-gradient(155deg,#0d2248 0%,#1a3a6e 30%,#2B6CC4 65%,#5b9bd5 85%,#e8f2fb 100%)">
   <div style="position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(45deg,rgba(255,255,255,0.025) 0px,rgba(255,255,255,0.025) 1px,transparent 1px,transparent 40px)"></div>
   <div style="position:relative;width:100%;max-width:380px;text-align:center">
-    <!-- Logo - vivid, popping with depth -->
+    <!-- Logo -->
     <div style="margin:0 auto 16px;width:150px;height:150px;position:relative">
-      <div style="position:absolute;inset:0;border-radius:28px;background:linear-gradient(135deg,rgba(255,255,255,0.9),rgba(200,225,255,0.7));box-shadow:0 12px 40px rgba(0,0,0,0.35),0 4px 12px rgba(43,108,196,0.4),inset 0 1px 0 rgba(255,255,255,0.8);backdrop-filter:blur(4px)"></div>
+      <div style="position:absolute;inset:0;border-radius:28px;background:linear-gradient(135deg,rgba(255,255,255,0.9),rgba(200,225,255,0.7));box-shadow:0 12px 40px rgba(0,0,0,0.35),0 4px 12px rgba(43,108,196,0.4),inset 0 1px 0 rgba(255,255,255,0.8)"></div>
       <img src="ElitePhysioLogo.jpg" alt="ElitePhysio" style="position:relative;width:88%;height:88%;object-fit:contain;margin:6%;filter:drop-shadow(0 4px 12px rgba(43,108,196,0.4))">
     </div>
 
     <!-- Clinic name with depth -->
-    <div style="font-size:34px;font-weight:900;letter-spacing:1px;margin-bottom:5px;
-      background:linear-gradient(180deg,#ffffff 0%,#c8dff8 100%);
-      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-      filter:drop-shadow(0 3px 8px rgba(0,0,0,0.4))">ElitePhysio</div>
+    <div style="font-size:36px;font-weight:900;letter-spacing:2px;margin-bottom:5px;
+      text-shadow:0 1px 0 #fff,0 2px 0 #c8dff8,0 4px 8px rgba(0,0,0,0.4),0 0 20px rgba(255,255,255,0.3);
+      color:#ffffff">ElitePhysio</div>
     <div id="l-tagline" style="font-size:11px;color:rgba(255,255,255,0.75);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:28px;text-shadow:0 1px 4px rgba(0,0,0,0.3)"></div>
 
     <!-- Patient Login -->
@@ -36,7 +35,7 @@
       <div id="l-intro" style="font-size:13px;color:#4a6a8a;margin-bottom:20px"></div>
       <div style="margin-bottom:12px">
         <div id="l-yn" class="lbl" style="color:#4a6a8a"></div>
-        <input class="inp" id="pnm" placeholder="Full name / שם מלא" onkeydown="if(event.key==='Enter')plog()">
+        <input class="inp" id="pnm" placeholder="Full name / &#1513;&#1501; &#1502;&#1500;&#1488;" onkeydown="if(event.key==='Enter')plog()">
       </div>
       <div style="margin-bottom:18px">
         <div id="l-yp" class="lbl" style="color:#4a6a8a"></div>
@@ -57,15 +56,15 @@
       <input class="inp" id="apw" type="password" placeholder="Password" style="background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.15);color:#fff;margin-bottom:14px" onkeydown="if(event.key==='Enter')alog()">
       <div id="le1" style="color:#fca5a5;font-size:13px;margin-bottom:8px;display:none"></div>
       <div style="display:flex;gap:8px">
-        <button class="btn btng" style="padding:10px 16px" onclick="toggleAdmin()">←</button>
+        <button class="btn btng" style="padding:10px 16px;font-size:18px" onclick="toggleAdmin()">&#8592;</button>
         <button class="btn" style="flex:1;padding:10px" onclick="alog()">Enter</button>
       </div>
     </div>
 
-    <!-- Language flags -->
+    <!-- Language flags - using image-based regional indicators -->
     <div style="display:flex;justify-content:center;gap:10px;margin-top:18px">
-      <button id="fle" onclick="setL('en')" style="background:rgba(255,255,255,0.9);border:2.5px solid #fff;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:22px;line-height:1.3;box-shadow:0 2px 8px rgba(0,0,0,0.25)">🇺🇸</button>
-      <button id="flh" onclick="setL('he')" style="background:rgba(255,255,255,0.12);border:2px solid rgba(255,255,255,0.3);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:22px;line-height:1.3;box-shadow:0 2px 8px rgba(0,0,0,0.15)">🇮🇱</button>
+      <button id="fle" onclick="setL('en')" style="background:rgba(255,255,255,0.9);border:2.5px solid #fff;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:22px;line-height:1.3;box-shadow:0 2px 8px rgba(0,0,0,0.25)">&#127482;&#127480;</button>
+      <button id="flh" onclick="setL('he')" style="background:rgba(255,255,255,0.12);border:2px solid rgba(255,255,255,0.3);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:22px;line-height:1.3;box-shadow:0 2px 8px rgba(0,0,0,0.15)">&#127470;&#127473;</button>
     </div>
   </div>
 </div>
