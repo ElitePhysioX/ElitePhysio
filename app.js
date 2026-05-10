@@ -42,15 +42,15 @@ function sv(){
 function setL(l){
   lng = l;
   document.body.style.direction = l === "he" ? "rtl" : "ltr";
-  // Flags - highlight active language
+  // Flags - highlight active language correctly
   var fle=g("fle"),flh=g("flh");
   if(fle&&flh){
-    fle.style.background = l==="en" ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.12)";
-    fle.style.border = l==="en" ? "2.5px solid #fff" : "2px solid rgba(255,255,255,0.3)";
-    fle.style.boxShadow = l==="en" ? "0 2px 8px rgba(0,0,0,0.25)" : "none";
-    flh.style.background = l==="he" ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.12)";
-    flh.style.border = l==="he" ? "2.5px solid #fff" : "2px solid rgba(255,255,255,0.3)";
-    flh.style.boxShadow = l==="he" ? "0 2px 8px rgba(0,0,0,0.25)" : "none";
+    fle.style.background = l==="en" ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.1)";
+    fle.style.border = l==="en" ? "2.5px solid #fff" : "2px solid rgba(255,255,255,0.25)";
+    fle.style.boxShadow = l==="en" ? "0 2px 10px rgba(0,0,0,0.3)" : "none";
+    flh.style.background = l==="he" ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.1)";
+    flh.style.border = l==="he" ? "2.5px solid #fff" : "2px solid rgba(255,255,255,0.25)";
+    flh.style.boxShadow = l==="he" ? "0 2px 10px rgba(0,0,0,0.3)" : "none";
   }
   var afle=g("afle"),aflh=g("aflh"); if(afle) afle.classList.toggle("on",l==="en"); if(aflh) aflh.classList.toggle("on",l==="he");
   var pfle=g("pfle"),pflh=g("pflh"); if(pfle) pfle.classList.toggle("on",l==="en"); if(pflh) pflh.classList.toggle("on",l==="he");
