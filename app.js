@@ -42,8 +42,16 @@ function sv(){
 function setL(l){
   lng = l;
   document.body.style.direction = l === "he" ? "rtl" : "ltr";
-  // Flags
-  var fle=g("fle"),flh=g("flh"); if(fle) fle.classList.toggle("on",l==="en"); if(flh) flh.classList.toggle("on",l==="he");
+  // Flags - highlight active language correctly
+  var fle=g("fle"),flh=g("flh");
+  if(fle&&flh){
+    fle.style.background = l==="en" ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.1)";
+    fle.style.border = l==="en" ? "2.5px solid #fff" : "2px solid rgba(255,255,255,0.25)";
+    fle.style.boxShadow = l==="en" ? "0 2px 10px rgba(0,0,0,0.3)" : "none";
+    flh.style.background = l==="he" ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.1)";
+    flh.style.border = l==="he" ? "2.5px solid #fff" : "2px solid rgba(255,255,255,0.25)";
+    flh.style.boxShadow = l==="he" ? "0 2px 10px rgba(0,0,0,0.3)" : "none";
+  }
   var afle=g("afle"),aflh=g("aflh"); if(afle) afle.classList.toggle("on",l==="en"); if(aflh) aflh.classList.toggle("on",l==="he");
   var pfle=g("pfle"),pflh=g("pflh"); if(pfle) pfle.classList.toggle("on",l==="en"); if(pflh) pflh.classList.toggle("on",l==="he");
 
@@ -57,7 +65,7 @@ function setL(l){
   var lal=g("l-al"); if(lal) lal.textContent=Lx.al;
   var lyn=g("l-yn"); if(lyn) lyn.textContent=Lx.yn;
   var lyp=g("l-yp"); if(lyp) lyp.textContent=Lx.yp;
-  var pnm=g("pnm"); if(pnm) pnm.placeholder=l==="he"?"\u05e7\u05d5\u05e8\u05dc \u05d0\u05d1\u05e8\u05d5\u05d8\u05d9\u05df / Koral Avrutin":"Koral Avrutin";
+  var pnm=g("pnm"); if(pnm) pnm.placeholder=l==="he"?"\u05e9\u05dd \u05de\u05dc\u05d0 / Full name":"Full name / \u05e9\u05dd \u05de\u05dc\u05d0";
   // Header taglines
   var hta=g("hdr-tag-a"); if(hta) hta.textContent=Lx.tagline;
   var htp=g("hdr-tag-p"); if(htp) htp.textContent=Lx.tagline;
