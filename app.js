@@ -320,12 +320,16 @@ function rpv(){
       ' <span style="background:rgba(255,255,255,0.25);border-radius:9px;padding:1px 7px;font-size:11px">'+t[2]+'</span></button>';
   }).join("");
   g("psex").innerHTML=(p.exercises||[]).length?(p.exercises||[]).map(function(e,i){
-    return '<div class="xcard"><div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">'+bdg("#"+(i+1))+
-      '<span style="font-weight:700;font-size:15px;color:#1a3a6e">'+e.name+'</span></div>'+
+    var isHe=lng==="he";
+    var eName = isHe&&e.nameHe ? e.nameHe : e.name;
+    var eDesc = isHe&&e.descHe ? e.descHe : e.desc;
+    var eTips = isHe&&e.tipsHe ? e.tipsHe : e.tips;
+    return '<div class="xcard" style="direction:'+(isHe?"rtl":"ltr")+'"><div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">'+bdg("#"+(i+1))+
+      '<span style="font-weight:700;font-size:15px;color:#1a3a6e">'+eName+'</span></div>'+
       '<div style="font-size:13px;color:#4a6a8a;margin-bottom:3px">'+e.sets+' &times; '+e.reps+'</div>'+
-      (e.desc?'<div style="font-size:13px;color:#1a2535;margin-bottom:3px">'+e.desc+'</div>':"")+
-      (e.tips?'<div style="font-size:13px;color:#00a86b;margin-bottom:8px">&#128161; '+e.tips+'</div>':"")+
-      '<a href="'+ytUrl(e.name)+'" target="_blank" style="font-size:12px;color:#6d28d9;border:1px solid rgba(109,40,217,0.3);border-radius:5px;padding:4px 11px;text-decoration:none;font-weight:600;display:inline-block">'+L().wv+'</a></div>';
+      (eDesc?'<div style="font-size:13px;color:#1a2535;margin-bottom:3px">'+eDesc+'</div>':"")+
+      (eTips?'<div style="font-size:13px;color:#00a86b;margin-bottom:8px">&#128161; '+eTips+'</div>':"")+
+      '<a href="'+ytUrl(eName)+'" target="_blank" style="font-size:12px;color:#6d28d9;border:1px solid rgba(109,40,217,0.3);border-radius:5px;padding:4px 11px;text-decoration:none;font-weight:600;display:inline-block">'+L().wv+'</a></div>';
   }).join(""):'<div style="color:#4a6a8a;font-size:14px;padding:14px 0">'+L().nx+'</div>';
   g("psfu").innerHTML=(p.followUps||[]).length?(p.followUps||[]).map(function(f){
     return '<div class="xcard"><div style="font-size:12px;color:#2B6CC4;font-weight:600;margin-bottom:4px">'+f.date+'</div>'+
@@ -355,11 +359,14 @@ function om(m){
   } else if(m==="ae"){
     c.innerHTML='<div style="font-size:17px;font-weight:800;margin-bottom:18px;color:#1a3a6e">'+Lx.ae+'</div>'+
       '<div class="g2" style="gap:11px;margin-bottom:11px">'+
-      '<div style="grid-column:1/-1"><label class="lbl">'+Lx.en2+'</label><input class="inp" id="fen"></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">'+Lx.en2+' (EN)</label><input class="inp" id="fen" placeholder="e.g. Dead Bug"></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">\u05e9\u05dd \u05ea\u05e8\u05d2\u05d9\u05dc (HE)</label><input class="inp" id="fenhe" dir="rtl" placeholder="\u05e9\u05dd \u05d1\u05e2\u05d1\u05e8\u05d9\u05ea"></div>'+
       '<div><label class="lbl">'+Lx.se+'</label><input class="inp" id="fse"></div>'+
       '<div><label class="lbl">'+Lx.rp+'</label><input class="inp" id="frp"></div>'+
-      '<div style="grid-column:1/-1"><label class="lbl">'+Lx.de+'</label><textarea class="inp" id="fde" style="height:56px"></textarea></div>'+
-      '<div style="grid-column:1/-1"><label class="lbl">'+Lx.ti+'</label><textarea class="inp" id="fti" style="height:56px"></textarea></div></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">'+Lx.de+' (EN)</label><textarea class="inp" id="fde" style="height:48px"></textarea></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">\u05ea\u05d9\u05d0\u05d5\u05e8 (HE)</label><textarea class="inp" id="fdehe" dir="rtl" style="height:48px"></textarea></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">'+Lx.ti+' (EN)</label><textarea class="inp" id="fti" style="height:48px"></textarea></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">\u05d8\u05d9\u05e4\u05d9\u05dd (HE)</label><textarea class="inp" id="ftihe" dir="rtl" style="height:48px"></textarea></div></div>'+
       '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btnd" onclick="cm()">'+Lx.ca+'</button><button class="btn" onclick="se2()">'+Lx.sa+'</button></div>';
   } else if(m==="af"){
     var td=new Date().toISOString().split("T")[0];
@@ -383,7 +390,7 @@ function sp2(){
 function dp(id){ pts=pts.filter(function(p){ return p.id!==id; }); sv(); gv("p"); }
 function se2(){
   var n=g("fen").value.trim(); if(!n) return;
-  var e={id:Date.now(),name:n,sets:g("fse").value,reps:g("frp").value,desc:g("fde").value,tips:g("fti").value};
+  var e={id:Date.now(),name:n,nameHe:g("fenhe")?g("fenhe").value.trim():"",sets:g("fse").value,reps:g("frp").value,desc:g("fde").value,descHe:g("fdehe")?g("fdehe").value.trim():"",tips:g("fti").value,tipsHe:g("ftihe")?g("ftihe").value.trim():""};
   if(!cur.exercises) cur.exercises=[];
   cur.exercises.push(e);
   pts=pts.map(function(p){ return p.id===cur.id?cur:p; }); sv(); cm(); rex();
