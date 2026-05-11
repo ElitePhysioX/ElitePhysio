@@ -23,10 +23,10 @@
       <div style="position:absolute;inset:-8px;border-radius:50%;background:radial-gradient(circle,transparent 55%,rgba(120,200,255,0.15) 70%,transparent 85%);filter:blur(6px)"></div>
       <!-- Glowing ring -->
       <div style="position:absolute;inset:0;border-radius:50%;border:2.5px solid rgba(255,255,255,0.9);box-shadow:0 0 12px rgba(150,220,255,0.9),0 0 25px rgba(100,180,255,0.6),0 0 50px rgba(43,108,196,0.4),inset 0 0 12px rgba(150,220,255,0.3),inset 0 0 25px rgba(43,108,196,0.2)"></div>
-      <!-- Second inner ring for depth -->
-      <div style="position:absolute;inset:8px;border-radius:50%;border:1px solid rgba(255,255,255,0.25);box-shadow:0 0 8px rgba(150,220,255,0.3),inset 0 0 8px rgba(150,220,255,0.15)"></div>
-      <!-- Logo image -->
-      <img src="ElitePhysioLogo.png?v=3" alt="ElitePhysio" style="position:relative;width:85px;height:85px;object-fit:contain;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.5)) drop-shadow(0 0 6px rgba(150,220,255,0.4)) brightness(1.1)">
+      <!-- White glow background inside ring -->
+      <div style="position:absolute;inset:6px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,0.22) 0%,rgba(200,230,255,0.12) 60%,transparent 100%)"></div>
+      <!-- Logo image - bigger, slightly overflowing ring -->
+      <img src="ElitePhysioLogo.png?v=3" alt="ElitePhysio" style="position:relative;width:128px;height:128px;object-fit:contain;filter:drop-shadow(0 0 10px rgba(255,255,255,0.8)) drop-shadow(0 0 20px rgba(255,255,255,0.5)) drop-shadow(0 2px 8px rgba(0,0,0,0.4)) brightness(1.3) contrast(1.05)">
     </div>
 
     <!-- Clinic name with depth -->
@@ -86,14 +86,14 @@
 <div id="AS" class="hid">
   <header style="direction:ltr">
     <div style="display:flex;align-items:center;gap:12px">
-      <div style="width:42px;height:42px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-        <img src="ElitePhysioLogo.png" alt="EP" style="width:38px;height:38px;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.3)) drop-shadow(0 0 4px rgba(255,255,255,0.2))">
+      <div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative">
+        <div style="position:absolute;inset:0;border-radius:50%;border:1.5px solid rgba(255,255,255,0.7);box-shadow:0 0 8px rgba(150,220,255,0.6),0 0 16px rgba(43,108,196,0.3)"></div>
+        <img src="ElitePhysioLogo.png?v=3" alt="EP" style="width:36px;height:36px;object-fit:contain;filter:drop-shadow(0 0 5px rgba(255,255,255,0.7)) brightness(1.2)">
       </div>
       <div>
         <div style="font-size:15px;font-weight:300;color:#fff;letter-spacing:4px;text-transform:uppercase;text-shadow:0 1px 4px rgba(0,0,0,0.3)">ElitePhysio</div>
         <div style="font-size:10px;color:rgba(255,255,255,0.7);letter-spacing:1.5px;text-transform:uppercase" id="hdr-tag-a"></div>
       </div>
-    </div>
     <div style="display:flex;align-items:center;gap:8px">
       <span id="svi" style="font-size:11px;color:rgba(255,255,255,0.8);display:none;align-items:center"><span class="spi"></span><span id="svt">Saving...</span></span>
       <button id="afle" onclick="setL('en')" style="background:rgba(255,255,255,0.9);border:2px solid #fff;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;gap:4px;color:#1a3a6e"><img src="https://flagcdn.com/w40/us.png" style="width:20px;height:auto;border-radius:2px"> EN</button>
@@ -129,8 +129,9 @@
 <div id="PS" class="hid">
   <header style="direction:ltr">
     <div style="display:flex;align-items:center;gap:12px">
-      <div style="width:42px;height:42px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-        <img src="ElitePhysioLogo.png" alt="EP" style="width:38px;height:38px;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.3)) drop-shadow(0 0 4px rgba(255,255,255,0.2))">
+      <div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative">
+        <div style="position:absolute;inset:0;border-radius:50%;border:1.5px solid rgba(255,255,255,0.7);box-shadow:0 0 8px rgba(150,220,255,0.6),0 0 16px rgba(43,108,196,0.3)"></div>
+        <img src="ElitePhysioLogo.png?v=3" alt="EP" style="width:36px;height:36px;object-fit:contain;filter:drop-shadow(0 0 5px rgba(255,255,255,0.7)) brightness(1.2)">
       </div>
       <div>
         <div style="font-size:15px;font-weight:300;color:#fff;letter-spacing:4px;text-transform:uppercase;text-shadow:0 1px 4px rgba(0,0,0,0.3)">ElitePhysio</div>
