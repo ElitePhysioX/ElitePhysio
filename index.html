@@ -17,13 +17,16 @@
 <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;position:relative;overflow:hidden;background:linear-gradient(155deg,#0d2248 0%,#1a3a6e 30%,#2B6CC4 65%,#5b9bd5 85%,#e8f2fb 100%)">
   <div style="position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(45deg,rgba(255,255,255,0.025) 0px,rgba(255,255,255,0.025) 1px,transparent 1px,transparent 40px)"></div>
   <div style="position:relative;width:100%;max-width:380px;text-align:center">
-    <!-- Logo -->
-    <div style="margin:0 auto 16px;width:130px;height:130px;position:relative;display:flex;align-items:center;justify-content:center">
-      <!-- Rough diagonal slash behind logo -->
-      <div style="position:absolute;width:160px;height:44px;background:linear-gradient(135deg,rgba(255,255,255,0.18),rgba(120,180,255,0.22));transform:rotate(-18deg);border-radius:4px 12px 6px 10px;box-shadow:0 4px 20px rgba(43,108,196,0.25);filter:blur(1px)"></div>
-      <div style="position:absolute;width:130px;height:28px;background:linear-gradient(135deg,rgba(255,255,255,0.08),rgba(80,140,220,0.15));transform:rotate(-18deg) translateY(20px);border-radius:3px 8px 4px 7px;filter:blur(2px)"></div>
-      <!-- Logo image - transparent, floating freely -->
-      <img src="ElitePhysioLogo.png?v=3" alt="ElitePhysio" style="position:relative;width:115px;height:115px;object-fit:contain;filter:drop-shadow(0 4px 16px rgba(0,0,0,0.4)) drop-shadow(0 0 8px rgba(43,108,196,0.5)) drop-shadow(2px 2px 0px rgba(255,255,255,0.15))">
+    <!-- Logo with glowing ring -->
+    <div style="margin:0 auto 16px;width:140px;height:140px;position:relative;display:flex;align-items:center;justify-content:center">
+      <!-- Outer glow halo -->
+      <div style="position:absolute;inset:-8px;border-radius:50%;background:radial-gradient(circle,transparent 55%,rgba(120,200,255,0.15) 70%,transparent 85%);filter:blur(6px)"></div>
+      <!-- Glowing ring -->
+      <div style="position:absolute;inset:0;border-radius:50%;border:2.5px solid rgba(255,255,255,0.9);box-shadow:0 0 12px rgba(150,220,255,0.9),0 0 25px rgba(100,180,255,0.6),0 0 50px rgba(43,108,196,0.4),inset 0 0 12px rgba(150,220,255,0.3),inset 0 0 25px rgba(43,108,196,0.2)"></div>
+      <!-- Second inner ring for depth -->
+      <div style="position:absolute;inset:8px;border-radius:50%;border:1px solid rgba(255,255,255,0.25);box-shadow:0 0 8px rgba(150,220,255,0.3),inset 0 0 8px rgba(150,220,255,0.15)"></div>
+      <!-- Logo image -->
+      <img src="ElitePhysioLogo.png?v=3" alt="ElitePhysio" style="position:relative;width:85px;height:85px;object-fit:contain;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.5)) drop-shadow(0 0 6px rgba(150,220,255,0.4)) brightness(1.1)">
     </div>
 
     <!-- Clinic name with depth -->
