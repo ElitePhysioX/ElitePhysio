@@ -41,7 +41,11 @@ function sv(){
 // ── Language ──
 function setL(l){
   lng = l;
-  document.body.style.direction = l === "he" ? "rtl" : "ltr";
+  // Apply direction only to content, never headers
+  var dir = l === "he" ? "rtl" : "ltr";
+  document.body.style.direction = dir;
+  // Force headers to always stay LTR
+  document.querySelectorAll("header").forEach(function(h){ h.style.direction="ltr"; });
   // Flags - highlight active language correctly
   var fle=g("fle"),flh=g("flh");
   if(fle&&flh){
