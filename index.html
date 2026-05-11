@@ -18,29 +18,25 @@
   <div style="position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(45deg,rgba(255,255,255,0.025) 0px,rgba(255,255,255,0.025) 1px,transparent 1px,transparent 40px)"></div>
   <div style="position:relative;width:100%;max-width:380px;text-align:center">
     <!-- Logo with glowing ring -->
-    <div style="margin:0 auto 16px;width:200px;height:200px;position:relative">
+    <div id="logo-outer" style="margin:0 auto 16px;width:200px;height:200px;position:relative;cursor:pointer;border-radius:50%;transition:filter 0.4s ease">
       <!-- Outer glow halo -->
       <div style="position:absolute;inset:-12px;border-radius:50%;background:radial-gradient(circle,transparent 50%,rgba(120,200,255,0.12) 70%,transparent 88%);filter:blur(10px)"></div>
       <!-- Strong white cloudy inner fill -->
       <div style="position:absolute;inset:3px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,0.65) 0%,rgba(225,240,255,0.45) 40%,rgba(180,215,255,0.15) 75%,transparent 100%)"></div>
       <!-- Glowing ring on top -->
       <div style="position:absolute;inset:0;border-radius:50%;border:2.5px solid rgba(255,255,255,0.9);box-shadow:0 0 14px rgba(150,220,255,0.9),0 0 30px rgba(100,180,255,0.6),0 0 55px rgba(43,108,196,0.4);z-index:2"></div>
-      <!-- Logo - scaled large, clipped to circle, truly centered -->
       <!-- Coin shine hover effect -->
       <style>
-        #logo-outer { transition: filter 0.4s ease; cursor: pointer; border-radius: 50%; position:absolute; inset:0; }
         #logo-outer:hover { filter: drop-shadow(0 0 22px rgba(200,235,255,1)) drop-shadow(0 0 45px rgba(150,210,255,0.85)) drop-shadow(0 0 70px rgba(100,180,255,0.6)); }
-        #logo-outer:hover .logo-img { filter: brightness(1.5) drop-shadow(0 0 18px rgba(255,255,255,0.95)) drop-shadow(0 0 35px rgba(200,235,255,0.85)); }
+        #logo-outer:hover .logo-img { filter: brightness(1.5) drop-shadow(0 0 18px rgba(255,255,255,0.95)) drop-shadow(0 0 35px rgba(200,235,255,0.85)) !important; }
         .logo-img { transition: filter 0.4s ease; }
         .hdr-logo { transition: filter 0.4s ease; cursor: pointer; border-radius: 50%; }
         .hdr-logo:hover { filter: drop-shadow(0 0 12px rgba(200,235,255,1)) drop-shadow(0 0 24px rgba(150,210,255,0.8)); }
         .hdr-logo:hover .hdr-logo-img { filter: brightness(1.5) drop-shadow(0 0 10px rgba(255,255,255,0.95)); }
         .hdr-logo-img { transition: filter 0.4s ease; }
       </style>
-      <div id="logo-outer">
-        <div id="logo-ring" style="position:absolute;inset:4px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center">
-          <img class="logo-img" src="ElitePhysioLogo.png?v=4" alt="ElitePhysio" style="width:340px;height:340px;object-fit:contain;flex-shrink:0;margin-left:15px">
-        </div>
+      <div id="logo-ring" style="position:absolute;inset:4px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center">
+        <img class="logo-img" src="ElitePhysioLogo.png?v=4" alt="ElitePhysio" style="width:340px;height:340px;object-fit:contain;flex-shrink:0;margin-left:15px">
       </div>
     </div>
 
