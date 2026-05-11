@@ -102,7 +102,13 @@ function setL(l){
     else if(g("vp")&&!g("vp").classList.contains("hid")) rpl();
     else if(g("vs")&&!g("vs").classList.contains("hid")) rs();
     else if(g("vpat")&&!g("vpat").classList.contains("hid")) rpd();
-  } else if(auth) rpv();
+  } else if(auth) {
+    if(lng==="he" && cur){
+      autoTranslateExercises(cur, function(){ renderPatientView(cur); });
+    } else {
+      rpv();
+    }
+  }
 }
 
 // ── Auth ──
