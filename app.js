@@ -459,7 +459,7 @@ function autoTranslateExercises(p, cb){
   );
 }
 
-
+function callClaude(prompt, maxTokens, cb){
   fetch("https://api.anthropic.com/v1/messages",{method:"POST",
     headers:{"Content-Type":"application/json","x-api-key":AI_KEY,"anthropic-version":"2023-06-01"},
     body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:maxTokens||800,messages:[{role:"user",content:prompt}]})
