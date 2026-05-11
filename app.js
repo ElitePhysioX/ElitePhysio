@@ -67,8 +67,8 @@ function setL(l){
   var lal=g("l-al"); if(lal) lal.textContent=Lx.al;
   var lyn=g("l-yn"); if(lyn) lyn.textContent=Lx.yn;
   var lyp=g("l-yp"); if(lyp) lyp.textContent=Lx.yp;
-  var pnm=g("pnm"); if(pnm) pnm.placeholder=l==="he"?"\u05e9\u05dd \u05de\u05dc\u05d0":"Full name";
-  var ppi=g("ppi"); if(ppi) ppi.placeholder=l==="he"?"\u05e7\u05d5\u05d3 \u05db\u05e0\u05d9\u05e1\u05d4":"PIN code";
+  var pnm=g("pnm"); if(pnm) pnm.placeholder=l==="he"?"\u05e9\u05dd \u05de\u05dc\u05d0":"Full name"; // v2
+  var ppi=g("ppi"); if(ppi) ppi.placeholder=l==="he"?"\u05e7\u05d5\u05d3 \u05d0\u05d1\u05d8\u05d7\u05d4":"PIN code"; // v2
   // Header taglines
   var hta=g("hdr-tag-a"); if(hta) hta.textContent=Lx.tagline;
   var htp=g("hdr-tag-p"); if(htp) htp.textContent=Lx.tagline;
