@@ -28,7 +28,7 @@
       <!-- Logo - scaled large, clipped to circle, truly centered -->
       <!-- Coin shine hover effect -->
       <style>
-        #logo-outer { transition: filter 0.4s ease; cursor: pointer; border-radius: 50%; }
+        #logo-outer { transition: filter 0.4s ease; cursor: pointer; border-radius: 50%; position:absolute; inset:0; }
         #logo-outer:hover { filter: drop-shadow(0 0 22px rgba(200,235,255,1)) drop-shadow(0 0 45px rgba(150,210,255,0.85)) drop-shadow(0 0 70px rgba(100,180,255,0.6)); }
         #logo-outer:hover .logo-img { filter: brightness(1.5) drop-shadow(0 0 18px rgba(255,255,255,0.95)) drop-shadow(0 0 35px rgba(200,235,255,0.85)); }
         .logo-img { transition: filter 0.4s ease; }
@@ -37,7 +37,7 @@
         .hdr-logo:hover .hdr-logo-img { filter: brightness(1.5) drop-shadow(0 0 10px rgba(255,255,255,0.95)); }
         .hdr-logo-img { transition: filter 0.4s ease; }
       </style>
-      <div id="logo-outer" style="position:absolute;inset:0;border-radius:50%;background:transparent">
+      <div id="logo-outer">
         <div id="logo-ring" style="position:absolute;inset:4px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center">
           <img class="logo-img" src="ElitePhysioLogo.png?v=4" alt="ElitePhysio" style="width:340px;height:340px;object-fit:contain;flex-shrink:0;margin-left:15px">
         </div>
