@@ -432,7 +432,6 @@ function dfile(fid){ cur.files=(cur.files||[]).filter(function(f){ return f.id!=
 
 // ── Auto-translate exercises to Hebrew ──
 function autoTranslateExercises(p, cb){
-  if(!AI_KEY){ cb(); return; }
   var needsTranslation = (p.exercises||[]).filter(function(e){
     return !e.nameHe || !e.descHe;
   });
@@ -442,27 +441,30 @@ function autoTranslateExercises(p, cb){
     return {id:e.id, name:e.name, desc:e.desc||"", tips:e.tips||""};
   });
 
-  callClaude(
-    "You are a physical therapy translator. Translate these exercises to Hebrew. " +
-    "Return ONLY a JSON array, no markdown, no explanation:\n" +
-    JSON.stringify(list) + "\n" +
-    "Format: [{\"id\":same_id,\"nameHe\":\"...\",\"descHe\":\"...\",\"tipsHe\":\"...\"}]",
-    1000,
-    function(err, txt){
-      if(!err){
-        try{
-          var translated = JSON.parse(txt.replace(/```json|```/g,"").trim());
-          translated.forEach(function(t){
-            var ex = (p.exercises||[]).find(function(e){ return e.id===t.id; });
-            if(ex){ ex.nameHe=t.nameHe; ex.descHe=t.descHe; ex.tipsHe=t.tipsHe; }
-          });
-          pts = pts.map(function(x){ return x.id===p.id?p:x; });
-          sv();
-        }catch(e2){}
-      }
-      cb();
-    }
-  );
+  fetch("https://api.anthropic.com/v1/messages",{
+    method:"POST",
+    headers:{"Content-Type":"application/json","x-api-key":AI_KEY,"anthropic-version":"2023-06-01"},
+    body:JSON.stringify({
+      model:"claude-sonnet-4-20250514",
+      max_tokens:1000,
+      messages:[{role:"user",content:
+        "Physical therapy translator. Translate to Hebrew. Return ONLY JSON array, no markdown:\n"+
+        JSON.stringify(list)+"\n"+
+        "Format: [{\"id\":same_id,\"nameHe\":\"...\",\"descHe\":\"...\",\"tipsHe\":\"...\"}]"
+      }]
+    })
+  }).then(function(r){return r.json();}).then(function(d){
+    try{
+      var txt=d.content.map(function(i){return i.text||"";}).join("");
+      var translated=JSON.parse(txt.replace(/```json|```/g,"").trim());
+      translated.forEach(function(t){
+        var ex=(p.exercises||[]).find(function(e){return e.id===t.id;});
+        if(ex){ex.nameHe=t.nameHe;ex.descHe=t.descHe;ex.tipsHe=t.tipsHe;}
+      });
+      pts=pts.map(function(x){return x.id===p.id?p:x;}); sv();
+    }catch(e){}
+    cb();
+  }).catch(function(){cb();});
 }
 
 function callClaude(prompt, maxTokens, cb){
