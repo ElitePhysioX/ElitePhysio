@@ -26,8 +26,20 @@
       <!-- Glowing ring on top -->
       <div style="position:absolute;inset:0;border-radius:50%;border:2.5px solid rgba(255,255,255,0.9);box-shadow:0 0 14px rgba(150,220,255,0.9),0 0 30px rgba(100,180,255,0.6),0 0 55px rgba(43,108,196,0.4);z-index:2"></div>
       <!-- Logo - scaled large, clipped to circle, truly centered -->
-      <div style="position:absolute;inset:4px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center">
-        <img src="ElitePhysioLogo.png?v=4" alt="ElitePhysio" style="width:340px;height:340px;object-fit:contain;flex-shrink:0;margin-left:22px;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.15))">
+      <!-- Coin shine hover effect style -->
+      <style>
+        #logo-ring:hover .logo-img { animation: coinshine 0.6s ease-in-out; }
+        #logo-ring:hover { filter: drop-shadow(0 0 18px rgba(200,235,255,0.9)) drop-shadow(0 0 35px rgba(150,210,255,0.6)); }
+        @keyframes coinshine {
+          0%   { filter: brightness(1) drop-shadow(0 2px 4px rgba(0,0,0,0.15)); }
+          20%  { filter: brightness(1.6) drop-shadow(0 0 20px rgba(255,255,255,0.9)) drop-shadow(0 0 40px rgba(200,235,255,0.8)); }
+          50%  { filter: brightness(2.0) drop-shadow(0 0 30px rgba(255,255,255,1)) drop-shadow(0 0 60px rgba(150,220,255,0.9)); }
+          80%  { filter: brightness(1.6) drop-shadow(0 0 20px rgba(255,255,255,0.9)) drop-shadow(0 0 40px rgba(200,235,255,0.8)); }
+          100% { filter: brightness(1) drop-shadow(0 2px 4px rgba(0,0,0,0.15)); }
+        }
+      </style>
+      <div id="logo-ring" style="position:absolute;inset:4px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:filter 0.3s">
+        <img class="logo-img" src="ElitePhysioLogo.png?v=4" alt="ElitePhysio" style="width:340px;height:340px;object-fit:contain;flex-shrink:0;margin-left:15px;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.15))">
       </div>
     </div>
 
