@@ -102,7 +102,11 @@ function setL(l){
     else if(g("vp")&&!g("vp").classList.contains("hid")) rpl();
     else if(g("vs")&&!g("vs").classList.contains("hid")) rs();
     else if(g("vpat")&&!g("vpat").classList.contains("hid")) rpd();
-  } else if(auth) rpv();
+  } else if(auth) {
+    if(lng==="he" && cur){
+      autoTranslateExercises(cur, function(){ renderPatientView(cur); });
+    } else if(auth) rpv();
+  }
 }
 
 // ── Auth ──
@@ -305,6 +309,15 @@ function rcl(){
 // ── Patient View (patient login) ──
 function rpv(){
   var p=pts.find(function(x){ return x.id===auth; }); if(!p){ dout(); return; } cur=p;
+  // Auto-translate exercises if Hebrew is selected
+  if(lng==="he"){
+    autoTranslateExercises(p, function(){ renderPatientView(p); });
+  } else {
+    renderPatientView(p);
+  }
+}
+
+function renderPatientView(p){
   g("psh").innerHTML=
     '<div style="display:flex;align-items:center;gap:15px;margin-bottom:14px">'+av(p.name,52)+
     '<div><div style="font-size:21px;font-weight:800;color:#1a3a6e">'+p.name+'</div>'+
@@ -359,14 +372,11 @@ function om(m){
   } else if(m==="ae"){
     c.innerHTML='<div style="font-size:17px;font-weight:800;margin-bottom:18px;color:#1a3a6e">'+Lx.ae+'</div>'+
       '<div class="g2" style="gap:11px;margin-bottom:11px">'+
-      '<div style="grid-column:1/-1"><label class="lbl">'+Lx.en2+' (EN)</label><input class="inp" id="fen" placeholder="e.g. Dead Bug"></div>'+
-      '<div style="grid-column:1/-1"><label class="lbl">\u05e9\u05dd \u05ea\u05e8\u05d2\u05d9\u05dc (HE)</label><input class="inp" id="fenhe" dir="rtl" placeholder="\u05e9\u05dd \u05d1\u05e2\u05d1\u05e8\u05d9\u05ea"></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">'+Lx.en2+'</label><input class="inp" id="fen"></div>'+
       '<div><label class="lbl">'+Lx.se+'</label><input class="inp" id="fse"></div>'+
       '<div><label class="lbl">'+Lx.rp+'</label><input class="inp" id="frp"></div>'+
-      '<div style="grid-column:1/-1"><label class="lbl">'+Lx.de+' (EN)</label><textarea class="inp" id="fde" style="height:48px"></textarea></div>'+
-      '<div style="grid-column:1/-1"><label class="lbl">\u05ea\u05d9\u05d0\u05d5\u05e8 (HE)</label><textarea class="inp" id="fdehe" dir="rtl" style="height:48px"></textarea></div>'+
-      '<div style="grid-column:1/-1"><label class="lbl">'+Lx.ti+' (EN)</label><textarea class="inp" id="fti" style="height:48px"></textarea></div>'+
-      '<div style="grid-column:1/-1"><label class="lbl">\u05d8\u05d9\u05e4\u05d9\u05dd (HE)</label><textarea class="inp" id="ftihe" dir="rtl" style="height:48px"></textarea></div></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">'+Lx.de+'</label><textarea class="inp" id="fde" style="height:56px"></textarea></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">'+Lx.ti+'</label><textarea class="inp" id="fti" style="height:56px"></textarea></div></div>'+
       '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btnd" onclick="cm()">'+Lx.ca+'</button><button class="btn" onclick="se2()">'+Lx.sa+'</button></div>';
   } else if(m==="af"){
     var td=new Date().toISOString().split("T")[0];
@@ -418,8 +428,42 @@ function hf(e){
 }
 function dfile(fid){ cur.files=(cur.files||[]).filter(function(f){ return f.id!==fid; }); pts=pts.map(function(p){ return p.id===cur.id?cur:p; }); sv(); rcl(); }
 
-// ── AI (Claude API) ──
-function callClaude(prompt, maxTokens, cb){
+// ── Auto-translate exercises to Hebrew ──
+function autoTranslateExercises(p, cb){
+  if(!AI_KEY){ cb(); return; }
+  var needsTranslation = (p.exercises||[]).filter(function(e){
+    return !e.nameHe || !e.descHe;
+  });
+  if(!needsTranslation.length){ cb(); return; }
+
+  var list = needsTranslation.map(function(e){
+    return {id:e.id, name:e.name, desc:e.desc||"", tips:e.tips||""};
+  });
+
+  callClaude(
+    "You are a physical therapy translator. Translate these exercises to Hebrew. " +
+    "Return ONLY a JSON array, no markdown, no explanation:\n" +
+    JSON.stringify(list) + "\n" +
+    "Format: [{\"id\":same_id,\"nameHe\":\"...\",\"descHe\":\"...\",\"tipsHe\":\"...\"}]",
+    1000,
+    function(err, txt){
+      if(!err){
+        try{
+          var translated = JSON.parse(txt.replace(/```json|```/g,"").trim());
+          translated.forEach(function(t){
+            var ex = (p.exercises||[]).find(function(e){ return e.id===t.id; });
+            if(ex){ ex.nameHe=t.nameHe; ex.descHe=t.descHe; ex.tipsHe=t.tipsHe; }
+          });
+          pts = pts.map(function(x){ return x.id===p.id?p:x; });
+          sv();
+        }catch(e2){}
+      }
+      cb();
+    }
+  );
+}
+
+
   fetch("https://api.anthropic.com/v1/messages",{method:"POST",
     headers:{"Content-Type":"application/json","x-api-key":AI_KEY,"anthropic-version":"2023-06-01"},
     body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:maxTokens||800,messages:[{role:"user",content:prompt}]})
