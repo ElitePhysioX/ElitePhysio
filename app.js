@@ -373,12 +373,20 @@ function om(m){
       '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btnd" onclick="cm()">'+Lx.ca+'</button><button class="btn" onclick="sp2()">'+Lx.sa+'</button></div>';
   } else if(m==="ae"){
     c.innerHTML='<div style="font-size:17px;font-weight:800;margin-bottom:18px;color:#1a3a6e">'+Lx.ae+'</div>'+
+      '<div style="margin-bottom:12px"><label class="lbl">Choose from library / בחר מהרשימה</label>'+
+      '<select class="inp" id="fexsel" onchange="selEx(this.value)">'+
+      '<option value="">-- Select exercise / בחר תרגיל --</option>'+
+      EX_LIB.map(function(e,i){ return '<option value="'+i+'">'+e.name+' / '+e.nameHe+'</option>'; }).join("")+
+      '</select></div>'+
       '<div class="g2" style="gap:11px;margin-bottom:11px">'+
-      '<div style="grid-column:1/-1"><label class="lbl">'+Lx.en2+'</label><input class="inp" id="fen"></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">Exercise Name (English)</label><input class="inp" id="fen" placeholder="e.g. Dead Bug"></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">שם תרגיל (עברית)</label><input class="inp" id="fenhe" dir="rtl" placeholder="שם בעברית"></div>'+
       '<div><label class="lbl">'+Lx.se+'</label><input class="inp" id="fse"></div>'+
       '<div><label class="lbl">'+Lx.rp+'</label><input class="inp" id="frp"></div>'+
-      '<div style="grid-column:1/-1"><label class="lbl">'+Lx.de+'</label><textarea class="inp" id="fde" style="height:56px"></textarea></div>'+
-      '<div style="grid-column:1/-1"><label class="lbl">'+Lx.ti+'</label><textarea class="inp" id="fti" style="height:56px"></textarea></div></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">Description (EN)</label><textarea class="inp" id="fde" style="height:48px"></textarea></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">תיאור (עברית)</label><textarea class="inp" id="fdehe" dir="rtl" style="height:48px"></textarea></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">Tips (EN)</label><textarea class="inp" id="fti" style="height:48px"></textarea></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">טיפים (עברית)</label><textarea class="inp" id="ftihe" dir="rtl" style="height:48px"></textarea></div></div>'+
       '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btnd" onclick="cm()">'+Lx.ca+'</button><button class="btn" onclick="se2()">'+Lx.sa+'</button></div>';
   } else if(m==="af"){
     var td=new Date().toISOString().split("T")[0];
@@ -391,7 +399,46 @@ function om(m){
 }
 function cm(){ g("MB").classList.remove("on"); }
 
-// ── Save patient / exercise / follow-up ──
+// ── Bilingual Exercise Library ──
+var EX_LIB = [
+  {name:"Dead Bug",nameHe:"חרק מת",desc:"Lie on back, arms up, legs at 90°. Lower opposite arm/leg while keeping core stable.",descHe:"שכב על הגב, ידיים למעלה, רגליים ב-90°. הורד יד ורגל מנוגדות תוך שמירה על יציבות הליבה.",tips:"Keep lower back pressed to floor.",tipsHe:"שמור על הגב התחתון לחוץ לרצפה."},
+  {name:"Pallof Press",nameHe:"לחיצת פאלוף",desc:"Anti-rotation core exercise with resistance band or cable.",descHe:"תרגיל ליבה נגד סיבוב עם גומייה או כבל.",tips:"Keep hips square, press straight out.",tipsHe:"שמור על הירכיים ישרות, לחץ ישר קדימה."},
+  {name:"Glute Bridge",nameHe:"גשר ישבן",desc:"Lie on back, feet flat, push hips up squeezing glutes.",descHe:"שכב על הגב, כפות הרגליים שטוחות, דחוף את הירכיים למעלה תוך כיווץ הישבן.",tips:"Hold 2 seconds at top.",tipsHe:"החזק 2 שניות בראש התנועה."},
+  {name:"Bird Dog",nameHe:"ציפור-כלב",desc:"On hands and knees, extend opposite arm and leg simultaneously.",descHe:"על ידיים וברכיים, הרחב יד ורגל מנוגדות בו זמנית.",tips:"Keep back flat, move slowly.",tipsHe:"שמור על גב שטוח, זוז לאט."},
+  {name:"Clamshell",nameHe:"צדפה",desc:"Side lying with knees bent, open top knee like a clamshell.",descHe:"שכיבה על הצד עם ברכיים כפופות, פתח את הברך העליונה כמו צדפה.",tips:"Keep feet together throughout.",tipsHe:"שמור כפות הרגליים יחד לאורך כל התרגיל."},
+  {name:"Hip Hinge",nameHe:"ציר ירך",desc:"Stand with slight knee bend, hinge forward from hips keeping spine neutral.",descHe:"עמוד עם כפיפת ברכיים קלה, כופף קדימה מהירכיים תוך שמירה על עמוד שדרה ניטרלי.",tips:"Push hips back, not down.",tipsHe:"דחוף ירכיים אחורה, לא למטה."},
+  {name:"Squat",nameHe:"סקוואט",desc:"Feet shoulder-width apart, lower down as if sitting on a chair.",descHe:"רגליים ברוחב כתפיים, רד למטה כאילו יושב על כיסא.",tips:"Keep knees over toes, chest up.",tipsHe:"שמור על ברכיים מעל אצבעות הרגליים, חזה למעלה."},
+  {name:"Lunge",nameHe:"לאנג'",desc:"Step forward, lower back knee toward floor, return to start.",descHe:"צעד קדימה, הורד ברך אחורית לכיוון הרצפה, חזור לתחילה.",tips:"Keep front knee behind toe.",tipsHe:"שמור על ברך קדמית מאחורי בוהן הרגל."},
+  {name:"Side Plank",nameHe:"פלאנק צידי",desc:"Support body on forearm and side of foot, keep body straight.",descHe:"תמוך בגוף על האמה וצד כף הרגל, שמור על הגוף ישר.",tips:"Don't let hips drop.",tipsHe:"אל תתן לירכיים לרדת."},
+  {name:"Plank",nameHe:"פלאנק",desc:"Hold a push-up position on forearms, keeping body in straight line.",descHe:"החזק עמדת שכיבה סומך על אמות הידיים, שמור על הגוף בקו ישר.",tips:"Breathe steadily, don't hold breath.",tipsHe:"נשום בקביעות, אל תחסום נשימה."},
+  {name:"Romanian Deadlift",nameHe:"דדליפט רומני",desc:"Hold weights, hinge at hips lowering weights along legs.",descHe:"אחוז במשקולות, כופף בירכיים תוך הורדת המשקולות לאורך הרגליים.",tips:"Feel stretch in hamstrings.",tipsHe:"הרגש מתיחה בירכיים האחוריות."},
+  {name:"Wall Sit",nameHe:"ישיבת קיר",desc:"Slide back down a wall until thighs are parallel to floor.",descHe:"החלק גב לאורך קיר עד שהירכיים מקבילות לרצפה.",tips:"Keep back flat against wall.",tipsHe:"שמור גב שטוח על הקיר."},
+  {name:"Step Up",nameHe:"עלייה על מדרגה",desc:"Step up onto a platform leading with one foot.",descHe:"עלה על פלטפורמה תוך התחלה ברגל אחת.",tips:"Drive through the heel.",tipsHe:"דחוף דרך העקב."},
+  {name:"Shoulder Press",nameHe:"לחיצת כתפיים",desc:"Press weights overhead from shoulder level.",descHe:"לחץ משקולות מעל הראש מגובה הכתפיים.",tips:"Don't arch lower back.",tipsHe:"אל תכופף את הגב התחתון."},
+  {name:"Rows",nameHe:"חתירה",desc:"Pull resistance toward body squeezing shoulder blades.",descHe:"משוך התנגדות לכיוון הגוף תוך כיווץ שכמיות.",tips:"Keep elbows close to body.",tipsHe:"שמור המרפקים קרובים לגוף."},
+  {name:"Chest Press",nameHe:"לחיצת חזה",desc:"Push resistance away from chest, extending arms.",descHe:"דחוף התנגדות מהחזה, הארך ידיים.",tips:"Control the movement in both directions.",tipsHe:"שלוט בתנועה בשני הכיוונים."},
+  {name:"Lat Pulldown",nameHe:"משיכת לט",desc:"Pull bar down to upper chest, squeezing lats.",descHe:"משוך מוט למטה לחזה עליון תוך כיווץ שרירי הגב.",tips:"Lean back slightly, pull with elbows.",tipsHe:"הישען מעט אחורה, משוך עם המרפקים."},
+  {name:"Calf Raises",nameHe:"הרמות עגל",desc:"Rise up on toes, then lower slowly.",descHe:"עלה על בהונות הרגליים, ואז רד לאט.",tips:"Full range of motion up and down.",tipsHe:"טווח תנועה מלא למעלה ולמטה."},
+  {name:"Hamstring Curl",nameHe:"כפיפת ירך אחורית",desc:"Curl heel toward glutes against resistance.",descHe:"כופף עקב לכיוון הישבן כנגד התנגדות.",tips:"Keep hips down.",tipsHe:"שמור ירכיים למטה."},
+  {name:"Quad Set",nameHe:"כיווץ ארבע ראשי",desc:"Sit with leg straight, tighten quad muscle pushing knee down.",descHe:"שב עם רגל ישרה, כווץ שריר ארבע-ראשי תוך לחיצת הברך למטה.",tips:"Hold 5 seconds each rep.",tipsHe:"החזק 5 שניות בכל חזרה."},
+  {name:"Heel Slides",nameHe:"החלקות עקב",desc:"Lie on back, slide heel toward glutes bending knee.",descHe:"שכב על הגב, החלק עקב לכיוון הישבן תוך כפיפת הברך.",tips:"Slide slowly and controlled.",tipsHe:"החלק לאט ובשליטה."},
+  {name:"Straight Leg Raise",nameHe:"הרמת רגל ישרה",desc:"Lie on back, raise straight leg to height of other bent knee.",descHe:"שכב על הגב, הרם רגל ישרה לגובה הברך הכפופה השנייה.",tips:"Tighten quad before lifting.",tipsHe:"כווץ ארבע-ראשי לפני ההרמה."},
+  {name:"Ankle Pumps",nameHe:"משאבות קרסול",desc:"Pump foot up and down at the ankle to improve circulation.",descHe:"הזוז עם כף הרגל למעלה ולמטה בקרסול לשיפור זרימת הדם.",tips:"Do slowly and rhythmically.",tipsHe:"עשה לאט ובקצב."},
+  {name:"Theraband Shoulder External Rotation",nameHe:"סיבוב חיצוני כתף עם תרבנד",desc:"Elbow at side, rotate arm outward against band resistance.",descHe:"מרפק בצד, סובב זרוע החוצה כנגד התנגדות הגומייה.",tips:"Keep elbow fixed at side.",tipsHe:"שמור מרפק קבוע בצד."},
+  {name:"Foam Roll ITB",nameHe:"גלגול קצף לרצועת IT",desc:"Roll outer thigh on foam roller from hip to knee.",descHe:"גלגל את החלק החיצוני של הירך על גלגלת קצף מהירך לברך.",tips:"Pause on tender spots 30 seconds.",tipsHe:"עצור על נקודות רגישות 30 שניות."}
+];
+
+// ── Select exercise from library ──
+function selEx(idx){
+  if(idx==="") return;
+  var e = EX_LIB[idx];
+  g("fen").value = e.name;
+  if(g("fenhe")) g("fenhe").value = e.nameHe;
+  if(g("fde")) g("fde").value = e.desc;
+  if(g("fdehe")) g("fdehe").value = e.descHe;
+  if(g("fti")) g("fti").value = e.tips;
+  if(g("ftihe")) g("ftihe").value = e.tipsHe;
+}
 function sp2(){
   var nm=g("fn").value.trim(), sp=g("fsp").value; if(!nm||!sp) return;
   var d={name:nm,nameHe:g("fnhe").value.trim(),sport:sp,age:g("fa").value,phone:g("fph").value,injury:g("fij").value,pin:g("fpi").value||"0000",status:g("fst").value,notes:g("fno").value};
@@ -402,7 +449,17 @@ function sp2(){
 function dp(id){ pts=pts.filter(function(p){ return p.id!==id; }); sv(); gv("p"); }
 function se2(){
   var n=g("fen").value.trim(); if(!n) return;
-  var e={id:Date.now(),name:n,nameHe:g("fenhe")?g("fenhe").value.trim():"",sets:g("fse").value,reps:g("frp").value,desc:g("fde").value,descHe:g("fdehe")?g("fdehe").value.trim():"",tips:g("fti").value,tipsHe:g("ftihe")?g("ftihe").value.trim():""};
+  var e={
+    id:Date.now(),
+    name:n,
+    nameHe:g("fenhe")?g("fenhe").value.trim():"",
+    sets:g("fse").value,
+    reps:g("frp").value,
+    desc:g("fde")?g("fde").value:"",
+    descHe:g("fdehe")?g("fdehe").value.trim():"",
+    tips:g("fti")?g("fti").value:"",
+    tipsHe:g("ftihe")?g("ftihe").value.trim():""
+  };
   if(!cur.exercises) cur.exercises=[];
   cur.exercises.push(e);
   pts=pts.map(function(p){ return p.id===cur.id?cur:p; }); sv(); cm(); rex();
