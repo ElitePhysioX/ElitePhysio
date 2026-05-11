@@ -54,8 +54,24 @@ function setL(l){
     flh.style.boxShadow = l==="he" ? "0 2px 10px rgba(0,0,0,0.3)" : "none";
     flh.style.color = l==="he" ? "#1a3a6e" : "rgba(255,255,255,0.9)";
   }
-  var afle=g("afle"),aflh=g("aflh"); if(afle) afle.classList.toggle("on",l==="en"); if(aflh) aflh.classList.toggle("on",l==="he");
-  var pfle=g("pfle"),pflh=g("pflh"); if(pfle) pfle.classList.toggle("on",l==="en"); if(pflh) pflh.classList.toggle("on",l==="he");
+  var afle=g("afle"),aflh=g("aflh");
+  if(afle&&aflh){
+    afle.style.background = l==="en" ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.12)";
+    afle.style.border = l==="en" ? "2px solid #fff" : "2px solid rgba(255,255,255,0.25)";
+    afle.style.color = l==="en" ? "#1a3a6e" : "rgba(255,255,255,0.9)";
+    aflh.style.background = l==="he" ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.12)";
+    aflh.style.border = l==="he" ? "2px solid #fff" : "2px solid rgba(255,255,255,0.25)";
+    aflh.style.color = l==="he" ? "#1a3a6e" : "rgba(255,255,255,0.9)";
+  }
+  var pfle=g("pfle"),pflh=g("pflh");
+  if(pfle&&pflh){
+    pfle.style.background = l==="en" ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.12)";
+    pfle.style.border = l==="en" ? "2px solid #fff" : "2px solid rgba(255,255,255,0.25)";
+    pfle.style.color = l==="en" ? "#1a3a6e" : "rgba(255,255,255,0.9)";
+    pflh.style.background = l==="he" ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.12)";
+    pflh.style.border = l==="he" ? "2px solid #fff" : "2px solid rgba(255,255,255,0.25)";
+    pflh.style.color = l==="he" ? "#1a3a6e" : "rgba(255,255,255,0.9)";
+  }
 
   var Lx = L();
   // Login page text
