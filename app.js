@@ -353,12 +353,17 @@ function renderPatientView(p){
     var eName = isHe&&e.nameHe ? e.nameHe : (e.name||e.nameHe);
     var eDesc = isHe&&e.descHe ? e.descHe : (e.desc||e.descHe);
     var eTips = isHe&&e.tipsHe ? e.tipsHe : (e.tips||e.tipsHe);
-    return '<div class="xcard" style="direction:'+(isHe?"rtl":"ltr")+'"><div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">'+bdg("#"+(i+1))+
-      '<span style="font-weight:700;font-size:15px;color:#1a3a6e">'+eName+'</span></div>'+
+    var eid = JSON.stringify({name:e.name||"",nameHe:e.nameHe||"",desc:e.desc||"",descHe:e.descHe||"",tips:e.tips||"",tipsHe:e.tipsHe||"",sets:e.sets,reps:e.reps}).replace(/"/g,"&quot;");
+    return '<div class="xcard" onclick="showExDetail('+i+')" style="direction:'+(isHe?"rtl":"ltr")+';cursor:pointer;transition:all 0.2s ease" '+
+      'onmouseover="this.style.background=\'#e8f2ff\';this.style.borderColor=\'rgba(43,108,196,0.4)\';this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 20px rgba(43,108,196,0.15)\'" '+
+      'onmouseout="this.style.background=\'\';this.style.borderColor=\'\';this.style.transform=\'\';this.style.boxShadow=\'\'">'+
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">'+bdg("#"+(i+1))+
+      '<span style="font-weight:700;font-size:15px;color:#1a3a6e">'+eName+'</span>'+
+      '<span style="font-size:11px;color:#4a6a8a;margin-left:auto">tap for details →</span></div>'+
       '<div style="font-size:13px;color:#4a6a8a;margin-bottom:3px"><span style="font-weight:600;color:#2B6CC4">'+e.sets+'</span> &times; <span style="font-weight:600;color:#2B6CC4">'+e.reps+'</span> reps</div>'+
       (eDesc?'<div style="font-size:13px;color:#1a2535;margin-bottom:3px">'+eDesc+'</div>':"")+
       (eTips?'<div style="font-size:13px;color:#00a86b;margin-bottom:8px">&#128161; '+eTips+'</div>':"")+
-      '<a href="'+ytUrl(eName)+'" target="_blank" style="font-size:12px;color:#6d28d9;border:1px solid rgba(109,40,217,0.3);border-radius:5px;padding:4px 11px;text-decoration:none;font-weight:600;display:inline-block">'+L().wv+'</a></div>';
+      '<a href="'+ytUrl(eName)+'" target="_blank" onclick="event.stopPropagation()" style="font-size:12px;color:#6d28d9;border:1px solid rgba(109,40,217,0.3);border-radius:5px;padding:4px 11px;text-decoration:none;font-weight:600;display:inline-block">'+L().wv+'</a></div>';
   }).join(""):'<div style="color:#4a6a8a;font-size:14px;padding:14px 0">'+L().nx+'</div>';
   g("psfu").innerHTML=(p.followUps||[]).length?(p.followUps||[]).map(function(f){
     return '<div class="xcard"><div style="font-size:12px;color:#2B6CC4;font-weight:600;margin-bottom:4px">'+f.date+'</div>'+
@@ -729,6 +734,283 @@ function delLibEx(i){
   custom.splice(i,1);
   saveCustomLib(custom);
   omLib();
+}
+
+// ── Exercise Detail Modal for Patient ──
+function showExDetail(idx){
+  var p = cur || pts.find(function(x){ return x.id===auth; });
+  if(!p) return;
+  var e = p.exercises[idx];
+  if(!e) return;
+  var isHe = (lng==="he" && e.nameHe) || (!e.name && e.nameHe);
+  var eName = isHe ? (e.nameHe||e.name) : (e.name||e.nameHe);
+  var eDesc = isHe ? (e.descHe||e.desc) : (e.desc||e.descHe);
+  var eTips = isHe ? (e.tipsHe||e.tips) : (e.tips||e.tipsHe);
+  var isFemale = Math.random() > 0.5;
+  var skinColor = "#f4a47c";
+  var hairColor = isFemale ? "#3d1f00" : "#2a2a2a";
+  var shirtColor = "#2B6CC4";
+  var pantsColor = "#1a3a6e";
+
+  // Generate exercise-specific SVG animation
+  var anim = getExerciseAnimation(e.name||e.nameHe||"", isFemale, skinColor, hairColor, shirtColor, pantsColor);
+
+  var c = g("MC");
+  c.innerHTML =
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'+
+    '<span style="font-size:18px;font-weight:800;color:#1a3a6e">'+eName+'</span>'+
+    '<button onclick="cm()" style="background:rgba(0,0,0,0.08);border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:18px;flex-shrink:0">✕</button>'+
+    '</div>'+
+    // Animation + Muscle diagram side by side
+    '<div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">'+
+    '<div style="flex:1;min-width:160px;background:linear-gradient(135deg,#e8f2ff,#f0f8ff);border-radius:12px;padding:12px;text-align:center">'+
+    '<div style="font-size:11px;font-weight:700;color:#2B6CC4;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Movement</div>'+
+    anim+
+    '</div>'+
+    '<div style="flex:1;min-width:160px;background:linear-gradient(135deg,#fff0f0,#fff8f8);border-radius:12px;padding:12px;text-align:center">'+
+    '<div style="font-size:11px;font-weight:700;color:#c0392b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Muscles Worked</div>'+
+    getMuscleMap(e.name||e.nameHe||"")+
+    '</div></div>'+
+    // Details
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">'+
+    '<div style="background:#f0f5ff;border-radius:10px;padding:12px;text-align:center">'+
+    '<div style="font-size:11px;color:#4a6a8a;text-transform:uppercase;font-weight:700">Sets × Reps</div>'+
+    '<div style="font-size:22px;font-weight:800;color:#2B6CC4;margin-top:4px">'+e.sets+' × '+e.reps+'</div></div>'+
+    '<div style="background:#f0fff5;border-radius:10px;padding:12px;text-align:center">'+
+    '<div style="font-size:11px;color:#4a6a8a;text-transform:uppercase;font-weight:700">Difficulty</div>'+
+    '<div style="font-size:18px;margin-top:4px">'+getExDifficulty(e.name||"")+'</div></div></div>'+
+    (eDesc?'<div style="margin-bottom:12px"><div style="font-size:11px;font-weight:700;color:#1a3a6e;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px">📋 How to perform</div>'+
+    '<div style="font-size:13px;color:#1a2535;line-height:1.7;background:#f8fbff;padding:10px 13px;border-radius:8px;border-left:3px solid #2B6CC4">'+eDesc+'</div></div>':"")+
+    (eTips?'<div style="margin-bottom:12px"><div style="font-size:11px;font-weight:700;color:#00a86b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px">💡 Tips</div>'+
+    '<div style="font-size:13px;color:#1a2535;line-height:1.7;background:#f0fff5;padding:10px 13px;border-radius:8px;border-left:3px solid #00a86b">'+eTips+'</div></div>':"")+
+    '<div style="margin-bottom:14px"><div style="font-size:11px;font-weight:700;color:#2B6CC4;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px">🎯 Benefits</div>'+
+    '<div style="font-size:13px;color:#1a2535;line-height:1.7;background:#f8fbff;padding:10px 13px;border-radius:8px">'+getExBenefits(e.name||e.nameHe||"")+'</div></div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">'+
+    '<div style="background:#fff8f0;border-radius:10px;padding:11px"><div style="font-size:11px;font-weight:700;color:#e67e22;text-transform:uppercase;margin-bottom:5px">✅ Good for</div>'+
+    '<div style="font-size:12px;color:#1a2535;line-height:1.6">'+getExGoodFor(e.name||e.nameHe||"")+'</div></div>'+
+    '<div style="background:#fff0f0;border-radius:10px;padding:11px"><div style="font-size:11px;font-weight:700;color:#e74c3c;text-transform:uppercase;margin-bottom:5px">⚠️ Avoid if</div>'+
+    '<div style="font-size:12px;color:#1a2535;line-height:1.6">'+getExAvoid(e.name||e.nameHe||"")+'</div></div></div>'+
+    '<div style="text-align:center"><a href="'+ytUrl(eName)+'" target="_blank" style="display:inline-block;background:#6d28d9;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px">▶ Watch Video Tutorial</a></div>';
+
+  g("MB").classList.add("on");
+}
+
+function getExDifficulty(name){
+  var n=name.toLowerCase();
+  if(n.includes("dead bug")||n.includes("ankle")||n.includes("heel slide")||n.includes("quad set")||n.includes("pump")) return "⭐ Beginner";
+  if(n.includes("squat")||n.includes("lunge")||n.includes("bridge")||n.includes("plank")||n.includes("row")||n.includes("press")) return "⭐⭐ Intermediate";
+  if(n.includes("deadlift")||n.includes("pull up")||n.includes("split")||n.includes("single")) return "⭐⭐⭐ Advanced";
+  return "⭐⭐ Intermediate";
+}
+
+function getExBenefits(name){
+  var n=name.toLowerCase();
+  if(n.includes("squat")) return "Builds leg strength, improves knee stability, increases functional mobility for daily activities.";
+  if(n.includes("deadlift")) return "Full posterior chain strength, hip hinge mechanics, real-world lifting patterns.";
+  if(n.includes("plank")) return "Core stability, spinal protection, posture improvement, reduces back pain risk.";
+  if(n.includes("bridge")||n.includes("thrust")) return "Glute activation, hip stability, lower back support, improved posture.";
+  if(n.includes("lunge")) return "Single-leg strength, balance, hip flexibility, sport-specific movement.";
+  if(n.includes("row")) return "Upper back strength, posture correction, shoulder blade stability.";
+  if(n.includes("press")) return "Upper body pushing strength, shoulder stability, chest development.";
+  if(n.includes("bird")||n.includes("dead bug")) return "Core stability, spinal alignment, coordination, injury prevention.";
+  if(n.includes("calf")) return "Lower leg strength, ankle stability, pushoff power for walking and running.";
+  if(n.includes("curl")) return "Muscle isolation, joint-specific strength, rehab progression.";
+  return "Improves strength, stability, and movement quality in the target area.";
+}
+
+function getExGoodFor(name){
+  var n=name.toLowerCase();
+  if(n.includes("squat")||n.includes("lunge")) return "Knee rehab (late stage)\nLeg strengthening\nReturn to sport\nAthletes";
+  if(n.includes("deadlift")) return "Back strengthening\nHip pain rehab\nStrength athletes\nPosture improvement";
+  if(n.includes("plank")||n.includes("dead bug")||n.includes("bird")) return "Back pain prevention\nCore weakness\nAll fitness levels\nPost-surgery rehab";
+  if(n.includes("bridge")||n.includes("clam")||n.includes("thrust")) return "Hip weakness\nKnee pain\nLower back rehab\nRunners & cyclists";
+  if(n.includes("press")||n.includes("row")) return "Shoulder rehab\nPosture problems\nUpper body weakness\nOffice workers";
+  if(n.includes("calf")||n.includes("ankle")) return "Ankle sprain rehab\nAchilles issues\nBalance training\nWalking improvement";
+  return "General fitness\nRehab programs\nStrength building\nMovement improvement";
+}
+
+function getExAvoid(name){
+  var n=name.toLowerCase();
+  if(n.includes("squat")||n.includes("lunge")) return "Acute knee injury\nSevere arthritis\nRecent knee surgery (early stage)\nSevere hip pain";
+  if(n.includes("deadlift")) return "Acute disc herniation\nRecent back surgery\nSevere osteoporosis\nWithout proper form";
+  if(n.includes("plank")) return "Acute shoulder injury\nWrist problems\nHigh blood pressure (prolonged)\nPost-abdominal surgery";
+  if(n.includes("bridge")||n.includes("thrust")) return "Acute hip injury\nSevere hip impingement\nRecent hip surgery";
+  if(n.includes("press")) return "Acute shoulder impingement\nRotator cuff tear\nShoulder instability";
+  if(n.includes("row")||n.includes("pull")) return "Acute shoulder injury\nElbow tendonitis\nWrist problems";
+  return "Acute injury in target area\nSevere pain during movement\nWithout medical clearance";
+}
+
+function getMuscleMap(name){
+  var n=name.toLowerCase();
+  // Determine which muscles to highlight based on exercise
+  var muscles={quads:false,hams:false,glutes:false,core:false,chest:false,back:false,shoulders:false,biceps:false,triceps:false,calves:false,hip:false};
+  if(n.includes("squat")||n.includes("lunge")||n.includes("leg press")||n.includes("step")){ muscles.quads=true; muscles.glutes=true; muscles.core=true; }
+  if(n.includes("deadlift")||n.includes("rdl")||n.includes("romanian")){ muscles.hams=true; muscles.glutes=true; muscles.back=true; muscles.core=true; }
+  if(n.includes("bridge")||n.includes("thrust")||n.includes("clam")||n.includes("hip")){ muscles.glutes=true; muscles.hams=true; muscles.core=true; }
+  if(n.includes("plank")||n.includes("dead bug")||n.includes("bird")||n.includes("pallof")||n.includes("hollow")||n.includes("russian")){ muscles.core=true; muscles.shoulders=true; }
+  if(n.includes("press")&&(n.includes("bench")||n.includes("chest")||n.includes("push"))){ muscles.chest=true; muscles.triceps=true; muscles.shoulders=true; }
+  if(n.includes("shoulder press")||n.includes("overhead")||n.includes("lateral")||n.includes("arnold")||n.includes("front raise")){ muscles.shoulders=true; muscles.triceps=true; }
+  if(n.includes("row")||n.includes("pulldown")||n.includes("pull up")){ muscles.back=true; muscles.biceps=true; muscles.shoulders=true; }
+  if(n.includes("curl")){ muscles.biceps=true; }
+  if(n.includes("tricep")||n.includes("pushdown")||n.includes("dip")||n.includes("skull")){ muscles.triceps=true; }
+  if(n.includes("calf")||n.includes("ankle")){ muscles.calves=true; }
+  if(n.includes("hamstring")||n.includes("ham curl")){ muscles.hams=true; }
+  if(n.includes("quad")||n.includes("straight leg")||n.includes("heel slide")||n.includes("quad set")){ muscles.quads=true; }
+  if(n.includes("face pull")||n.includes("external")||n.includes("internal")||n.includes("y-t-w")||n.includes("wall angel")||n.includes("scapular")){ muscles.shoulders=true; muscles.back=true; }
+  // If nothing matched, default to core
+  if(!Object.values(muscles).some(Boolean)) muscles.core=true;
+
+  var hi="#e74c3c", lo="#f8f8f8", outline="#ddd";
+  return '<svg viewBox="0 0 160 280" width="140" height="220" xmlns="http://www.w3.org/2000/svg">'+
+    // Body outline - front view simplified
+    // Head
+    '<ellipse cx="80" cy="22" rx="16" ry="18" fill="#f4a47c" stroke="#ccc" stroke-width="1"/>'+
+    // Neck
+    '<rect x="74" y="38" width="12" height="10" fill="#f4a47c"/>'+
+    // Torso
+    '<rect x="52" y="48" width="56" height="70" rx="8" fill="'+(muscles.core?hi:'#e0eaff')+'" stroke="'+outline+'" stroke-width="1"/>'+
+    // Chest overlay
+    (muscles.chest?'<ellipse cx="65" cy="62" rx="12" ry="10" fill="'+hi+'" opacity="0.7"/><ellipse cx="95" cy="62" rx="12" ry="10" fill="'+hi+'" opacity="0.7"/>':"")+
+    // Shoulders
+    '<ellipse cx="44" cy="58" rx="14" ry="12" fill="'+(muscles.shoulders?hi:'#c8daf0')+'" stroke="'+outline+'" stroke-width="1"/>'+
+    '<ellipse cx="116" cy="58" rx="14" ry="12" fill="'+(muscles.shoulders?hi:'#c8daf0')+'" stroke="'+outline+'" stroke-width="1"/>'+
+    // Upper arms / biceps+triceps
+    '<rect x="28" y="66" width="18" height="44" rx="9" fill="'+(muscles.biceps?hi:muscles.triceps?"#f39c12":'#c8daf0')+'" stroke="'+outline+'" stroke-width="1"/>'+
+    '<rect x="114" y="66" width="18" height="44" rx="9" fill="'+(muscles.biceps?hi:muscles.triceps?"#f39c12":'#c8daf0')+'" stroke="'+outline+'" stroke-width="1"/>'+
+    // Forearms
+    '<rect x="30" y="108" width="14" height="34" rx="7" fill="#f4a47c" stroke="'+outline+'" stroke-width="1"/>'+
+    '<rect x="116" y="108" width="14" height="34" rx="7" fill="#f4a47c" stroke="'+outline+'" stroke-width="1"/>'+
+    // Back label if back muscles
+    (muscles.back?'<text x="80" y="80" text-anchor="middle" font-size="9" fill="'+hi+'" font-weight="bold">BACK</text>':"")+
+    // Hips
+    '<rect x="52" y="116" width="56" height="20" rx="5" fill="'+(muscles.hip||muscles.glutes?hi:'#c8daf0')+'" stroke="'+outline+'" stroke-width="1"/>'+
+    // Quads
+    '<rect x="54" y="134" width="22" height="60" rx="11" fill="'+(muscles.quads?hi:'#c8daf0')+'" stroke="'+outline+'" stroke-width="1"/>'+
+    '<rect x="84" y="134" width="22" height="60" rx="11" fill="'+(muscles.quads?hi:'#c8daf0')+'" stroke="'+outline+'" stroke-width="1"/>'+
+    // Hamstrings (shown as knee area highlight)
+    (muscles.hams?'<rect x="54" y="164" width="22" height="30" rx="8" fill="'+hi+'" opacity="0.6"/><rect x="84" y="164" width="22" height="30" rx="8" fill="'+hi+'" opacity="0.6"/>':"")+
+    // Calves
+    '<rect x="56" y="196" width="18" height="46" rx="9" fill="'+(muscles.calves?hi:'#c8daf0')+'" stroke="'+outline+'" stroke-width="1"/>'+
+    '<rect x="86" y="196" width="18" height="46" rx="9" fill="'+(muscles.calves?hi:'#c8daf0')+'" stroke="'+outline+'" stroke-width="1"/>'+
+    // Feet
+    '<ellipse cx="65" cy="244" rx="12" ry="6" fill="#f4a47c" stroke="'+outline+'" stroke-width="1"/>'+
+    '<ellipse cx="95" cy="244" rx="12" ry="6" fill="#f4a47c" stroke="'+outline+'" stroke-width="1"/>'+
+    // Legend
+    '<rect x="10" y="254" width="10" height="10" fill="'+hi+'" rx="2"/><text x="23" y="263" font-size="9" fill="#1a2535">Active</text>'+
+    '<rect x="70" y="254" width="10" height="10" fill="#c8daf0" rx="2"/><text x="83" y="263" font-size="9" fill="#1a2535">Supporting</text>'+
+    '</svg>';
+}
+
+function getExerciseAnimation(name, isFemale, skin, hair, shirt, pants){
+  var n=name.toLowerCase();
+  var dur="1.2s";
+  var sc=skin, ha=hair, sh=shirt, pa=pants;
+
+  // Head shape (slightly different for female)
+  var head = isFemale ?
+    '<ellipse cx="80" cy="28" rx="13" ry="15" fill="'+sc+'"/>'+
+    '<ellipse cx="80" cy="16" rx="14" ry="10" fill="'+ha+'"/>'+  // hair
+    '<ellipse cx="67" cy="22" rx="5" ry="8" fill="'+ha+'"/>'+    // side hair L
+    '<ellipse cx="93" cy="22" rx="5" ry="8" fill="'+ha+'"/>'+    // side hair R
+    '<circle cx="75" cy="30" r="1.5" fill="#333"/>'+
+    '<circle cx="85" cy="30" r="1.5" fill="#333"/>'+
+    '<path d="M77 34 Q80 36 83 34" stroke="#333" stroke-width="1" fill="none"/>' :
+    '<ellipse cx="80" cy="28" rx="13" ry="15" fill="'+sc+'"/>'+
+    '<ellipse cx="80" cy="14" rx="13" ry="7" fill="'+ha+'"/>'+   // hair
+    '<circle cx="75" cy="30" r="1.5" fill="#333"/>'+
+    '<circle cx="85" cy="30" r="1.5" fill="#333"/>'+
+    '<path d="M77 34 Q80 36 83 34" stroke="#333" stroke-width="1" fill="none"/>';
+
+  // Squats/Goblet squat
+  if(n.includes("squat")||n.includes("goblet")||n.includes("wall sit")){
+    return '<svg viewBox="0 0 160 200" width="150" height="160" xmlns="http://www.w3.org/2000/svg">'+
+    '<defs><animateTransform/></defs>'+
+    '<g id="sq">'+head+
+    '<rect x="67" y="42" width="26" height="42" rx="5" fill="'+sh+'"/>'+
+    '<rect x="67" y="82" width="26" height="34" rx="4" fill="'+pa+'"/>'+
+    // Left arm
+    '<line x1="67" y1="50" x2="50" y2="70" stroke="'+sc+'" stroke-width="8" stroke-linecap="round"/>'+
+    '<line x1="50" y1="70" x2="50" y2="90" stroke="'+sc+'" stroke-width="7" stroke-linecap="round"/>'+
+    // Right arm
+    '<line x1="93" y1="50" x2="110" y2="70" stroke="'+sc+'" stroke-width="8" stroke-linecap="round"/>'+
+    '<line x1="110" y1="70" x2="110" y2="90" stroke="'+sc+'" stroke-width="7" stroke-linecap="round"/>'+
+    // Legs - animated
+    '<g><line x1="72" y1="116" x2="60" y2="145" stroke="'+pa+'" stroke-width="10" stroke-linecap="round"/>'+
+    '<line x1="60" y1="145" x2="58" y2="165" stroke="'+sc+'" stroke-width="8" stroke-linecap="round"/>'+
+    '<line x1="88" y1="116" x2="100" y2="145" stroke="'+pa+'" stroke-width="10" stroke-linecap="round"/>'+
+    '<line x1="100" y1="145" x2="102" y2="165" stroke="'+sc+'" stroke-width="8" stroke-linecap="round"/>'+
+    '<animateTransform attributeName="transform" type="translate" values="0,0;0,28;0,0" dur="'+dur+'" repeatCount="indefinite" additive="sum"/></g>'+
+    '</g></svg>';
+  }
+
+  // Plank
+  if(n.includes("plank")&&!n.includes("side")){
+    return '<svg viewBox="0 0 200 120" width="180" height="100" xmlns="http://www.w3.org/2000/svg">'+
+    '<ellipse cx="40" cy="55" rx="13" ry="13" fill="'+sc+'"/>'+
+    '<rect x="52" y="48" width="90" height="20" rx="8" fill="'+sh+'"/>'+
+    '<rect x="130" y="52" width="32" height="16" rx="6" fill="'+pa+'"/>'+
+    '<line x1="40" y1="68" x2="42" y2="85" stroke="'+sc+'" stroke-width="6" stroke-linecap="round"/>'+
+    '<line x1="42" y1="85" x2="55" y2="85" stroke="'+sc+'" stroke-width="5" stroke-linecap="round"/>'+
+    '<line x1="160" y1="66" x2="162" y2="85" stroke="'+sc+'" stroke-width="7" stroke-linecap="round"/>'+
+    '<line x1="162" y1="85" x2="175" y2="85" stroke="'+sc+'" stroke-width="5" stroke-linecap="round"/>'+
+    '<line x1="52" y1="55" x2="42" y2="85" stroke="'+sc+'" stroke-width="7" stroke-linecap="round"/>'+
+    '<rect x="38" y="83" width="140" height="4" rx="2" fill="#ccc"/>'+
+    '<text x="100" y="105" text-anchor="middle" font-size="11" fill="#4a6a8a">Hold position</text>'+
+    '</svg>';
+  }
+
+  // Glute bridge / hip thrust
+  if(n.includes("bridge")||n.includes("thrust")){
+    return '<svg viewBox="0 0 200 140" width="180" height="120" xmlns="http://www.w3.org/2000/svg">'+
+    '<g><ellipse cx="25" cy="60" rx="13" ry="13" fill="'+sc+'"/>'+
+    '<rect x="36" y="53" width="50" height="18" rx="6" fill="'+sh+'"/>'+
+    '<rect x="80" y="53" width="46" height="18" rx="5" fill="'+pa+'"/>'+
+    '<line x1="24" y1="73" x2="22" y2="93" stroke="'+sc+'" stroke-width="6" stroke-linecap="round"/>'+
+    '<line x1="22" y1="93" x2="30" y2="93" stroke="'+sc+'" stroke-width="5" stroke-linecap="round"/>'+
+    '<line x1="120" y1="58" x2="135" y2="80" stroke="'+pa+'" stroke-width="10" stroke-linecap="round"/>'+
+    '<line x1="135" y1="80" x2="140" y2="100" stroke="'+sc+'" stroke-width="8" stroke-linecap="round"/>'+
+    '<line x1="142" y1="58" x2="155" y2="80" stroke="'+pa+'" stroke-width="10" stroke-linecap="round"/>'+
+    '<line x1="155" y1="80" x2="160" y2="100" stroke="'+sc+'" stroke-width="8" stroke-linecap="round"/>'+
+    '<rect x="18" y="98" width="148" height="5" rx="2" fill="#ccc"/>'+
+    '<animateTransform attributeName="transform" type="translate" values="0,0;0,-22;0,0" dur="1.4s" repeatCount="indefinite"/></g>'+
+    '</svg>';
+  }
+
+  // Deadlift
+  if(n.includes("deadlift")||n.includes("rdl")||n.includes("romanian")){
+    return '<svg viewBox="0 0 160 220" width="140" height="180" xmlns="http://www.w3.org/2000/svg">'+
+    '<g>'+head+
+    '<rect x="67" y="42" width="26" height="38" rx="5" fill="'+sh+'"/>'+
+    '<rect x="67" y="78" width="26" height="30" rx="4" fill="'+pa+'"/>'+
+    '<line x1="72" y1="106" x2="68" y2="145" stroke="'+pa+'" stroke-width="10" stroke-linecap="round"/>'+
+    '<line x1="68" y1="145" x2="68" y2="168" stroke="'+sc+'" stroke-width="8" stroke-linecap="round"/>'+
+    '<line x1="88" y1="106" x2="92" y2="145" stroke="'+pa+'" stroke-width="10" stroke-linecap="round"/>'+
+    '<line x1="92" y1="145" x2="92" y2="168" stroke="'+sc+'" stroke-width="8" stroke-linecap="round"/>'+
+    '<line x1="50" y1="56" x2="40" y2="100" stroke="'+sc+'" stroke-width="8" stroke-linecap="round"/>'+
+    '<line x1="110" y1="56" x2="120" y2="100" stroke="'+sc+'" stroke-width="8" stroke-linecap="round"/>'+
+    '<rect x="28" y="98" width="24" height="8" rx="4" fill="#888"/>'+
+    '<rect x="108" y="98" width="24" height="8" rx="4" fill="#888"/>'+
+    '<animateTransform attributeName="transform" type="rotate" values="0 80 110;-25 80 110;0 80 110" dur="1.6s" repeatCount="indefinite"/></g>'+
+    '</svg>';
+  }
+
+  // Default - generic standing curl / press animation
+  return '<svg viewBox="0 0 160 220" width="140" height="180" xmlns="http://www.w3.org/2000/svg">'+
+    '<g>'+head+
+    '<rect x="67" y="42" width="26" height="42" rx="5" fill="'+sh+'"/>'+
+    '<rect x="67" y="82" width="26" height="50" rx="4" fill="'+pa+'"/>'+
+    // left arm animated
+    '<line x1="67" y1="50" x2="50" y2="68" stroke="'+sc+'" stroke-width="8" stroke-linecap="round"/>'+
+    '<g><line x1="50" y1="68" x2="44" y2="95" stroke="'+sc+'" stroke-width="7" stroke-linecap="round"/>'+
+    '<animateTransform attributeName="transform" type="rotate" values="0 50 68;-50 50 68;0 50 68" dur="'+dur+'" repeatCount="indefinite"/></g>'+
+    // right arm animated
+    '<line x1="93" y1="50" x2="110" y2="68" stroke="'+sc+'" stroke-width="8" stroke-linecap="round"/>'+
+    '<g><line x1="110" y1="68" x2="116" y2="95" stroke="'+sc+'" stroke-width="7" stroke-linecap="round"/>'+
+    '<animateTransform attributeName="transform" type="rotate" values="0 110 68;50 110 68;0 110 68" dur="'+dur+'" repeatCount="indefinite"/></g>'+
+    // legs
+    '<line x1="72" y1="130" x2="68" y2="168" stroke="'+sc+'" stroke-width="8" stroke-linecap="round"/>'+
+    '<line x1="88" y1="130" x2="92" y2="168" stroke="'+sc+'" stroke-width="8" stroke-linecap="round"/>'+
+    '</g></svg>';
 }
 
 // ── Save patient / exercise / follow-up ──
