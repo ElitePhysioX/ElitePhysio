@@ -255,18 +255,23 @@ function rex(){
     '<button class="btn" style="font-size:12px" onclick="om(\'ae\')">'+L().ae+'</button></div></div>'+
     (!(p.exercises||[]).length?'<div style="color:#4a6a8a;font-size:14px;padding:14px 0">'+L().nx+'</div>':"")+
     (p.exercises||[]).map(function(e,i){
-      var isHe = e.displayLng==="he" || (!e.displayLng && !e.name && e.nameHe);
+      // Language: respect displayLng but override if page language has a translation
+      var isHe;
+      if(lng==="he" && e.nameHe) isHe=true;
+      else if(lng==="en" && e.name) isHe=false;
+      else isHe = e.displayLng==="he" || (!e.name && e.nameHe);
       var eName = isHe&&e.nameHe ? e.nameHe : (e.name||e.nameHe);
       var eDesc = isHe&&e.descHe ? e.descHe : (e.desc||e.descHe);
       var eTips = isHe&&e.tipsHe ? e.tipsHe : (e.tips||e.tipsHe);
-      var lngBadge = e.displayLng==="he" ? '<span style="font-size:10px;background:#e8f0ff;color:#2B6CC4;border-radius:4px;padding:1px 5px;margin-left:4px">🇮🇱 HE</span>' :
-                     '<span style="font-size:10px;background:#f0f5e8;color:#2a7a3a;border-radius:4px;padding:1px 5px;margin-left:4px">🇺🇸 EN</span>';
+      var lngBadge = isHe ? '<span style="font-size:10px;background:#e8f0ff;color:#2B6CC4;border-radius:4px;padding:1px 5px;margin-left:4px">🇮🇱 HE</span>' :
+                            '<span style="font-size:10px;background:#f0f5e8;color:#2a7a3a;border-radius:4px;padding:1px 5px;margin-left:4px">🇺🇸 EN</span>';
+      var setsReps = '<span style="font-weight:600;color:#2B6CC4">'+e.sets+'</span> &times; <span style="font-weight:600;color:#2B6CC4">'+e.reps+'</span>';
       return '<div class="xcard" style="direction:'+(isHe?"rtl":"ltr")+'">'+
         '<div style="display:flex;justify-content:space-between;align-items:flex-start">'+
         '<div style="flex:1">'+
         '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;flex-wrap:wrap">'+bdg("#"+(i+1))+
         '<span style="font-weight:700;font-size:15px;color:#1a3a6e">'+eName+'</span>'+lngBadge+'</div>'+
-        '<div style="font-size:13px;color:#4a6a8a;margin-bottom:6px">'+e.sets+' sets &times; '+e.reps+'</div>'+
+        '<div style="font-size:13px;color:#4a6a8a;margin-bottom:6px">'+setsReps+' reps</div>'+
         (eDesc?'<div style="font-size:13px;color:#1a2535;margin-bottom:6px;line-height:1.5">'+eDesc+'</div>':"")+
         (eTips?'<div style="font-size:13px;color:#00a86b;margin-bottom:8px;line-height:1.5">&#128161; '+eTips+'</div>':"")+
         '<a href="'+ytUrl(eName)+'" target="_blank" style="font-size:12px;color:#6d28d9;border:1px solid rgba(109,40,217,0.3);border-radius:5px;padding:4px 11px;text-decoration:none;font-weight:600;display:inline-block">'+L().wv+'</a></div>'+
@@ -341,13 +346,16 @@ function renderPatientView(p){
       ' <span style="background:rgba(255,255,255,0.25);border-radius:9px;padding:1px 7px;font-size:11px">'+t[2]+'</span></button>';
   }).join("");
   g("psex").innerHTML=(p.exercises||[]).length?(p.exercises||[]).map(function(e,i){
-    var isHe = e.displayLng==="he" || (lng==="he" && !e.displayLng) || (!e.name && e.nameHe);
+    var isHe;
+    if(lng==="he" && e.nameHe) isHe=true;
+    else if(lng==="en" && e.name) isHe=false;
+    else isHe = e.displayLng==="he" || (!e.name && e.nameHe);
     var eName = isHe&&e.nameHe ? e.nameHe : (e.name||e.nameHe);
     var eDesc = isHe&&e.descHe ? e.descHe : (e.desc||e.descHe);
     var eTips = isHe&&e.tipsHe ? e.tipsHe : (e.tips||e.tipsHe);
     return '<div class="xcard" style="direction:'+(isHe?"rtl":"ltr")+'"><div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">'+bdg("#"+(i+1))+
       '<span style="font-weight:700;font-size:15px;color:#1a3a6e">'+eName+'</span></div>'+
-      '<div style="font-size:13px;color:#4a6a8a;margin-bottom:3px">'+e.sets+' &times; '+e.reps+'</div>'+
+      '<div style="font-size:13px;color:#4a6a8a;margin-bottom:3px"><span style="font-weight:600;color:#2B6CC4">'+e.sets+'</span> &times; <span style="font-weight:600;color:#2B6CC4">'+e.reps+'</span> reps</div>'+
       (eDesc?'<div style="font-size:13px;color:#1a2535;margin-bottom:3px">'+eDesc+'</div>':"")+
       (eTips?'<div style="font-size:13px;color:#00a86b;margin-bottom:8px">&#128161; '+eTips+'</div>':"")+
       '<a href="'+ytUrl(eName)+'" target="_blank" style="font-size:12px;color:#6d28d9;border:1px solid rgba(109,40,217,0.3);border-radius:5px;padding:4px 11px;text-decoration:none;font-weight:600;display:inline-block">'+L().wv+'</a></div>';
@@ -596,29 +604,93 @@ function omLib(){
   var custom = loadCustomLib();
   var c = g("MC");
   c.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'+
-    '<span style="font-size:17px;font-weight:800;color:#1a3a6e">📚 Manage Library</span>'+
+    '<span style="font-size:17px;font-weight:800;color:#1a3a6e">📚 Exercise Library</span>'+
     '<button onclick="cm()" style="background:rgba(0,0,0,0.08);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:16px;line-height:1">✕</button>'+
     '</div>'+
-    '<div style="font-size:12px;color:#4a6a8a;margin-bottom:10px">Built-in exercises: '+EX_LIB.length+' &nbsp;|&nbsp; Your custom exercises: '+custom.length+'</div>'+
-    '<button class="btn" style="width:100%;margin-bottom:14px;font-size:13px" onclick="omLibAdd(null)">+ Add Custom Exercise</button>'+
-    (custom.length?
-      '<div style="font-size:12px;font-weight:700;color:#1a3a6e;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Your Custom Exercises</div>'+
-      custom.map(function(e,i){
-        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 11px;background:#f8fbff;border:1px solid #c8d8ee;border-radius:8px;margin-bottom:6px">'+
-          '<div><div style="font-weight:600;font-size:13px;color:#1a3a6e">'+e.name+' / '+e.nameHe+'</div>'+
-          '<div style="font-size:11px;color:#4a6a8a;margin-top:1px">'+(e.desc?e.desc.substring(0,50)+'...':'No description')+'</div></div>'+
-          '<div style="display:flex;gap:6px">'+
-          '<button class="btn" style="padding:3px 8px;font-size:12px;background:#f0f5ff" onclick="omLibAdd('+i+')">✏️</button>'+
-          '<button class="btn btnd" style="padding:3px 8px;font-size:12px" onclick="delLibEx('+i+')">✕</button>'+
-          '</div></div>';
-      }).join(""):
-      '<div style="color:#4a6a8a;font-size:13px;padding:12px 0;text-align:center">No custom exercises yet.</div>'
-    )+
-    '<div style="font-size:12px;font-weight:700;color:#1a3a6e;margin:12px 0 8px;text-transform:uppercase;letter-spacing:0.5px">Built-in Library Preview</div>'+
-    '<div style="max-height:160px;overflow-y:auto;background:#f0f5fb;border-radius:8px;padding:8px">'+
-    EX_LIB.map(function(e){ return '<div style="font-size:12px;padding:3px 6px;color:#1a2535">'+e.name+' / '+e.nameHe+'</div>'; }).join("")+
+    '<div style="font-size:12px;color:#4a6a8a;margin-bottom:10px">Click any exercise to edit it. Changes save permanently.</div>'+
+    '<button class="btn" style="width:100%;margin-bottom:12px;font-size:13px" onclick="omLibAdd(-1)">+ Add New Exercise to Library</button>'+
+    // Custom exercises section
+    (custom.length?'<div style="font-size:11px;font-weight:700;color:#2B6CC4;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">⭐ Your Custom Exercises ('+custom.length+')</div>'+
+    custom.map(function(e,i){
+      return '<div onclick="omLibEdit(\'custom\','+i+')" style="padding:9px 12px;background:#eef4ff;border:1px solid rgba(43,108,196,0.25);border-radius:8px;margin-bottom:5px;cursor:pointer;transition:background 0.2s" '+
+        'onmouseover="this.style.background=\'#dbeafe\'" onmouseout="this.style.background=\'#eef4ff\'">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center">'+
+        '<div><span style="font-weight:600;font-size:13px;color:#1a3a6e">'+e.name+'</span>'+
+        (e.nameHe?'<span style="color:#888;margin:0 5px">/</span><span style="color:#4a6a8a;font-size:13px">'+e.nameHe+'</span>':'')+
+        '</div><span style="font-size:11px;color:#2B6CC4">✏️ edit</span></div>'+
+        (e.desc?'<div style="font-size:11px;color:#666;margin-top:3px">'+e.desc.substring(0,60)+(e.desc.length>60?'...':'')+'</div>':'')+
+        '</div>';
+    }).join(""):'') +
+    // Built-in exercises section
+    '<div style="font-size:11px;font-weight:700;color:#2a7a3a;margin:10px 0 6px;text-transform:uppercase;letter-spacing:0.5px">📋 Built-in Exercises ('+EX_LIB.length+')</div>'+
+    '<div style="max-height:320px;overflow-y:auto">'+
+    EX_LIB.map(function(e,i){
+      return '<div onclick="omLibEdit(\'builtin\','+i+')" style="padding:8px 12px;background:#f8fbff;border:1px solid #e0eaf5;border-radius:8px;margin-bottom:4px;cursor:pointer;transition:background 0.2s" '+
+        'onmouseover="this.style.background=\'#e8f0fb\'" onmouseout="this.style.background=\'#f8fbff\'">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center">'+
+        '<div><span style="font-weight:600;font-size:13px;color:#1a3a6e">'+e.name+'</span>'+
+        '<span style="color:#888;margin:0 5px">/</span><span style="color:#4a6a8a;font-size:13px">'+e.nameHe+'</span></div>'+
+        '<span style="font-size:11px;color:#4a6a8a">✏️ edit</span></div>'+
+        (e.desc?'<div style="font-size:11px;color:#666;margin-top:2px">'+e.desc.substring(0,55)+(e.desc.length>55?'...':'')+'</div>':'')+
+        '</div>';
+    }).join("")+
     '</div>';
   g("MB").classList.add("on");
+}
+
+// Edit any exercise in the library (builtin or custom)
+function omLibEdit(type, idx){
+  var e = type==="custom" ? loadCustomLib()[idx] : EX_LIB[idx];
+  var c = g("MC");
+  c.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'+
+    '<span style="font-size:16px;font-weight:800;color:#1a3a6e">✏️ Edit Library Exercise</span>'+
+    '<button onclick="omLib()" style="background:rgba(0,0,0,0.08);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:16px;line-height:1">←</button>'+
+    '</div>'+
+    (type==="builtin"?'<div style="font-size:12px;color:#4a6a8a;background:#fff8e1;border-radius:6px;padding:8px 10px;margin-bottom:12px">Editing a built-in exercise. Changes apply to all patients who have this exercise.</div>':'')+
+    '<div class="g2" style="gap:10px;margin-bottom:12px">'+
+    '<div style="grid-column:1/-1"><label class="lbl">Name (EN)</label><input class="inp" id="lib_en" value="'+e.name+'"></div>'+
+    '<div style="grid-column:1/-1"><label class="lbl">שם (עברית)</label><input class="inp" id="lib_he" dir="rtl" value="'+(e.nameHe||'')+'"></div>'+
+    '<div style="grid-column:1/-1"><label class="lbl">Description (EN)</label><textarea class="inp" id="lib_de" style="height:52px">'+(e.desc||'')+'</textarea></div>'+
+    '<div style="grid-column:1/-1"><label class="lbl">תיאור (HE)</label><textarea class="inp" id="lib_dhe" dir="rtl" style="height:52px">'+(e.descHe||'')+'</textarea></div>'+
+    '<div style="grid-column:1/-1"><label class="lbl">Tips (EN)</label><textarea class="inp" id="lib_ti" style="height:44px">'+(e.tips||'')+'</textarea></div>'+
+    '<div style="grid-column:1/-1"><label class="lbl">טיפים (HE)</label><textarea class="inp" id="lib_the" dir="rtl" style="height:44px">'+(e.tipsHe||'')+'</textarea></div></div>'+
+    '<div style="display:flex;gap:8px;justify-content:space-between">'+
+    '<button class="btn btnd" onclick="delLibEx2(\''+type+'\','+idx+')">🗑 Delete</button>'+
+    '<div style="display:flex;gap:8px"><button class="btn btnd" onclick="omLib()">Cancel</button>'+
+    '<button class="btn" onclick="saveLibEdit(\''+type+'\','+idx+')">Save Changes</button></div></div>';
+}
+
+function saveLibEdit(type, idx){
+  var n=g("lib_en").value.trim(), nhe=g("lib_he").value.trim();
+  if(!n&&!nhe){ alert("Enter at least one name."); return; }
+  var updated={ name:n||nhe, nameHe:nhe||n, desc:g("lib_de").value.trim(), descHe:g("lib_dhe").value.trim(), tips:g("lib_ti").value.trim(), tipsHe:g("lib_the").value.trim() };
+  if(type==="custom"){
+    var custom=loadCustomLib(); custom[idx]=updated; saveCustomLib(custom);
+  } else {
+    // Override builtin exercise
+    EX_LIB[idx]=Object.assign(EX_LIB[idx],updated);
+  }
+  // Propagate changes to ALL patients who have this exercise by name
+  var origName = type==="custom" ? loadCustomLib()[idx]&&loadCustomLib()[idx].name : EX_LIB[idx].name;
+  pts=pts.map(function(p){
+    if(p.exercises){
+      p.exercises=p.exercises.map(function(e){
+        if(e.name===updated.name||e.name===origName||e.nameHe===updated.nameHe){
+          return Object.assign({},e,{name:updated.name,nameHe:updated.nameHe,desc:updated.desc,descHe:updated.descHe,tips:updated.tips,tipsHe:updated.tipsHe});
+        }
+        return e;
+      });
+    }
+    return p;
+  });
+  sv(); rex(); omLib();
+}
+
+function delLibEx2(type, idx){
+  if(!confirm("Delete this exercise from the library?")) return;
+  if(type==="custom"){ var c=loadCustomLib(); c.splice(idx,1); saveCustomLib(c); }
+  // Can't delete built-in, just go back
+  omLib();
 }
 
 function omLibAdd(customIdx){
@@ -852,7 +924,7 @@ function dprint(id){
       var eTips = isHe&&e.tipsHe ? e.tipsHe : (e.tips||e.tipsHe);
       var dir = isHe ? 'direction:rtl;text-align:right' : '';
       return '<div class="ex" style="'+dir+'"><div style="font-size:15px;font-weight:700;margin-bottom:4px">'+(i+1)+'. '+eName+'</div>'+
-        '<div style="font-size:12px;color:#4a6a8a;margin-bottom:3px">'+e.sets+' sets &times; '+e.reps+'</div>'+
+        '<div style="font-size:12px;color:#4a6a8a;margin-bottom:3px"><strong>'+e.sets+'</strong> &times; <strong>'+e.reps+'</strong> reps</div>'+
         (eDesc?'<div style="font-size:12px;color:#1a2535;margin-bottom:3px">'+eDesc+'</div>':"")+
         (eTips?'<div style="font-size:12px;color:#2B6CC4;font-weight:600">&#128161; '+eTips+'</div>':"")+
         '</div>';
