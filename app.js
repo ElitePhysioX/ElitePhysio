@@ -589,25 +589,31 @@ function se2(editId){
   var n=g("fen").value.trim(), nhe=g("fenhe")?g("fenhe").value.trim():"";
   if(!n&&!nhe) return;
   var dlng=g("fdlng")?g("fdlng").value:"en";
+  // If only one language filled, use it for both
+  var finalName = n || nhe;
+  var finalNameHe = nhe || n;
   var e={
-    id:editId||Date.now(),
-    name:n||nhe,
-    nameHe:nhe||n,
-    sets:g("fse").value,
-    reps:g("frp").value,
-    desc:g("fde")?g("fde").value:"",
-    descHe:g("fdehe")?g("fdehe").value.trim():"",
-    tips:g("fti")?g("fti").value:"",
-    tipsHe:g("ftihe")?g("ftihe").value.trim():"",
-    displayLng:dlng
+    id: editId ? Number(editId) : Date.now(),
+    name: finalName,
+    nameHe: finalNameHe,
+    sets: g("fse").value,
+    reps: g("frp").value,
+    desc: g("fde")?g("fde").value.trim():"",
+    descHe: g("fdehe")?g("fdehe").value.trim():"",
+    tips: g("fti")?g("fti").value.trim():"",
+    tipsHe: g("ftihe")?g("ftihe").value.trim():"",
+    displayLng: dlng
   };
   if(!cur.exercises) cur.exercises=[];
-  if(editId){ cur.exercises=cur.exercises.map(function(x){return x.id===editId?e:x;}); }
-  else { cur.exercises.push(e); }
+  if(editId){
+    cur.exercises=cur.exercises.map(function(x){ return Number(x.id)===Number(editId)?e:x; });
+  } else {
+    cur.exercises.push(e);
+  }
   pts=pts.map(function(p){ return p.id===cur.id?cur:p; }); sv(); cm(); rex();
   var sp=document.querySelectorAll("#ptbs .nb"); if(sp[0]&&sp[0].querySelector("span")) sp[0].querySelector("span").textContent=cur.exercises.length;
 }
-function de(eid){ cur.exercises=(cur.exercises||[]).filter(function(e){ return e.id!==eid; }); pts=pts.map(function(p){ return p.id===cur.id?cur:p; }); sv(); rex(); }
+function de(eid){ cur.exercises=(cur.exercises||[]).filter(function(e){ return Number(e.id)!==Number(eid); }); pts=pts.map(function(p){ return p.id===cur.id?cur:p; }); sv(); rex(); }
 function sfu(){
   var nt=g("fnt").value.trim(); if(!nt) return;
   var f={id:Date.now(),date:g("fdt").value,note:nt};
