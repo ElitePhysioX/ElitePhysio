@@ -261,7 +261,8 @@ function rex(){
         (e.desc?'<div style="font-size:13px;color:#1a2535;margin-bottom:3px">'+e.desc+'</div>':"")+
         (e.tips?'<div style="font-size:13px;color:#00a86b;margin-bottom:8px">&#128161; '+e.tips+'</div>':"")+
         '<a href="'+ytUrl(e.name)+'" target="_blank" style="font-size:12px;color:#6d28d9;border:1px solid rgba(109,40,217,0.3);border-radius:5px;padding:4px 11px;text-decoration:none;font-weight:600;display:inline-block">'+L().wv+'</a></div>'+
-        '<button class="btn btnd" style="padding:4px 9px;font-size:12px;margin-left:8px" onclick="de('+e.id+')">&#10005;</button></div></div>';
+        '<button class="btn btnd" style="padding:4px 9px;font-size:12px;margin-left:8px" onclick="de('+e.id+')">&#10005;</button>'+
+        '<button class="btn" style="padding:4px 9px;font-size:12px;margin-left:4px;background:#f0f5ff" onclick="om(\'ae\','+e.id+')">✏️</button></div></div>';
     }).join("");
 }
 
@@ -329,7 +330,7 @@ function renderPatientView(p){
       ' <span style="background:rgba(255,255,255,0.25);border-radius:9px;padding:1px 7px;font-size:11px">'+t[2]+'</span></button>';
   }).join("");
   g("psex").innerHTML=(p.exercises||[]).length?(p.exercises||[]).map(function(e,i){
-    var isHe=lng==="he";
+    var isHe = e.displayLng==="he" || (lng==="he" && !e.displayLng);
     var eName = isHe&&e.nameHe ? e.nameHe : e.name;
     var eDesc = isHe&&e.descHe ? e.descHe : e.desc;
     var eTips = isHe&&e.tipsHe ? e.tipsHe : e.tips;
@@ -349,7 +350,7 @@ function renderPatientView(p){
 function spt(t){ ptab=t; document.querySelectorAll("#pstb .nb").forEach(function(b,i){ b.classList.toggle("on",["ex","fu"][i]===t); }); g("psex").classList.toggle("hid",t!=="ex"); g("psfu").classList.toggle("hid",t!=="fu"); }
 
 // ── Modals ──
-function om(m){
+function om(m, editId){
   mmode=m; var c=g("MC"); var Lx=L();
   if(m==="ap"||m==="ep"){
     var p=m==="ep"?cur:{};
@@ -366,22 +367,33 @@ function om(m){
       '<div style="grid-column:1/-1"><label class="lbl">'+Lx.no+'</label><textarea class="inp" id="fno" style="height:68px">'+(p.notes||"")+'</textarea></div></div>'+
       '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btnd" onclick="cm()">'+Lx.ca+'</button><button class="btn" onclick="sp2()">'+Lx.sa+'</button></div>';
   } else if(m==="ae"){
-    c.innerHTML='<div style="font-size:17px;font-weight:800;margin-bottom:14px;color:#1a3a6e">'+Lx.ae+'</div>'+
-      '<div style="margin-bottom:10px">'+
-      '<label class="lbl">🔍 Search / חפש תרגיל</label>'+
+    var editEx = editId ? (cur.exercises||[]).find(function(e){return e.id===editId;}) : null;
+    c.innerHTML='<div style="font-size:17px;font-weight:800;margin-bottom:14px;color:#1a3a6e">'+(editEx?"✏️ Edit Exercise / ערוך תרגיל":Lx.ae)+'</div>'+
+      '<div style="margin-bottom:10px;position:relative">'+
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'+
+      '<label class="lbl" style="margin:0">🔍 Search / חפש תרגיל</label>'+
+      '<button onclick="g(\'fexlist\').innerHTML=\'\';g(\'fexsearch\').value=\'\'" style="background:rgba(0,0,0,0.08);border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:13px;line-height:1;color:#666">✕</button>'+
+      '</div>'+
       '<input class="inp" id="fexsearch" placeholder="e.g. dumbbell, squat, כתף..." oninput="filterEx(this.value)" autocomplete="off">'+
       '<div id="fexlist" style="max-height:180px;overflow-y:auto;border:1px solid rgba(43,108,196,0.2);border-radius:8px;margin-top:4px;background:#fff"></div>'+
       '</div>'+
       '<div class="g2" style="gap:10px;margin-bottom:11px">'+
-      '<div style="grid-column:1/-1"><label class="lbl">Exercise Name (EN)</label><input class="inp" id="fen" placeholder="English name"></div>'+
-      '<div style="grid-column:1/-1"><label class="lbl">שם תרגיל (עברית)</label><input class="inp" id="fenhe" dir="rtl" placeholder="שם בעברית"></div>'+
-      '<div><label class="lbl">'+Lx.se+'</label><input class="inp" id="fse"></div>'+
-      '<div><label class="lbl">'+Lx.rp+'</label><input class="inp" id="frp"></div>'+
-      '<div style="grid-column:1/-1"><label class="lbl">Description (EN)</label><textarea class="inp" id="fde" style="height:44px"></textarea></div>'+
-      '<div style="grid-column:1/-1"><label class="lbl">תיאור (עברית)</label><textarea class="inp" id="fdehe" dir="rtl" style="height:44px"></textarea></div>'+
-      '<div style="grid-column:1/-1"><label class="lbl">Tips (EN)</label><textarea class="inp" id="fti" style="height:44px"></textarea></div>'+
-      '<div style="grid-column:1/-1"><label class="lbl">טיפים (עברית)</label><textarea class="inp" id="ftihe" dir="rtl" style="height:44px"></textarea></div></div>'+
-      '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btnd" onclick="cm()">'+Lx.ca+'</button><button class="btn" onclick="se2()">'+Lx.sa+'</button></div>';
+      '<div style="grid-column:1/-1"><label class="lbl">Exercise Name (EN)</label><input class="inp" id="fen" placeholder="English name" value="'+(editEx?editEx.name:'')+'"></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">שם תרגיל (עברית)</label><input class="inp" id="fenhe" dir="rtl" placeholder="שם בעברית" value="'+(editEx&&editEx.nameHe?editEx.nameHe:'')+'"></div>'+
+      '<div><label class="lbl">'+Lx.se+'</label><input class="inp" id="fse" value="'+(editEx?editEx.sets:'')+'"></div>'+
+      '<div><label class="lbl">'+Lx.rp+'</label><input class="inp" id="frp" value="'+(editEx?editEx.reps:'')+'"></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">Description (EN)</label><textarea class="inp" id="fde" style="height:44px">'+(editEx?editEx.desc:'')+'</textarea></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">תיאור (עברית)</label><textarea class="inp" id="fdehe" dir="rtl" style="height:44px">'+(editEx&&editEx.descHe?editEx.descHe:'')+'</textarea></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">Tips (EN)</label><textarea class="inp" id="fti" style="height:44px">'+(editEx?editEx.tips:'')+'</textarea></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">טיפים (עברית)</label><textarea class="inp" id="ftihe" dir="rtl" style="height:44px">'+(editEx&&editEx.tipsHe?editEx.tipsHe:'')+'</textarea></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">Show patient in / הצג למטופל ב</label>'+
+      '<div style="display:flex;gap:8px;margin-top:4px">'+
+      '<button id="lng-en" onclick="setExLng(\'en\')" style="flex:1;padding:8px;border-radius:8px;border:2px solid '+((!editEx||editEx.displayLng!=='he')?'#2B6CC4':'#ddd')+';background:'+((!editEx||editEx.displayLng!=='he')?'rgba(43,108,196,0.1)':'#fff')+';cursor:pointer;font-weight:600;color:#1a3a6e">🇺🇸 English</button>'+
+      '<button id="lng-he" onclick="setExLng(\'he\')" style="flex:1;padding:8px;border-radius:8px;border:2px solid '+(editEx&&editEx.displayLng==='he'?'#2B6CC4':'#ddd')+';background:'+(editEx&&editEx.displayLng==='he'?'rgba(43,108,196,0.1)':'#fff')+';cursor:pointer;font-weight:600;color:#1a3a6e">🇮🇱 עברית</button>'+
+      '</div><input type="hidden" id="fdlng" value="'+(editEx&&editEx.displayLng?editEx.displayLng:'en')+'"></div></div>'+
+      '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btnd" onclick="cm()">'+Lx.ca+'</button>'+
+      '<button class="btn" onclick="se2('+(editEx?editEx.id:'null')+')">'+Lx.sa+'</button></div>';
+    g("_eid") || (function(){ var h=document.createElement("input"); h.type="hidden"; h.id="_eid"; h.value=editId||""; c.appendChild(h); })();
   } else if(m==="af"){
     var td=new Date().toISOString().split("T")[0];
     c.innerHTML='<div style="font-size:17px;font-weight:800;margin-bottom:18px;color:#1a3a6e">'+Lx.an+'</div>'+
@@ -556,21 +568,32 @@ function sp2(){
   sv(); cm(); rpl(); if(mmode==="ep") rpd();
 }
 function dp(id){ pts=pts.filter(function(p){ return p.id!==id; }); sv(); gv("p"); }
-function se2(){
-  var n=g("fen").value.trim(); if(!n) return;
+function setExLng(l){
+  g("fdlng").value=l;
+  g("lng-en").style.border=l==="en"?"2px solid #2B6CC4":"2px solid #ddd";
+  g("lng-en").style.background=l==="en"?"rgba(43,108,196,0.1)":"#fff";
+  g("lng-he").style.border=l==="he"?"2px solid #2B6CC4":"2px solid #ddd";
+  g("lng-he").style.background=l==="he"?"rgba(43,108,196,0.1)":"#fff";
+}
+function se2(editId){
+  var n=g("fen").value.trim(), nhe=g("fenhe")?g("fenhe").value.trim():"";
+  if(!n&&!nhe) return;
+  var dlng=g("fdlng")?g("fdlng").value:"en";
   var e={
-    id:Date.now(),
-    name:n,
-    nameHe:g("fenhe")?g("fenhe").value.trim():"",
+    id:editId||Date.now(),
+    name:n||nhe,
+    nameHe:nhe||n,
     sets:g("fse").value,
     reps:g("frp").value,
     desc:g("fde")?g("fde").value:"",
     descHe:g("fdehe")?g("fdehe").value.trim():"",
     tips:g("fti")?g("fti").value:"",
-    tipsHe:g("ftihe")?g("ftihe").value.trim():""
+    tipsHe:g("ftihe")?g("ftihe").value.trim():"",
+    displayLng:dlng
   };
   if(!cur.exercises) cur.exercises=[];
-  cur.exercises.push(e);
+  if(editId){ cur.exercises=cur.exercises.map(function(x){return x.id===editId?e:x;}); }
+  else { cur.exercises.push(e); }
   pts=pts.map(function(p){ return p.id===cur.id?cur:p; }); sv(); cm(); rex();
   var sp=document.querySelectorAll("#ptbs .nb"); if(sp[0]&&sp[0].querySelector("span")) sp[0].querySelector("span").textContent=cur.exercises.length;
 }
