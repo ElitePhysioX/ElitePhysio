@@ -254,15 +254,25 @@ function rex(){
     '<button class="btn" style="font-size:12px" onclick="om(\'ae\')">'+L().ae+'</button></div></div>'+
     (!(p.exercises||[]).length?'<div style="color:#4a6a8a;font-size:14px;padding:14px 0">'+L().nx+'</div>':"")+
     (p.exercises||[]).map(function(e,i){
-      return '<div class="xcard"><div style="display:flex;justify-content:space-between;align-items:flex-start">'+
-        '<div style="flex:1"><div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">'+bdg("#"+(i+1))+
-        '<span style="font-weight:700;font-size:15px;color:#1a3a6e">'+e.name+'</span></div>'+
-        '<div style="font-size:13px;color:#4a6a8a;margin-bottom:3px">'+e.sets+' sets &times; '+e.reps+'</div>'+
-        (e.desc?'<div style="font-size:13px;color:#1a2535;margin-bottom:3px">'+e.desc+'</div>':"")+
-        (e.tips?'<div style="font-size:13px;color:#00a86b;margin-bottom:8px">&#128161; '+e.tips+'</div>':"")+
-        '<a href="'+ytUrl(e.name)+'" target="_blank" style="font-size:12px;color:#6d28d9;border:1px solid rgba(109,40,217,0.3);border-radius:5px;padding:4px 11px;text-decoration:none;font-weight:600;display:inline-block">'+L().wv+'</a></div>'+
-        '<button class="btn btnd" style="padding:4px 9px;font-size:12px;margin-left:8px" onclick="de('+e.id+')">&#10005;</button>'+
-        '<button class="btn" style="padding:4px 9px;font-size:12px;margin-left:4px;background:#f0f5ff" onclick="om(\'ae\','+e.id+')">✏️</button></div></div>';
+      var isHe = e.displayLng==="he" || (!e.displayLng && !e.name && e.nameHe);
+      var eName = isHe&&e.nameHe ? e.nameHe : (e.name||e.nameHe);
+      var eDesc = isHe&&e.descHe ? e.descHe : (e.desc||e.descHe);
+      var eTips = isHe&&e.tipsHe ? e.tipsHe : (e.tips||e.tipsHe);
+      var lngBadge = e.displayLng==="he" ? '<span style="font-size:10px;background:#e8f0ff;color:#2B6CC4;border-radius:4px;padding:1px 5px;margin-left:4px">🇮🇱 HE</span>' :
+                     '<span style="font-size:10px;background:#f0f5e8;color:#2a7a3a;border-radius:4px;padding:1px 5px;margin-left:4px">🇺🇸 EN</span>';
+      return '<div class="xcard" style="direction:'+(isHe?"rtl":"ltr")+'">'+
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start">'+
+        '<div style="flex:1">'+
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;flex-wrap:wrap">'+bdg("#"+(i+1))+
+        '<span style="font-weight:700;font-size:15px;color:#1a3a6e">'+eName+'</span>'+lngBadge+'</div>'+
+        '<div style="font-size:13px;color:#4a6a8a;margin-bottom:6px">'+e.sets+' sets &times; '+e.reps+'</div>'+
+        (eDesc?'<div style="font-size:13px;color:#1a2535;margin-bottom:6px;line-height:1.5">'+eDesc+'</div>':"")+
+        (eTips?'<div style="font-size:13px;color:#00a86b;margin-bottom:8px;line-height:1.5">&#128161; '+eTips+'</div>':"")+
+        '<a href="'+ytUrl(eName)+'" target="_blank" style="font-size:12px;color:#6d28d9;border:1px solid rgba(109,40,217,0.3);border-radius:5px;padding:4px 11px;text-decoration:none;font-weight:600;display:inline-block">'+L().wv+'</a></div>'+
+        '<div style="display:flex;flex-direction:column;gap:4px;margin-'+(isHe?'right':'left')+':8px">'+
+        '<button class="btn btnd" style="padding:4px 9px;font-size:12px" onclick="de('+e.id+')">&#10005;</button>'+
+        '<button class="btn" style="padding:4px 9px;font-size:12px;background:#f0f5ff" onclick="om(\'ae\','+e.id+')">✏️</button>'+
+        '</div></div></div>';
     }).join("");
 }
 
@@ -330,10 +340,10 @@ function renderPatientView(p){
       ' <span style="background:rgba(255,255,255,0.25);border-radius:9px;padding:1px 7px;font-size:11px">'+t[2]+'</span></button>';
   }).join("");
   g("psex").innerHTML=(p.exercises||[]).length?(p.exercises||[]).map(function(e,i){
-    var isHe = e.displayLng==="he" || (lng==="he" && !e.displayLng);
-    var eName = isHe&&e.nameHe ? e.nameHe : e.name;
-    var eDesc = isHe&&e.descHe ? e.descHe : e.desc;
-    var eTips = isHe&&e.tipsHe ? e.tipsHe : e.tips;
+    var isHe = e.displayLng==="he" || (lng==="he" && !e.displayLng) || (!e.name && e.nameHe);
+    var eName = isHe&&e.nameHe ? e.nameHe : (e.name||e.nameHe);
+    var eDesc = isHe&&e.descHe ? e.descHe : (e.desc||e.descHe);
+    var eTips = isHe&&e.tipsHe ? e.tipsHe : (e.tips||e.tipsHe);
     return '<div class="xcard" style="direction:'+(isHe?"rtl":"ltr")+'"><div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">'+bdg("#"+(i+1))+
       '<span style="font-weight:700;font-size:15px;color:#1a3a6e">'+eName+'</span></div>'+
       '<div style="font-size:13px;color:#4a6a8a;margin-bottom:3px">'+e.sets+' &times; '+e.reps+'</div>'+
