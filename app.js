@@ -102,13 +102,7 @@ function setL(l){
     else if(g("vp")&&!g("vp").classList.contains("hid")) rpl();
     else if(g("vs")&&!g("vs").classList.contains("hid")) rs();
     else if(g("vpat")&&!g("vpat").classList.contains("hid")) rpd();
-  } else if(auth) {
-    if(lng==="he" && cur){
-      autoTranslateExercises(cur, function(){ renderPatientView(cur); });
-    } else {
-      rpv();
-    }
-  }
+  } else if(auth) rpv();
 }
 
 // ── Auth ──
@@ -372,21 +366,21 @@ function om(m){
       '<div style="grid-column:1/-1"><label class="lbl">'+Lx.no+'</label><textarea class="inp" id="fno" style="height:68px">'+(p.notes||"")+'</textarea></div></div>'+
       '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btnd" onclick="cm()">'+Lx.ca+'</button><button class="btn" onclick="sp2()">'+Lx.sa+'</button></div>';
   } else if(m==="ae"){
-    c.innerHTML='<div style="font-size:17px;font-weight:800;margin-bottom:18px;color:#1a3a6e">'+Lx.ae+'</div>'+
-      '<div style="margin-bottom:12px"><label class="lbl">Choose from library / בחר מהרשימה</label>'+
-      '<select class="inp" id="fexsel" onchange="selEx(this.value)">'+
-      '<option value="">-- Select exercise / בחר תרגיל --</option>'+
-      EX_LIB.map(function(e,i){ return '<option value="'+i+'">'+e.name+' / '+e.nameHe+'</option>'; }).join("")+
-      '</select></div>'+
-      '<div class="g2" style="gap:11px;margin-bottom:11px">'+
-      '<div style="grid-column:1/-1"><label class="lbl">Exercise Name (English)</label><input class="inp" id="fen" placeholder="e.g. Dead Bug"></div>'+
+    c.innerHTML='<div style="font-size:17px;font-weight:800;margin-bottom:14px;color:#1a3a6e">'+Lx.ae+'</div>'+
+      '<div style="margin-bottom:10px">'+
+      '<label class="lbl">🔍 Search / חפש תרגיל</label>'+
+      '<input class="inp" id="fexsearch" placeholder="e.g. dumbbell, squat, כתף..." oninput="filterEx(this.value)" autocomplete="off">'+
+      '<div id="fexlist" style="max-height:180px;overflow-y:auto;border:1px solid rgba(43,108,196,0.2);border-radius:8px;margin-top:4px;background:#fff"></div>'+
+      '</div>'+
+      '<div class="g2" style="gap:10px;margin-bottom:11px">'+
+      '<div style="grid-column:1/-1"><label class="lbl">Exercise Name (EN)</label><input class="inp" id="fen" placeholder="English name"></div>'+
       '<div style="grid-column:1/-1"><label class="lbl">שם תרגיל (עברית)</label><input class="inp" id="fenhe" dir="rtl" placeholder="שם בעברית"></div>'+
       '<div><label class="lbl">'+Lx.se+'</label><input class="inp" id="fse"></div>'+
       '<div><label class="lbl">'+Lx.rp+'</label><input class="inp" id="frp"></div>'+
-      '<div style="grid-column:1/-1"><label class="lbl">Description (EN)</label><textarea class="inp" id="fde" style="height:48px"></textarea></div>'+
-      '<div style="grid-column:1/-1"><label class="lbl">תיאור (עברית)</label><textarea class="inp" id="fdehe" dir="rtl" style="height:48px"></textarea></div>'+
-      '<div style="grid-column:1/-1"><label class="lbl">Tips (EN)</label><textarea class="inp" id="fti" style="height:48px"></textarea></div>'+
-      '<div style="grid-column:1/-1"><label class="lbl">טיפים (עברית)</label><textarea class="inp" id="ftihe" dir="rtl" style="height:48px"></textarea></div></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">Description (EN)</label><textarea class="inp" id="fde" style="height:44px"></textarea></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">תיאור (עברית)</label><textarea class="inp" id="fdehe" dir="rtl" style="height:44px"></textarea></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">Tips (EN)</label><textarea class="inp" id="fti" style="height:44px"></textarea></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">טיפים (עברית)</label><textarea class="inp" id="ftihe" dir="rtl" style="height:44px"></textarea></div></div>'+
       '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btnd" onclick="cm()">'+Lx.ca+'</button><button class="btn" onclick="se2()">'+Lx.sa+'</button></div>';
   } else if(m==="af"){
     var td=new Date().toISOString().split("T")[0];
@@ -401,44 +395,159 @@ function cm(){ g("MB").classList.remove("on"); }
 
 // ── Bilingual Exercise Library ──
 var EX_LIB = [
-  {name:"Dead Bug",nameHe:"חרק מת",desc:"Lie on back, arms up, legs at 90°. Lower opposite arm/leg while keeping core stable.",descHe:"שכב על הגב, ידיים למעלה, רגליים ב-90°. הורד יד ורגל מנוגדות תוך שמירה על יציבות הליבה.",tips:"Keep lower back pressed to floor.",tipsHe:"שמור על הגב התחתון לחוץ לרצפה."},
-  {name:"Pallof Press",nameHe:"לחיצת פאלוף",desc:"Anti-rotation core exercise with resistance band or cable.",descHe:"תרגיל ליבה נגד סיבוב עם גומייה או כבל.",tips:"Keep hips square, press straight out.",tipsHe:"שמור על הירכיים ישרות, לחץ ישר קדימה."},
-  {name:"Glute Bridge",nameHe:"גשר ישבן",desc:"Lie on back, feet flat, push hips up squeezing glutes.",descHe:"שכב על הגב, כפות הרגליים שטוחות, דחוף את הירכיים למעלה תוך כיווץ הישבן.",tips:"Hold 2 seconds at top.",tipsHe:"החזק 2 שניות בראש התנועה."},
-  {name:"Bird Dog",nameHe:"ציפור-כלב",desc:"On hands and knees, extend opposite arm and leg simultaneously.",descHe:"על ידיים וברכיים, הרחב יד ורגל מנוגדות בו זמנית.",tips:"Keep back flat, move slowly.",tipsHe:"שמור על גב שטוח, זוז לאט."},
-  {name:"Clamshell",nameHe:"צדפה",desc:"Side lying with knees bent, open top knee like a clamshell.",descHe:"שכיבה על הצד עם ברכיים כפופות, פתח את הברך העליונה כמו צדפה.",tips:"Keep feet together throughout.",tipsHe:"שמור כפות הרגליים יחד לאורך כל התרגיל."},
-  {name:"Hip Hinge",nameHe:"ציר ירך",desc:"Stand with slight knee bend, hinge forward from hips keeping spine neutral.",descHe:"עמוד עם כפיפת ברכיים קלה, כופף קדימה מהירכיים תוך שמירה על עמוד שדרה ניטרלי.",tips:"Push hips back, not down.",tipsHe:"דחוף ירכיים אחורה, לא למטה."},
-  {name:"Squat",nameHe:"סקוואט",desc:"Feet shoulder-width apart, lower down as if sitting on a chair.",descHe:"רגליים ברוחב כתפיים, רד למטה כאילו יושב על כיסא.",tips:"Keep knees over toes, chest up.",tipsHe:"שמור על ברכיים מעל אצבעות הרגליים, חזה למעלה."},
-  {name:"Lunge",nameHe:"לאנג'",desc:"Step forward, lower back knee toward floor, return to start.",descHe:"צעד קדימה, הורד ברך אחורית לכיוון הרצפה, חזור לתחילה.",tips:"Keep front knee behind toe.",tipsHe:"שמור על ברך קדמית מאחורי בוהן הרגל."},
-  {name:"Side Plank",nameHe:"פלאנק צידי",desc:"Support body on forearm and side of foot, keep body straight.",descHe:"תמוך בגוף על האמה וצד כף הרגל, שמור על הגוף ישר.",tips:"Don't let hips drop.",tipsHe:"אל תתן לירכיים לרדת."},
-  {name:"Plank",nameHe:"פלאנק",desc:"Hold a push-up position on forearms, keeping body in straight line.",descHe:"החזק עמדת שכיבה סומך על אמות הידיים, שמור על הגוף בקו ישר.",tips:"Breathe steadily, don't hold breath.",tipsHe:"נשום בקביעות, אל תחסום נשימה."},
-  {name:"Romanian Deadlift",nameHe:"דדליפט רומני",desc:"Hold weights, hinge at hips lowering weights along legs.",descHe:"אחוז במשקולות, כופף בירכיים תוך הורדת המשקולות לאורך הרגליים.",tips:"Feel stretch in hamstrings.",tipsHe:"הרגש מתיחה בירכיים האחוריות."},
-  {name:"Wall Sit",nameHe:"ישיבת קיר",desc:"Slide back down a wall until thighs are parallel to floor.",descHe:"החלק גב לאורך קיר עד שהירכיים מקבילות לרצפה.",tips:"Keep back flat against wall.",tipsHe:"שמור גב שטוח על הקיר."},
-  {name:"Step Up",nameHe:"עלייה על מדרגה",desc:"Step up onto a platform leading with one foot.",descHe:"עלה על פלטפורמה תוך התחלה ברגל אחת.",tips:"Drive through the heel.",tipsHe:"דחוף דרך העקב."},
-  {name:"Shoulder Press",nameHe:"לחיצת כתפיים",desc:"Press weights overhead from shoulder level.",descHe:"לחץ משקולות מעל הראש מגובה הכתפיים.",tips:"Don't arch lower back.",tipsHe:"אל תכופף את הגב התחתון."},
-  {name:"Rows",nameHe:"חתירה",desc:"Pull resistance toward body squeezing shoulder blades.",descHe:"משוך התנגדות לכיוון הגוף תוך כיווץ שכמיות.",tips:"Keep elbows close to body.",tipsHe:"שמור המרפקים קרובים לגוף."},
-  {name:"Chest Press",nameHe:"לחיצת חזה",desc:"Push resistance away from chest, extending arms.",descHe:"דחוף התנגדות מהחזה, הארך ידיים.",tips:"Control the movement in both directions.",tipsHe:"שלוט בתנועה בשני הכיוונים."},
-  {name:"Lat Pulldown",nameHe:"משיכת לט",desc:"Pull bar down to upper chest, squeezing lats.",descHe:"משוך מוט למטה לחזה עליון תוך כיווץ שרירי הגב.",tips:"Lean back slightly, pull with elbows.",tipsHe:"הישען מעט אחורה, משוך עם המרפקים."},
-  {name:"Calf Raises",nameHe:"הרמות עגל",desc:"Rise up on toes, then lower slowly.",descHe:"עלה על בהונות הרגליים, ואז רד לאט.",tips:"Full range of motion up and down.",tipsHe:"טווח תנועה מלא למעלה ולמטה."},
-  {name:"Hamstring Curl",nameHe:"כפיפת ירך אחורית",desc:"Curl heel toward glutes against resistance.",descHe:"כופף עקב לכיוון הישבן כנגד התנגדות.",tips:"Keep hips down.",tipsHe:"שמור ירכיים למטה."},
-  {name:"Quad Set",nameHe:"כיווץ ארבע ראשי",desc:"Sit with leg straight, tighten quad muscle pushing knee down.",descHe:"שב עם רגל ישרה, כווץ שריר ארבע-ראשי תוך לחיצת הברך למטה.",tips:"Hold 5 seconds each rep.",tipsHe:"החזק 5 שניות בכל חזרה."},
-  {name:"Heel Slides",nameHe:"החלקות עקב",desc:"Lie on back, slide heel toward glutes bending knee.",descHe:"שכב על הגב, החלק עקב לכיוון הישבן תוך כפיפת הברך.",tips:"Slide slowly and controlled.",tipsHe:"החלק לאט ובשליטה."},
-  {name:"Straight Leg Raise",nameHe:"הרמת רגל ישרה",desc:"Lie on back, raise straight leg to height of other bent knee.",descHe:"שכב על הגב, הרם רגל ישרה לגובה הברך הכפופה השנייה.",tips:"Tighten quad before lifting.",tipsHe:"כווץ ארבע-ראשי לפני ההרמה."},
-  {name:"Ankle Pumps",nameHe:"משאבות קרסול",desc:"Pump foot up and down at the ankle to improve circulation.",descHe:"הזוז עם כף הרגל למעלה ולמטה בקרסול לשיפור זרימת הדם.",tips:"Do slowly and rhythmically.",tipsHe:"עשה לאט ובקצב."},
-  {name:"Theraband Shoulder External Rotation",nameHe:"סיבוב חיצוני כתף עם תרבנד",desc:"Elbow at side, rotate arm outward against band resistance.",descHe:"מרפק בצד, סובב זרוע החוצה כנגד התנגדות הגומייה.",tips:"Keep elbow fixed at side.",tipsHe:"שמור מרפק קבוע בצד."},
-  {name:"Foam Roll ITB",nameHe:"גלגול קצף לרצועת IT",desc:"Roll outer thigh on foam roller from hip to knee.",descHe:"גלגל את החלק החיצוני של הירך על גלגלת קצף מהירך לברך.",tips:"Pause on tender spots 30 seconds.",tipsHe:"עצור על נקודות רגישות 30 שניות."}
+  // CORE
+  {name:"Dead Bug",nameHe:"חרק מת",desc:"Lie on back, arms up, legs at 90°. Lower opposite arm/leg keeping core stable.",descHe:"שכב על הגב, ידיים למעלה, רגליים ב-90°. הורד יד ורגל מנוגדות תוך שמירה על יציבות הליבה.",tips:"Keep lower back pressed to floor.",tipsHe:"שמור גב תחתון לחוץ לרצפה."},
+  {name:"Plank",nameHe:"פלאנק",desc:"Hold push-up position on forearms, body in straight line.",descHe:"החזק עמדת שכיבה סומך על אמות, גוף בקו ישר.",tips:"Breathe steadily, don't hold breath.",tipsHe:"נשום בקביעות, אל תחסום נשימה."},
+  {name:"Side Plank",nameHe:"פלאנק צידי",desc:"Support body on forearm and side of foot, keep body straight.",descHe:"תמוך בגוף על האמה וצד כף הרגל, שמור גוף ישר.",tips:"Don't let hips drop.",tipsHe:"אל תתן לירכיים לרדת."},
+  {name:"Bird Dog",nameHe:"ציפור-כלב",desc:"On hands and knees, extend opposite arm and leg simultaneously.",descHe:"על ידיים וברכיים, הרחב יד ורגל מנוגדות בו זמנית.",tips:"Keep back flat, move slowly.",tipsHe:"שמור גב שטוח, זוז לאט."},
+  {name:"Pallof Press",nameHe:"לחיצת פאלוף",desc:"Anti-rotation core exercise with band or cable.",descHe:"תרגיל ליבה נגד סיבוב עם גומייה או כבל.",tips:"Keep hips square, press straight out.",tipsHe:"שמור ירכיים ישרות, לחץ ישר קדימה."},
+  {name:"Hollow Body Hold",nameHe:"החזקת גוף חלול",desc:"Lie on back, press lower back down, raise arms and legs slightly off floor.",descHe:"שכב על הגב, לחץ גב תחתון למטה, הרם ידיים ורגליים מעט.",tips:"If too hard, bend knees slightly.",tipsHe:"אם קשה מדי, כופף ברכיים מעט."},
+  {name:"Russian Twist",nameHe:"סיבוב רוסי",desc:"Sit with knees bent, lean back slightly, rotate torso side to side.",descHe:"שב עם ברכיים כפופות, הישען מעט אחורה, סובב גוף מצד לצד.",tips:"Keep chest tall throughout.",tipsHe:"שמור חזה גבוה לאורך כל התרגיל."},
+  {name:"Ab Wheel Rollout",nameHe:"גלגל בטן",desc:"Kneel with wheel, roll forward slowly keeping core tight.",descHe:"כרע עם הגלגל, גלגל קדימה לאט תוך שמירה על ליבה מכווצת.",tips:"Don't let hips sag.",tipsHe:"אל תתן לירכיים להתכופף."},
+  // LOWER BODY
+  {name:"Squat",nameHe:"סקוואט",desc:"Feet shoulder-width, lower as if sitting on a chair.",descHe:"רגליים ברוחב כתפיים, רד כאילו יושב על כיסא.",tips:"Knees over toes, chest up.",tipsHe:"ברכיים מעל אצבעות, חזה למעלה."},
+  {name:"Barbell Back Squat",nameHe:"סקוואט עם מוט על הגב",desc:"Bar on upper back, squat to parallel or below.",descHe:"מוט על הגב העליון, רד לעד מקביל לרצפה.",tips:"Keep bar over mid-foot.",tipsHe:"שמור מוט מעל אמצע כף הרגל."},
+  {name:"Goblet Squat",nameHe:"סקוואט גביע",desc:"Hold dumbbell at chest, squat keeping elbows inside knees.",descHe:"אחוז משקולת בחזה, רד לסקוואט תוך שמירה על מרפקים מבפנים לברכיים.",tips:"Great for beginners and mobility.",tipsHe:"מצוין למתחילים ולגמישות."},
+  {name:"Lunge",nameHe:"לאנג'",desc:"Step forward, lower back knee toward floor, return to start.",descHe:"צעד קדימה, הורד ברך אחורית לכיוון הרצפה, חזור.",tips:"Keep front knee behind toe.",tipsHe:"שמור ברך קדמית מאחורי בוהן."},
+  {name:"Reverse Lunge",nameHe:"לאנג' הפוך",desc:"Step backward into lunge, return to standing.",descHe:"צעד אחורה ללאנג', חזור לעמידה.",tips:"Easier on the knees than forward lunge.",tipsHe:"קל יותר על הברכיים מלאנג' קדימה."},
+  {name:"Bulgarian Split Squat",nameHe:"סקוואט בולגרי",desc:"Rear foot elevated on bench, squat down on front leg.",descHe:"רגל אחורית מורמת על ספסל, רד על רגל קדמית.",tips:"Keep torso upright.",tipsHe:"שמור גו זקוף."},
+  {name:"Glute Bridge",nameHe:"גשר ישבן",desc:"Lie on back, feet flat, push hips up squeezing glutes.",descHe:"שכב על הגב, כפות רגליים שטוחות, דחוף ירכיים למעלה.",tips:"Hold 2 seconds at top.",tipsHe:"החזק 2 שניות בראש."},
+  {name:"Hip Thrust",nameHe:"דחיפת ירכיים",desc:"Shoulders on bench, bar on hips, thrust hips upward.",descHe:"כתפיים על ספסל, מוט על ירכיים, דחוף ירכיים למעלה.",tips:"Squeeze glutes hard at top.",tipsHe:"כווץ ישבן חזק בראש התנועה."},
+  {name:"Clamshell",nameHe:"צדפה",desc:"Side lying knees bent, open top knee like a clamshell.",descHe:"שכיבה על הצד ברכיים כפופות, פתח ברך עליונה.",tips:"Keep feet together.",tipsHe:"שמור כפות רגליים יחד."},
+  {name:"Hip Hinge",nameHe:"ציר ירך",desc:"Hinge forward from hips keeping spine neutral.",descHe:"כופף מהירכיים תוך שמירה על עמוד שדרה ניטרלי.",tips:"Push hips back, not down.",tipsHe:"דחוף ירכיים אחורה, לא למטה."},
+  {name:"Romanian Deadlift",nameHe:"דדליפט רומני",desc:"Hold weights, hinge at hips lowering weights along legs.",descHe:"אחוז במשקולות, כופף בירכיים תוך הורדת משקולות לאורך הרגליים.",tips:"Feel hamstring stretch.",tipsHe:"הרגש מתיחה בירך אחורית."},
+  {name:"Dumbbell Romanian Deadlift",nameHe:"דדליפט רומני עם משקולות",desc:"Same as RDL but with dumbbells for more range of motion.",descHe:"כמו דדליפט רומני אבל עם משקולות לטווח תנועה גדול יותר.",tips:"Let dumbbells travel close to legs.",tipsHe:"תן למשקולות לנסוע קרוב לרגליים."},
+  {name:"Conventional Deadlift",nameHe:"דדליפט קונבנציונלי",desc:"Lift barbell from floor, drive hips forward to standing.",descHe:"הרם מוט מהרצפה, דחוף ירכיים קדימה לעמידה.",tips:"Keep bar close to body.",tipsHe:"שמור מוט קרוב לגוף."},
+  {name:"Sumo Deadlift",nameHe:"דדליפט סומו",desc:"Wide stance, grip inside legs, lift with hips and legs.",descHe:"עמידה רחבה, אחיזה בין הרגליים, הרם עם ירכיים ורגליים.",tips:"Push knees out over toes.",tipsHe:"דחוף ברכיים החוצה מעל אצבעות."},
+  {name:"Step Up",nameHe:"עלייה על מדרגה",desc:"Step up onto platform leading with one foot.",descHe:"עלה על פלטפורמה עם רגל אחת.",tips:"Drive through the heel.",tipsHe:"דחוף דרך העקב."},
+  {name:"Wall Sit",nameHe:"ישיבת קיר",desc:"Slide down wall until thighs parallel to floor, hold.",descHe:"החלק גב על קיר עד שהירכיים מקבילות לרצפה, החזק.",tips:"Keep back flat against wall.",tipsHe:"שמור גב שטוח על הקיר."},
+  {name:"Calf Raises",nameHe:"הרמות עגל",desc:"Rise up on toes, lower slowly.",descHe:"עלה על בהונות, רד לאט.",tips:"Full range up and down.",tipsHe:"טווח תנועה מלא."},
+  {name:"Single Leg Calf Raise",nameHe:"הרמת עגל רגל אחת",desc:"Stand on one foot, raise and lower heel.",descHe:"עמוד על רגל אחת, הרם והורד עקב.",tips:"Hold wall for balance if needed.",tipsHe:"אחוז בקיר לשיווי משקל אם צריך."},
+  {name:"Leg Press",nameHe:"לחיצת רגליים במכונה",desc:"Push platform away using legs on leg press machine.",descHe:"דחוף פלטפורמה עם הרגליים במכונת לחיצת רגליים.",tips:"Don't lock knees at top.",tipsHe:"אל תנעל ברכיים בראש התנועה."},
+  {name:"Leg Extension",nameHe:"פשיטת רגל במכונה",desc:"Extend knees against resistance on machine.",descHe:"פשוט ברכיים כנגד התנגדות במכונה.",tips:"Slow lowering phase.",tipsHe:"הורדה איטית."},
+  {name:"Hamstring Curl",nameHe:"כפיפת ירך אחורית",desc:"Curl heel toward glutes against resistance.",descHe:"כופף עקב לכיוון ישבן כנגד התנגדות.",tips:"Keep hips down.",tipsHe:"שמור ירכיים למטה."},
+  {name:"Straight Leg Raise",nameHe:"הרמת רגל ישרה",desc:"Lie on back, raise straight leg to height of bent knee.",descHe:"שכב על הגב, הרם רגל ישרה לגובה ברך כפופה.",tips:"Tighten quad before lifting.",tipsHe:"כווץ ארבע-ראשי לפני ההרמה."},
+  {name:"Quad Set",nameHe:"כיווץ ארבע ראשי",desc:"Sit with leg straight, tighten quad pushing knee down.",descHe:"שב עם רגל ישרה, כווץ ארבע-ראשי תוך לחיצת ברך למטה.",tips:"Hold 5 seconds each rep.",tipsHe:"החזק 5 שניות בכל חזרה."},
+  {name:"Heel Slides",nameHe:"החלקות עקב",desc:"Lie on back, slide heel toward glutes bending knee.",descHe:"שכב על הגב, החלק עקב לכיוון ישבן תוך כפיפת ברך.",tips:"Slide slowly and controlled.",tipsHe:"החלק לאט ובשליטה."},
+  {name:"Terminal Knee Extension",nameHe:"פשיטת ברך סופית",desc:"Band behind knee, straighten knee against resistance.",descHe:"גומייה מאחורי הברך, פשוט ברך כנגד התנגדות.",tips:"Great for knee rehab.",tipsHe:"מצוין לשיקום ברך."},
+  {name:"Ankle Pumps",nameHe:"משאבות קרסול",desc:"Pump foot up and down at ankle to improve circulation.",descHe:"זוז עם כף הרגל למעלה ולמטה בקרסול לשיפור זרימת דם.",tips:"Do slowly and rhythmically.",tipsHe:"עשה לאט ובקצב."},
+  // UPPER BODY - PUSH
+  {name:"Push Up",nameHe:"שכיבות סמיכה",desc:"Lower chest to floor and push back up keeping body straight.",descHe:"הורד חזה לרצפה ודחוף חזרה למעלה תוך שמירה על גוף ישר.",tips:"Keep core tight throughout.",tipsHe:"שמור ליבה מכווצת לאורך כל התרגיל."},
+  {name:"Incline Push Up",nameHe:"שכיבות סמיכה בשיפוע",desc:"Hands on elevated surface, perform push up.",descHe:"ידיים על משטח מורם, בצע שכיבות סמיכה.",tips:"Easier than regular push up.",tipsHe:"קל יותר משכיבות סמיכה רגילות."},
+  {name:"Shoulder Press",nameHe:"לחיצת כתפיים",desc:"Press weights overhead from shoulder level.",descHe:"לחץ משקולות מעל הראש מגובה כתפיים.",tips:"Don't arch lower back.",tipsHe:"אל תכופף גב תחתון."},
+  {name:"Dumbbell Shoulder Press",nameHe:"לחיצת כתפיים עם משקולות",desc:"Press dumbbells overhead from shoulder level.",descHe:"לחץ משקולות מעל הראש מגובה כתפיים.",tips:"Palms face forward.",tipsHe:"כפות ידיים פונות קדימה."},
+  {name:"Barbell Overhead Press",nameHe:"לחיצת מוט מעל הראש",desc:"Press barbell from shoulders to overhead.",descHe:"לחץ מוט מהכתפיים למעל הראש.",tips:"Brace core, don't lean back.",tipsHe:"כווץ ליבה, אל תישען אחורה."},
+  {name:"Lateral Raise",nameHe:"הרמה לצד",desc:"Raise dumbbells out to sides to shoulder height.",descHe:"הרם משקולות לצדדים לגובה הכתפיים.",tips:"Slight bend in elbow, lead with elbow.",tipsHe:"כפיפה קלה במרפק, הוביל עם מרפק."},
+  {name:"Front Raise",nameHe:"הרמה קדמית",desc:"Raise dumbbells straight in front to shoulder height.",descHe:"הרם משקולות ישר קדימה לגובה הכתפיים.",tips:"Control the lowering phase.",tipsHe:"שלוט בשלב ההורדה."},
+  {name:"Arnold Press",nameHe:"לחיצת ארנולד",desc:"Start with palms facing you, rotate out as you press up.",descHe:"התחל עם כפות ידיים פונות אליך, סובב החוצה תוך לחיצה למעלה.",tips:"Full rotation through range.",tipsHe:"סיבוב מלא דרך הטווח."},
+  {name:"Chest Press",nameHe:"לחיצת חזה",desc:"Push resistance away from chest, extending arms.",descHe:"דחוף התנגדות מהחזה, הארך ידיים.",tips:"Control both directions.",tipsHe:"שלוט בשני הכיוונים."},
+  {name:"Barbell Bench Press",nameHe:"לחיצת ספסל עם מוט",desc:"Lower bar to chest and press back up.",descHe:"הורד מוט לחזה ולחץ חזרה למעלה.",tips:"Feet flat, arch slightly, bar over nipples.",tipsHe:"רגליים שטוחות, קשת קלה, מוט מעל הפטמות."},
+  {name:"Dumbbell Bench Press",nameHe:"לחיצת ספסל עם משקולות",desc:"Press dumbbells from chest to full arm extension.",descHe:"לחץ משקולות מהחזה לפשיטת זרוע מלאה.",tips:"Greater range of motion than barbell.",tipsHe:"טווח תנועה גדול יותר ממוט."},
+  {name:"Incline Bench Press",nameHe:"לחיצת ספסל בשיפוע חיובי",desc:"Press at incline angle targeting upper chest.",descHe:"לחץ בזווית שיפוע המכוונת לחזה עליון.",tips:"30-45 degree incline.",tipsHe:"שיפוע 30-45 מעלות."},
+  {name:"Dumbbell Flye",nameHe:"פרפר עם משקולות",desc:"Lie on bench, open arms wide and bring together over chest.",descHe:"שכב על ספסל, פתח ידיים רחב והבא אותם יחד מעל החזה.",tips:"Slight bend in elbows throughout.",tipsHe:"כפיפה קלה במרפקים לאורך כל התרגיל."},
+  {name:"Cable Chest Flye",nameHe:"פרפר חזה בכבל",desc:"Pull cables from wide position to center of chest.",descHe:"משוך כבלים ממצב רחב למרכז החזה.",tips:"Squeeze at center, control return.",tipsHe:"כווץ במרכז, שלוט בחזרה."},
+  {name:"Tricep Dips",nameHe:"מתח שלישיות",desc:"Lower and raise body using parallel bars or bench.",descHe:"הורד והרם גוף באמצעות מוטות מקבילים או ספסל.",tips:"Lean forward for chest, upright for triceps.",tipsHe:"הישען קדימה לחזה, זקוף לשלישיות."},
+  {name:"Tricep Pushdown",nameHe:"לחיצת שלישיות למטה",desc:"Push cable bar down extending elbows.",descHe:"לחץ מוט כבל למטה תוך פשיטת מרפקים.",tips:"Keep elbows fixed at sides.",tipsHe:"שמור מרפקים קבועים בצדדים."},
+  {name:"Skull Crusher",nameHe:"מרסק גולגולת",desc:"Lower barbell to forehead, extend arms back up.",descHe:"הורד מוט למצח, הארך ידיים חזרה למעלה.",tips:"Keep upper arms perpendicular to floor.",tipsHe:"שמור זרועות עליונות ניצבות לרצפה."},
+  {name:"Overhead Tricep Extension",nameHe:"פשיטת שלישיות מעל הראש",desc:"Extend dumbbell overhead, lower behind head, press up.",descHe:"הארך משקולת מעל הראש, הורד מאחורי הראש, לחץ למעלה.",tips:"Keep elbows close to head.",tipsHe:"שמור מרפקים קרובים לראש."},
+  // UPPER BODY - PULL
+  {name:"Pull Up",nameHe:"מתח",desc:"Hang from bar, pull body up until chin over bar.",descHe:"תלה מהמוט, משוך גוף למעלה עד שסנטר מעל המוט.",tips:"Full dead hang to start each rep.",tipsHe:"תלייה מלאה בתחילת כל חזרה."},
+  {name:"Lat Pulldown",nameHe:"משיכת לט",desc:"Pull bar down to upper chest squeezing lats.",descHe:"משוך מוט למטה לחזה עליון תוך כיווץ שרירי הגב.",tips:"Lean back slightly, pull with elbows.",tipsHe:"הישען מעט אחורה, משוך עם המרפקים."},
+  {name:"Seated Cable Row",nameHe:"חתירה בכבל ישיבה",desc:"Pull cable to abdomen squeezing shoulder blades.",descHe:"משוך כבל לבטן תוך כיווץ שכמיות.",tips:"Keep torso upright, squeeze at end.",tipsHe:"שמור גו זקוף, כווץ בסוף."},
+  {name:"Barbell Row",nameHe:"חתירה עם מוט",desc:"Bent over, pull barbell to lower chest/abdomen.",descHe:"כפוף קדימה, משוך מוט לחזה תחתון/בטן.",tips:"Keep back flat, squeeze shoulder blades.",tipsHe:"שמור גב שטוח, כווץ שכמיות."},
+  {name:"Dumbbell Row",nameHe:"חתירה עם משקולת",desc:"One hand on bench, row dumbbell to hip.",descHe:"יד אחת על ספסל, משוך משקולת לירך.",tips:"Elbow close to body, squeeze at top.",tipsHe:"מרפק קרוב לגוף, כווץ בראש."},
+  {name:"Cable Row",nameHe:"חתירה בכבל",desc:"Pull cable toward abdomen keeping torso stable.",descHe:"משוך כבל לכיוון הבטן תוך שמירה על יציבות הגו.",tips:"Don't lean back to pull.",tipsHe:"אל תישען אחורה כדי למשוך."},
+  {name:"Face Pull",nameHe:"משיכת פנים",desc:"Pull rope attachment to face level, external rotate at end.",descHe:"משוך חיבור חבל לגובה הפנים, סובב חיצונית בסוף.",tips:"Great for shoulder health.",tipsHe:"מצוין לבריאות הכתף."},
+  {name:"Bicep Curl",nameHe:"כפיפת מרפק דו-ראשי",desc:"Curl weights from hip to shoulder.",descHe:"כפוף משקולות מהירך לכתף.",tips:"Keep elbows fixed at sides.",tipsHe:"שמור מרפקים קבועים בצדדים."},
+  {name:"Barbell Bicep Curl",nameHe:"כפיפת מרפק עם מוט",desc:"Curl barbell from thighs to shoulders.",descHe:"כפוף מוט מהירכיים לכתפיים.",tips:"Don't swing, strict form.",tipsHe:"אל תנדנד, טופס קפדני."},
+  {name:"Dumbbell Bicep Curl",nameHe:"כפיפת מרפק עם משקולות",desc:"Curl dumbbells alternating or together.",descHe:"כפוף משקולות לסירוגין או יחד.",tips:"Supinate at top for full contraction.",tipsHe:"סובב כלפי חוץ בראש לכיווץ מלא."},
+  {name:"Hammer Curl",nameHe:"כפיפת פטיש",desc:"Curl with neutral grip (palms facing each other).",descHe:"כפיפה עם אחיזה ניטרלית (כפות ידיים פונות זו לזו).",tips:"Works brachialis and brachioradialis.",tipsHe:"עובד על ברכיאליס וברכיורדיאליס."},
+  {name:"Preacher Curl",nameHe:"כפיפת ספסל הכומר",desc:"Curl on angled pad isolating the bicep.",descHe:"כפיפה על כרית משופעת לבידוד הדו-ראשי.",tips:"Full stretch at bottom.",tipsHe:"מתיחה מלאה בתחתית."},
+  {name:"Concentration Curl",nameHe:"כפיפת ריכוז",desc:"Seated, elbow on inner thigh, curl dumbbell.",descHe:"ישיבה, מרפק על ירך פנימי, כפוף משקולת.",tips:"Squeeze hard at top.",tipsHe:"כווץ חזק בראש."},
+  // SHOULDER REHAB
+  {name:"Theraband External Rotation",nameHe:"סיבוב חיצוני עם תרבנד",desc:"Elbow at side, rotate arm outward against band.",descHe:"מרפק בצד, סובב זרוע החוצה כנגד גומייה.",tips:"Keep elbow fixed at side.",tipsHe:"שמור מרפק קבוע בצד."},
+  {name:"Theraband Internal Rotation",nameHe:"סיבוב פנימי עם תרבנד",desc:"Elbow at side, rotate arm inward against band.",descHe:"מרפק בצד, סובב זרוע פנימה כנגד גומייה.",tips:"Slow controlled movement.",tipsHe:"תנועה איטית ומבוקרת."},
+  {name:"Shoulder External Rotation",nameHe:"סיבוב חיצוני כתף",desc:"90° abduction, rotate forearm upward.",descHe:"הרחקה ב-90°, סובב אמה למעלה.",tips:"Don't shrug shoulder.",tipsHe:"אל תרים כתף."},
+  {name:"Wall Angels",nameHe:"מלאכי קיר",desc:"Stand against wall, raise and lower arms like snow angel.",descHe:"עמוד מול קיר, הרם והורד ידיים כמו מלאך שלג.",tips:"Keep back and wrists on wall.",tipsHe:"שמור גב ופרקי ידיים על הקיר."},
+  {name:"Scapular Retraction",nameHe:"נסיגת שכמית",desc:"Squeeze shoulder blades together and hold.",descHe:"כווץ שכמיות יחד והחזק.",tips:"Hold 5 seconds, no shrugging.",tipsHe:"החזק 5 שניות, ללא הרמת כתפיים."},
+  {name:"Prone Y-T-W",nameHe:"Y-T-W בשכיבה",desc:"Lie face down, raise arms in Y, T, and W positions.",descHe:"שכב פנים למטה, הרם ידיים בצורות Y, T ו-W.",tips:"Squeeze shoulder blades throughout.",tipsHe:"כווץ שכמיות לאורך כל התרגיל."},
+  // KNEE REHAB
+  {name:"Short Arc Quad",nameHe:"קשת קצרה ארבע-ראשי",desc:"Lie on back with roll under knee, extend knee to straight.",descHe:"שכב על הגב עם גליל מתחת לברך, פשוט ברך ישר.",tips:"Hold 5 seconds at top.",tipsHe:"החזק 5 שניות בראש."},
+  {name:"Step Down",nameHe:"ירידה ממדרגה",desc:"Stand on step, slowly lower other foot to floor and back.",descHe:"עמוד על מדרגה, הורד רגל שנייה לאיטה לרצפה וחזור.",tips:"Control the descent.",tipsHe:"שלוט בירידה."},
+  {name:"Terminal Knee Extension",nameHe:"פשיטת ברך סופית",desc:"Band behind knee, partial squat, fully straighten knee.",descHe:"גומייה מאחורי ברך, סקוואט חלקי, פשוט ברך לגמרי.",tips:"Focus on last 30° of extension.",tipsHe:"התמקד ב-30° האחרונות של פשיטה."},
+  {name:"Knee CKC Extension",nameHe:"פשיטת ברך שרשרת סגורה",desc:"Squat partially against wall or with support.",descHe:"סקוואט חלקי מול קיר או עם תמיכה.",tips:"Pain-free range only.",tipsHe:"טווח ללא כאב בלבד."},
+  {name:"Patellar Mobilization",nameHe:"גיוס פיקה",desc:"Gently move kneecap up, down and side to side.",descHe:"הזז פיקה בעדינות למעלה, למטה ומצד לצד.",tips:"Should not cause pain.",tipsHe:"לא אמור לגרום כאב."},
+  // BACK REHAB
+  {name:"Cat Cow",nameHe:"חתול-פרה",desc:"On hands and knees, alternate arching and rounding back.",descHe:"על ידיים וברכיים, חלופה בין קשת ועיגול הגב.",tips:"Move slowly with breathing.",tipsHe:"זוז לאט עם נשימה."},
+  {name:"Child's Pose",nameHe:"תנוחת הילד",desc:"Kneel and stretch arms forward resting forehead on floor.",descHe:"כרע ומשוך ידיים קדימה תוך מנוחת מצח על הרצפה.",tips:"Hold 30-60 seconds.",tipsHe:"החזק 30-60 שניות."},
+  {name:"McKenzie Extension",nameHe:"הארכת מקנזי",desc:"Lie face down, press up with arms leaving hips on floor.",descHe:"שכב פנים למטה, לחץ למעלה עם ידיים תוך השארת ירכיים על הרצפה.",tips:"For disc issues - check with physio.",tipsHe:"לבעיות דיסק - בדוק עם פיזיותרפיסט."},
+  {name:"Knee to Chest Stretch",nameHe:"מתיחת ברך לחזה",desc:"Lie on back, pull one or both knees to chest.",descHe:"שכב על הגב, משוך ברך אחת או שתיהן לחזה.",tips:"Hold 30 seconds, breathe out.",tipsHe:"החזק 30 שניות, נשוף."},
+  {name:"Lumbar Rotation Stretch",nameHe:"מתיחת סיבוב מותני",desc:"Lie on back, drop knees to one side, hold.",descHe:"שכב על הגב, הפל ברכיים לצד אחד, החזק.",tips:"Keep shoulders flat on floor.",tipsHe:"שמור כתפיים שטוחות על הרצפה."},
+  {name:"Superman",nameHe:"סופרמן",desc:"Lie face down, raise arms and legs off floor simultaneously.",descHe:"שכב פנים למטה, הרם ידיים ורגליים בו זמנית.",tips:"Hold 2-3 seconds at top.",tipsHe:"החזק 2-3 שניות בראש."},
+  // MOBILITY / FLEXIBILITY
+  {name:"Hip Flexor Stretch",nameHe:"מתיחת כופף ירך",desc:"Lunge position, lower back knee, push hips forward.",descHe:"מצב לאנג', הורד ברך אחורית, דחוף ירכיים קדימה.",tips:"Hold 30 seconds each side.",tipsHe:"החזק 30 שניות כל צד."},
+  {name:"Piriformis Stretch",nameHe:"מתיחת פיריפורמיס",desc:"Figure-4 stretch, cross ankle over knee, lean forward.",descHe:"מתיחת ספרה-4, הצלב קרסול מעל ברך, הישען קדימה.",tips:"Feel deep in glute.",tipsHe:"הרגש עמוק בישבן."},
+  {name:"IT Band Stretch",nameHe:"מתיחת רצועת IT",desc:"Cross leg in front, lean to side.",descHe:"הצלב רגל קדימה, הישען לצד.",tips:"Hold 30 seconds.",tipsHe:"החזק 30 שניות."},
+  {name:"Hamstring Stretch",nameHe:"מתיחת ירך אחורית",desc:"Lie on back, raise leg straight up, hold behind knee.",descHe:"שכב על הגב, הרם רגל ישרה למעלה, אחוז מאחורי הברך.",tips:"Don't force - breathe and relax.",tipsHe:"אל תכריח - נשום והרפה."},
+  {name:"Calf Stretch",nameHe:"מתיחת שריר השוק",desc:"Stand at wall, one foot back, heel down, lean forward.",descHe:"עמוד ליד קיר, רגל אחת אחורה, עקב למטה, הישען קדימה.",tips:"Hold 30 seconds each side.",tipsHe:"החזק 30 שניות כל צד."},
+  {name:"Thoracic Extension",nameHe:"הארכה חזית",desc:"Sit on chair or use foam roller to extend upper back.",descHe:"שב על כיסא או השתמש בגלגלת קצף להארכת גב עליון.",tips:"Keep head supported.",tipsHe:"שמור ראש נתמך."},
+  {name:"Ankle Circles",nameHe:"עיגולי קרסול",desc:"Rotate foot in full circles at the ankle joint.",descHe:"סובב כף רגל בעיגולים מלאים במפרק הקרסול.",tips:"10 circles each direction.",tipsHe:"10 עיגולים בכל כיוון."},
+  {name:"Foam Roll Quads",nameHe:"גלגול קצף לארבע-ראשי",desc:"Lie face down, roll front of thigh on foam roller.",descHe:"שכב פנים למטה, גלגל חלק קדמי ירך על גלגלת קצף.",tips:"Pause on tender spots 20-30 seconds.",tipsHe:"עצור על נקודות רגישות 20-30 שניות."},
+  {name:"Foam Roll ITB",nameHe:"גלגול קצף לרצועת IT",desc:"Roll outer thigh from hip to knee.",descHe:"גלגל חלק חיצוני ירך מהירך לברך.",tips:"Go slowly.",tipsHe:"לאט לאט."},
+  {name:"Foam Roll Upper Back",nameHe:"גלגול קצף לגב עליון",desc:"Lie on roller across upper back, support head, roll.",descHe:"שכב על גלגלת לרוחב הגב העליון, תמוך בראש, גלגל.",tips:"Arms crossed over chest.",tipsHe:"ידיים משולבות על החזה."},
+  // BALANCE
+  {name:"Single Leg Balance",nameHe:"איזון רגל אחת",desc:"Stand on one leg, maintain balance 30-60 seconds.",descHe:"עמוד על רגל אחת, שמור שיווי משקל 30-60 שניות.",tips:"Focus on a fixed point ahead.",tipsHe:"התמקד בנקודה קבועה קדימה."},
+  {name:"Tandem Walking",nameHe:"הליכה טנדם",desc:"Walk in straight line placing heel directly in front of toe.",descHe:"הלך בקו ישר תוך הנחת עקב ישירות מול בוהן.",tips:"Arms out for balance.",tipsHe:"ידיים פרושות לשיווי משקל."},
+  {name:"Bosu Ball Squat",nameHe:"סקוואט על כדור בוסו",desc:"Stand on flat side of Bosu, perform squat.",descHe:"עמוד על הצד השטוח של הבוסו, בצע סקוואט.",tips:"Start near wall for safety.",tipsHe:"התחל ליד קיר לבטיחות."},
+  // CARDIO / FUNCTIONAL
+  {name:"Walking",nameHe:"הליכה",desc:"Walk at comfortable pace, maintaining good posture.",descHe:"הלך בקצב נוח תוך שמירה על יציבה טובה.",tips:"Swing arms naturally.",tipsHe:"טלטל ידיים באופן טבעי."},
+  {name:"Stationary Bike",nameHe:"אופניים נייחים",desc:"Cycle on stationary bike maintaining steady cadence.",descHe:"רכב על אופניים נייחים תוך שמירה על קצב קבוע.",tips:"Seat at hip height.",tipsHe:"מושב בגובה הירך."},
+  {name:"Swimming",nameHe:"שחייה",desc:"Low impact full body exercise in water.",descHe:"פעילות גוף מלאה עם עומס נמוך במים.",tips:"Great for joint conditions.",tipsHe:"מצוין למצבי מפרקים."},
+  {name:"Aqua Walking",nameHe:"הליכה במים",desc:"Walk in pool, water resistance reduces joint load.",descHe:"הלך בבריכה, התנגדות המים מפחיתה עומס מפרקים.",tips:"Water at waist level.",tipsHe:"מים ברמת המותניים."},
 ];
+
+// ── Filter exercises for search ──
+function filterEx(query){
+  var q = query.toLowerCase().trim();
+  var list = q ? EX_LIB.filter(function(e){
+    return e.name.toLowerCase().indexOf(q)>-1 ||
+           e.nameHe.indexOf(q)>-1 ||
+           e.desc.toLowerCase().indexOf(q)>-1 ||
+           e.descHe.indexOf(q)>-1;
+  }) : EX_LIB;
+  var box = g("fexlist");
+  if(!box) return;
+  if(!list.length){
+    box.innerHTML='<div style="padding:8px;color:#999;font-size:13px">No results / אין תוצאות</div>';
+    return;
+  }
+  box.innerHTML = list.map(function(e){
+    var idx = EX_LIB.indexOf(e);
+    return '<div onclick="selEx('+idx+')" style="padding:8px 10px;cursor:pointer;border-bottom:1px solid #f0f0f0;font-size:13px" '+
+      'onmouseover="this.style.background=\'#f0f5fb\'" onmouseout="this.style.background=\'\'">'+
+      '<span style="font-weight:600;color:#1a3a6e">'+e.name+'</span>'+
+      '<span style="color:#888;margin:0 5px">/</span>'+
+      '<span style="color:#4a6a8a">'+e.nameHe+'</span></div>';
+  }).join("");
+}
 
 // ── Select exercise from library ──
 function selEx(idx){
-  if(idx==="") return;
   var e = EX_LIB[idx];
-  g("fen").value = e.name;
+  if(g("fen")) g("fen").value = e.name;
   if(g("fenhe")) g("fenhe").value = e.nameHe;
   if(g("fde")) g("fde").value = e.desc;
   if(g("fdehe")) g("fdehe").value = e.descHe;
   if(g("fti")) g("fti").value = e.tips;
   if(g("ftihe")) g("ftihe").value = e.tipsHe;
+  // Hide dropdown after selection
+  var box = g("fexlist");
+  if(box) box.innerHTML="";
+  var si = g("fexsearch");
+  if(si) si.value = e.name+" / "+e.nameHe;
 }
+
+// ── Save patient / exercise / follow-up ──
 function sp2(){
   var nm=g("fn").value.trim(), sp=g("fsp").value; if(!nm||!sp) return;
   var d={name:nm,nameHe:g("fnhe").value.trim(),sport:sp,age:g("fa").value,phone:g("fph").value,injury:g("fij").value,pin:g("fpi").value||"0000",status:g("fst").value,notes:g("fno").value};
