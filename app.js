@@ -249,8 +249,9 @@ function sct(t){
 function rex(){
   var p=cur;
   g("pet").innerHTML=
-    '<div class="row"><span class="st">'+L().ex+'</span><div style="display:flex;gap:8px">'+
+    '<div class="row"><span class="st">'+L().ex+'</span><div style="display:flex;gap:8px;flex-wrap:wrap">'+
     '<button class="btn btnpu" style="font-size:12px" onclick="ais()">'+L().ai+'</button>'+
+    '<button class="btn" style="font-size:12px;background:#f0f5ff;color:#2B6CC4;border:1px solid rgba(43,108,196,0.3)" onclick="omLib()">📚 Library</button>'+
     '<button class="btn" style="font-size:12px" onclick="om(\'ae\')">'+L().ae+'</button></div></div>'+
     (!(p.exercises||[]).length?'<div style="color:#4a6a8a;font-size:14px;padding:14px 0">'+L().nx+'</div>':"")+
     (p.exercises||[]).map(function(e,i){
@@ -531,12 +532,13 @@ var EX_LIB = [
 // ── Filter exercises for search ──
 function filterEx(query){
   var q = query.toLowerCase().trim();
-  var list = q ? EX_LIB.filter(function(e){
-    return e.name.toLowerCase().indexOf(q)>-1 ||
-           e.nameHe.indexOf(q)>-1 ||
-           e.desc.toLowerCase().indexOf(q)>-1 ||
-           e.descHe.indexOf(q)>-1;
-  }) : EX_LIB;
+  var fullLib = EX_LIB.concat(loadCustomLib());
+  var list = q ? fullLib.filter(function(e){
+    return (e.name||"").toLowerCase().indexOf(q)>-1 ||
+           (e.nameHe||"").indexOf(q)>-1 ||
+           (e.desc||"").toLowerCase().indexOf(q)>-1 ||
+           (e.descHe||"").indexOf(q)>-1;
+  }) : fullLib;
   var box = g("fexlist");
   if(!box) return;
   if(!list.length){
@@ -545,14 +547,29 @@ function filterEx(query){
   }
   box.innerHTML = list.map(function(e){
     var idx = EX_LIB.indexOf(e);
-    return '<div onclick="selEx('+idx+')" style="padding:8px 10px;cursor:pointer;border-bottom:1px solid #f0f0f0;font-size:13px" '+
+    var isCustom = idx===-1;
+    if(isCustom){ idx = EX_LIB.length + loadCustomLib().indexOf(e); }
+    return '<div onclick="selExFull('+JSON.stringify(e).replace(/"/g,"&quot;")+')" style="padding:8px 10px;cursor:pointer;border-bottom:1px solid #f0f0f0;font-size:13px;display:flex;justify-content:space-between;align-items:center" '+
       'onmouseover="this.style.background=\'#f0f5fb\'" onmouseout="this.style.background=\'\'">'+
-      '<span style="font-weight:600;color:#1a3a6e">'+e.name+'</span>'+
+      '<span><span style="font-weight:600;color:#1a3a6e">'+e.name+'</span>'+
       '<span style="color:#888;margin:0 5px">/</span>'+
-      '<span style="color:#4a6a8a">'+e.nameHe+'</span></div>';
+      '<span style="color:#4a6a8a">'+e.nameHe+'</span></span>'+
+      (isCustom?'<span style="font-size:10px;background:#e8f0ff;color:#2B6CC4;border-radius:4px;padding:1px 5px">custom</span>':'')+
+      '</div>';
   }).join("");
 }
 
+function selExFull(e){
+  if(typeof e === "string") try{ e=JSON.parse(e); }catch(x){ return; }
+  if(g("fen")) g("fen").value = e.name||"";
+  if(g("fenhe")) g("fenhe").value = e.nameHe||"";
+  if(g("fde")) g("fde").value = e.desc||"";
+  if(g("fdehe")) g("fdehe").value = e.descHe||"";
+  if(g("fti")) g("fti").value = e.tips||"";
+  if(g("ftihe")) g("ftihe").value = e.tipsHe||"";
+  var box = g("fexlist"); if(box) box.innerHTML="";
+  var si = g("fexsearch"); if(si) si.value = (e.name||"")+" / "+(e.nameHe||"");
+}
 // ── Select exercise from library ──
 function selEx(idx){
   var e = EX_LIB[idx];
@@ -567,6 +584,79 @@ function selEx(idx){
   if(box) box.innerHTML="";
   var si = g("fexsearch");
   if(si) si.value = e.name+" / "+e.nameHe;
+}
+
+// ── Library Management ──
+var CUSTOM_LIB_KEY = "ep_custom_lib";
+function loadCustomLib(){ try{ return JSON.parse(localStorage.getItem(CUSTOM_LIB_KEY)||"[]"); }catch(e){ return []; } }
+function saveCustomLib(arr){ localStorage.setItem(CUSTOM_LIB_KEY, JSON.stringify(arr)); }
+function getFullLib(){ return EX_LIB.concat(loadCustomLib()); }
+
+function omLib(){
+  var custom = loadCustomLib();
+  var c = g("MC");
+  c.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'+
+    '<span style="font-size:17px;font-weight:800;color:#1a3a6e">📚 Manage Library</span>'+
+    '<button onclick="cm()" style="background:rgba(0,0,0,0.08);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:16px;line-height:1">✕</button>'+
+    '</div>'+
+    '<div style="font-size:12px;color:#4a6a8a;margin-bottom:10px">Built-in exercises: '+EX_LIB.length+' &nbsp;|&nbsp; Your custom exercises: '+custom.length+'</div>'+
+    '<button class="btn" style="width:100%;margin-bottom:14px;font-size:13px" onclick="omLibAdd(null)">+ Add Custom Exercise</button>'+
+    (custom.length?
+      '<div style="font-size:12px;font-weight:700;color:#1a3a6e;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Your Custom Exercises</div>'+
+      custom.map(function(e,i){
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 11px;background:#f8fbff;border:1px solid #c8d8ee;border-radius:8px;margin-bottom:6px">'+
+          '<div><div style="font-weight:600;font-size:13px;color:#1a3a6e">'+e.name+' / '+e.nameHe+'</div>'+
+          '<div style="font-size:11px;color:#4a6a8a;margin-top:1px">'+(e.desc?e.desc.substring(0,50)+'...':'No description')+'</div></div>'+
+          '<div style="display:flex;gap:6px">'+
+          '<button class="btn" style="padding:3px 8px;font-size:12px;background:#f0f5ff" onclick="omLibAdd('+i+')">✏️</button>'+
+          '<button class="btn btnd" style="padding:3px 8px;font-size:12px" onclick="delLibEx('+i+')">✕</button>'+
+          '</div></div>';
+      }).join(""):
+      '<div style="color:#4a6a8a;font-size:13px;padding:12px 0;text-align:center">No custom exercises yet.</div>'
+    )+
+    '<div style="font-size:12px;font-weight:700;color:#1a3a6e;margin:12px 0 8px;text-transform:uppercase;letter-spacing:0.5px">Built-in Library Preview</div>'+
+    '<div style="max-height:160px;overflow-y:auto;background:#f0f5fb;border-radius:8px;padding:8px">'+
+    EX_LIB.map(function(e){ return '<div style="font-size:12px;padding:3px 6px;color:#1a2535">'+e.name+' / '+e.nameHe+'</div>'; }).join("")+
+    '</div>';
+  g("MB").classList.add("on");
+}
+
+function omLibAdd(customIdx){
+  var custom = loadCustomLib();
+  var ex = customIdx!==null ? custom[customIdx] : null;
+  var c = g("MC");
+  c.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'+
+    '<span style="font-size:16px;font-weight:800;color:#1a3a6e">'+(ex?'✏️ Edit Exercise':'+ Add to Library')+'</span>'+
+    '<button onclick="omLib()" style="background:rgba(0,0,0,0.08);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:16px;line-height:1">←</button>'+
+    '</div>'+
+    '<div class="g2" style="gap:10px;margin-bottom:12px">'+
+    '<div style="grid-column:1/-1"><label class="lbl">Name (English)</label><input class="inp" id="lib_en" value="'+(ex?ex.name:'')+'" placeholder="e.g. Bulgarian Split Squat"></div>'+
+    '<div style="grid-column:1/-1"><label class="lbl">שם (עברית)</label><input class="inp" id="lib_he" dir="rtl" value="'+(ex?ex.nameHe:'')+'" placeholder="שם בעברית"></div>'+
+    '<div style="grid-column:1/-1"><label class="lbl">Description (EN)</label><textarea class="inp" id="lib_de" style="height:52px">'+(ex?ex.desc:'')+'</textarea></div>'+
+    '<div style="grid-column:1/-1"><label class="lbl">תיאור (HE)</label><textarea class="inp" id="lib_dhe" dir="rtl" style="height:52px">'+(ex?ex.descHe:'')+'</textarea></div>'+
+    '<div style="grid-column:1/-1"><label class="lbl">Tips (EN)</label><textarea class="inp" id="lib_ti" style="height:44px">'+(ex?ex.tips:'')+'</textarea></div>'+
+    '<div style="grid-column:1/-1"><label class="lbl">טיפים (HE)</label><textarea class="inp" id="lib_the" dir="rtl" style="height:44px">'+(ex?ex.tipsHe:'')+'</textarea></div></div>'+
+    '<div style="display:flex;gap:8px;justify-content:flex-end">'+
+    '<button class="btn btnd" onclick="omLib()">Cancel</button>'+
+    '<button class="btn" onclick="saveLibEx('+(customIdx!==null?customIdx:'null')+')">Save to Library</button></div>';
+}
+
+function saveLibEx(customIdx){
+  var n=g("lib_en").value.trim(), nhe=g("lib_he").value.trim();
+  if(!n&&!nhe){ alert("Enter at least one name."); return; }
+  var e={ name:n||nhe, nameHe:nhe||n, desc:g("lib_de").value.trim(), descHe:g("lib_dhe").value.trim(), tips:g("lib_ti").value.trim(), tipsHe:g("lib_the").value.trim() };
+  var custom = loadCustomLib();
+  if(customIdx!==null){ custom[customIdx]=e; } else { custom.push(e); }
+  saveCustomLib(custom);
+  omLib();
+}
+
+function delLibEx(i){
+  if(!confirm("Delete this custom exercise?")) return;
+  var custom = loadCustomLib();
+  custom.splice(i,1);
+  saveCustomLib(custom);
+  omLib();
 }
 
 // ── Save patient / exercise / follow-up ──
@@ -754,12 +844,19 @@ function dprint(id){
     '<div class="ii"><label>Status</label><span>'+(p.status||"\u2014")+'</span></div>'+
     '<div class="ii"><label>Sessions</label><span>'+(p.sessions||0)+'</span></div></div>'+
     (p.notes?'<div style="background:#eef4ff;border-radius:8px;padding:11px 15px;font-size:13px;color:#1a2535;margin-bottom:4px">'+p.notes+'</div>':"")+
-    '<h2>Exercise Plan ('+( p.exercises||[]).length+')</h2>'+
-    (p.exercises||[]).map(function(e,i){ return '<div class="ex"><div style="font-size:15px;font-weight:700;margin-bottom:4px">'+(i+1)+'. '+e.name+'</div>'+
-      '<div style="font-size:12px;color:#4a6a8a;margin-bottom:3px">'+e.sets+' sets &times; '+e.reps+'</div>'+
-      (e.desc?'<div style="font-size:12px;color:#1a2535;margin-bottom:3px">'+e.desc+'</div>':"")+
-      (e.tips?'<div style="font-size:12px;color:#2B6CC4;font-weight:600">&#128161; '+e.tips+'</div>':"")+
-      '</div>'; }).join("")||'<p style="color:#4a6a8a;font-size:13px">No exercises assigned yet.</p>'+
+    '<h2>Exercise Plan ('+(p.exercises||[]).length+')</h2>'+
+    (p.exercises||[]).map(function(e,i){
+      var isHe = e.displayLng==="he" || (!e.displayLng && !e.name && e.nameHe);
+      var eName = isHe&&e.nameHe ? e.nameHe : (e.name||e.nameHe);
+      var eDesc = isHe&&e.descHe ? e.descHe : (e.desc||e.descHe);
+      var eTips = isHe&&e.tipsHe ? e.tipsHe : (e.tips||e.tipsHe);
+      var dir = isHe ? 'direction:rtl;text-align:right' : '';
+      return '<div class="ex" style="'+dir+'"><div style="font-size:15px;font-weight:700;margin-bottom:4px">'+(i+1)+'. '+eName+'</div>'+
+        '<div style="font-size:12px;color:#4a6a8a;margin-bottom:3px">'+e.sets+' sets &times; '+e.reps+'</div>'+
+        (eDesc?'<div style="font-size:12px;color:#1a2535;margin-bottom:3px">'+eDesc+'</div>':"")+
+        (eTips?'<div style="font-size:12px;color:#2B6CC4;font-weight:600">&#128161; '+eTips+'</div>':"")+
+        '</div>';
+    }).join("")||'<p style="color:#4a6a8a;font-size:13px">No exercises assigned yet.</p>'+
     ((p.followUps||[]).length?'<h2>Progress Notes</h2>'+(p.followUps||[]).map(function(f){ return '<div class="fu"><div style="font-size:10px;color:#4a6a8a;margin-bottom:3px">'+f.date+'</div><div style="font-size:13px">'+f.note+'</div></div>'; }).join(""):"")+
     '<div class="foot"><strong>ElitePhysio</strong> \u2014 \u05de\u05db\u05d5\u05df \u05e4\u05d9\u05d6\u05d9\u05d5\u05ea\u05e8\u05e4\u05d9\u05d4 \u05dc\u05e1\u05e4\u05d5\u05e8\u05d8\u05d0\u05d9\u05dd<br>'+
     '\u05e4\u05d9\u05d6\u05d9\u05d5\u05ea\u05e8\u05e4\u05d9\u05d4 \u05dc\u05e1\u05e4\u05d5\u05e8\u05d8\u05d0\u05d9\u05dd \u05e9\u05e8\u05d5\u05e6\u05d9\u05dd \u05dc\u05d4\u05d2\u05d9\u05e2 \u05dc\u05e7\u05e6\u05d4 \u05d4\u05d9\u05db\u05d5\u05dc\u05ea &middot; Yoqneam Ilit<br>Generated: '+today+'</div>'+
