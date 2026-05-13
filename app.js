@@ -340,12 +340,7 @@ function rcl(){
 // ── Patient View (patient login) ──
 function rpv(){
   var p=pts.find(function(x){ return x.id===auth; }); if(!p){ dout(); return; } cur=p;
-  // Auto-translate exercises if Hebrew is selected
-  if(lng==="he"){
-    autoTranslateExercises(p, function(){ renderPatientView(p); });
-  } else {
-    renderPatientView(p);
-  }
+  renderPatientView(p);
 }
 
 function renderPatientView(p){
@@ -1105,39 +1100,8 @@ function dfile(fid){ cur.files=(cur.files||[]).filter(function(f){ return f.id!=
 
 // ── Auto-translate exercises to Hebrew ──
 function autoTranslateExercises(p, cb){
-  var needsTranslation = (p.exercises||[]).filter(function(e){
-    return !e.nameHe || !e.descHe;
-  });
-  if(!needsTranslation.length){ cb(); return; }
-
-  var list = needsTranslation.map(function(e){
-    return {id:e.id, name:e.name, desc:e.desc||"", tips:e.tips||""};
-  });
-
-  fetch("https://api.anthropic.com/v1/messages",{
-    method:"POST",
-    headers:{"Content-Type":"application/json","x-api-key":AI_KEY,"anthropic-version":"2023-06-01"},
-    body:JSON.stringify({
-      model:"claude-sonnet-4-20250514",
-      max_tokens:1000,
-      messages:[{role:"user",content:
-        "Physical therapy translator. Translate to Hebrew. Return ONLY JSON array, no markdown:\n"+
-        JSON.stringify(list)+"\n"+
-        "Format: [{\"id\":same_id,\"nameHe\":\"...\",\"descHe\":\"...\",\"tipsHe\":\"...\"}]"
-      }]
-    })
-  }).then(function(r){return r.json();}).then(function(d){
-    try{
-      var txt=d.content.map(function(i){return i.text||"";}).join("");
-      var translated=JSON.parse(txt.replace(/```json|```/g,"").trim());
-      translated.forEach(function(t){
-        var ex=(p.exercises||[]).find(function(e){return e.id===t.id;});
-        if(ex){ex.nameHe=t.nameHe;ex.descHe=t.descHe;ex.tipsHe=t.tipsHe;}
-      });
-      pts=pts.map(function(x){return x.id===p.id?p:x;}); sv();
-    }catch(e){}
-    cb();
-  }).catch(function(){cb();});
+  // Translation requires API key - just call cb immediately
+  if(cb) cb();
 }
 
 function callClaude(prompt, maxTokens, cb){
