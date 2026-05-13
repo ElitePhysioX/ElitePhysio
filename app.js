@@ -117,7 +117,19 @@ function plog(){
   var entered=normName(g("pnm").value), pi=g("ppi").value.trim(), m=null;
   for(var i=0;i<pts.length;i++){
     var p=pts[i];
-    if((normName(p.name)===entered||(p.nameHe&&normName(p.nameHe)===entered))&&p.pin===pi){ m=p; break; }
+    var names=[p.name,p.nameHe,p.name+" / "+p.nameHe,p.nameHe+" / "+p.name].map(normName);
+    if(names.some(function(n){return n&&n===entered;})&&p.pin===pi){ m=p; break; }
+  }
+  // Fallback: try matching just first word of name (for "Eyal" matching "Eyal Carmel" etc)
+  if(!m){
+    for(var i=0;i<pts.length;i++){
+      var p=pts[i];
+      var allNames=[normName(p.name),normName(p.nameHe)];
+      var enteredFirst=entered.split(" ")[0];
+      if(allNames.some(function(n){return n&&(n.indexOf(entered)>-1||entered.indexOf(n)>-1);})){
+        if(p.pin===pi){ m=p; break; }
+      }
+    }
   }
   if(m){ auth=m.id; cur=m; ptab="ex"; g("ppi").value=""; ss2("p"); rpv(); }
   else{ g("le2").textContent=L().le; g("le2").style.display="block"; }
@@ -1015,8 +1027,14 @@ function getExerciseAnimation(name, isFemale, skin, hair, shirt, pants){
 
 // ── Save patient / exercise / follow-up ──
 function sp2(){
-  var nm=g("fn").value.trim(), sp=g("fsp").value; if(!nm||!sp) return;
-  var d={name:nm,nameHe:g("fnhe").value.trim(),sport:sp,age:g("fa").value,phone:g("fph").value,injury:g("fij").value,pin:g("fpi").value||"0000",status:g("fst").value,notes:g("fno").value};
+  var nm=g("fn").value.trim();
+  if(!nm){ 
+    var fn=g("fn"); fn.style.border="2px solid #e74c3c"; fn.placeholder="Name is required!";
+    setTimeout(function(){ fn.style.border=""; },2000);
+    return; 
+  }
+  var sp=g("fsp").value||"General";
+  var d={name:nm,nameHe:g("fnhe")?g("fnhe").value.trim():"",sport:sp,age:g("fa")?g("fa").value:"",phone:g("fph")?g("fph").value:"",injury:g("fij")?g("fij").value:"",pin:g("fpi")?g("fpi").value||"0000":"0000",status:g("fst")?g("fst").value:"Active",notes:g("fno")?g("fno").value:""};
   if(mmode==="ep"&&cur){ Object.assign(cur,d); pts=pts.map(function(p){ return p.id===cur.id?cur:p; }); }
   else{ pts.push(Object.assign({},d,{id:Date.now(),sessions:0,startDate:new Date().toISOString().split("T")[0],exercises:[],followUps:[],files:[],eval:""})); }
   sv(); cm(); rpl(); if(mmode==="ep") rpd();
