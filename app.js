@@ -163,22 +163,27 @@ function rd(){
     }).join("")+'</div>'+
     '<div class="row"><span class="st">'+L().rp2+'</span><button class="btn" style="font-size:12px" onclick="gv(\'p\')">'+L().va+'</button></div>'+
     pts.slice(0,4).map(function(p){
+      var dn=pn(p);
       return '<div class="card" onclick="op('+p.id+')"><div style="display:flex;align-items:center;justify-content:space-between">'+
-        '<div style="display:flex;align-items:center;gap:13px">'+av(p.name)+
-        '<div><div class="pat-name">'+p.name+'</div><div class="pat-sub">'+(p.injury||"—")+'</div></div></div>'+
+        '<div style="display:flex;align-items:center;gap:13px">'+av(dn)+
+        '<div><div class="pat-name">'+dn+'</div><div class="pat-sub">'+(p.injury||"—")+'</div></div></div>'+
         '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">'+bdg(p.sport)+' '+sbdg(p.status)+'</div></div></div>';
     }).join("");
 }
 
 // ── Patient List ──
+function pn(p){ return (lng==="he"&&p.nameHe)?p.nameHe:(p.name||p.nameHe||""); }
 function rpl(){
   var q=(g("psr").value||"").toLowerCase();
-  var list=pts.filter(function(p){ return p.name.toLowerCase().includes(q)||p.sport.toLowerCase().includes(q)||(p.injury||"").toLowerCase().includes(q); });
+  var list=pts.filter(function(p){
+    return (p.name||"").toLowerCase().includes(q)||(p.nameHe||"").toLowerCase().includes(q)||(p.sport||"").toLowerCase().includes(q)||(p.injury||"").toLowerCase().includes(q);
+  });
   g("ptit").textContent=L().pats+" ("+pts.length+")";
   g("pls").innerHTML=list.length?list.map(function(p){
+    var dn=pn(p);
     return '<div class="card" onclick="op('+p.id+')"><div style="display:flex;align-items:center;justify-content:space-between">'+
-      '<div style="display:flex;align-items:center;gap:13px">'+av(p.name)+
-      '<div><div class="pat-name">'+p.name+'</div><div class="pat-sub">'+(p.injury||"—")+' &middot; '+(p.age||"—")+'</div></div></div>'+
+      '<div style="display:flex;align-items:center;gap:13px">'+av(dn)+
+      '<div><div class="pat-name">'+dn+'</div><div class="pat-sub">'+(p.injury||"—")+' &middot; '+(p.age||"—")+'</div></div></div>'+
       '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">'+bdg(p.sport)+' '+sbdg(p.status)+'</div></div></div>';
   }).join(""):'<div style="color:#4a6a8a;text-align:center;padding:32px 0;font-size:14px">No patients found</div>';
 }
@@ -213,9 +218,10 @@ function rs(){
     '<div>&#127939; Sports: <strong style="color:#d97706">'+Object.keys(pts.reduce(function(a,p){ a[p.sport]=1; return a; },{})).length+'</strong></div></div></div>'+
     '<div class="panel"><div class="st" style="margin-bottom:10px">'+L().fl+'</div>'+
     ([].concat(lds,drp)).map(function(p){
+      var dn=pn(p);
       return '<div class="xcard" style="cursor:pointer" onclick="op('+p.id+')"><div style="display:flex;align-items:center;justify-content:space-between">'+
-        '<div style="display:flex;align-items:center;gap:10px">'+av(p.name)+
-        '<div><div class="pat-name">'+p.name+'</div><div class="pat-sub">'+p.sport+' &middot; '+(p.sessions||0)+' sessions</div></div></div>'+
+        '<div style="display:flex;align-items:center;gap:10px">'+av(dn)+
+        '<div><div class="pat-name">'+dn+'</div><div class="pat-sub">'+p.sport+' &middot; '+(p.sessions||0)+' sessions</div></div></div>'+
         '<div style="display:flex;gap:6px;align-items:center">'+sbdg(p.status)+' '+waLink(p)+'</div></div></div>';
     }).join("")+(([].concat(lds,drp)).length===0?'<div style="color:#4a6a8a;font-size:14px">No follow-ups needed.</div>':"")+
     '<div style="background:rgba(43,108,196,0.07);border:1px solid rgba(43,108,196,0.2);border-radius:9px;padding:13px 16px;margin-top:12px;font-size:13px;color:#1a2535;line-height:2.2">'+
@@ -232,8 +238,8 @@ function rpd(){
   g("pbk").textContent=L().bk;
   g("phd").innerHTML=
     '<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">'+
-    '<div style="display:flex;align-items:center;gap:15px">'+av(p.name,54)+'<div>'+
-    '<div style="font-size:22px;font-weight:800;color:#1a3a6e">'+p.name+'</div>'+
+    '<div style="display:flex;align-items:center;gap:15px">'+av(pn(p),54)+'<div>'+
+    '<div style="font-size:22px;font-weight:800;color:#1a3a6e">'+pn(p)+'</div>'+
     '<div style="display:flex;align-items:center;gap:7px;margin-top:6px;flex-wrap:wrap">'+bdg(p.sport)+' '+sbdg(p.status)+
     (p.age?'<span style="font-size:12px;color:#4a6a8a">'+p.age+'y</span>':"")+
     '<span style="font-size:11px;color:#4a6a8a;border:1px solid rgba(43,108,196,0.25);border-radius:4px;padding:2px 8px">PIN: '+p.pin+'</span>'+
@@ -344,8 +350,8 @@ function rpv(){
 
 function renderPatientView(p){
   g("psh").innerHTML=
-    '<div style="display:flex;align-items:center;gap:15px;margin-bottom:14px">'+av(p.name,52)+
-    '<div><div style="font-size:21px;font-weight:800;color:#1a3a6e">'+p.name+'</div>'+
+    '<div style="display:flex;align-items:center;gap:15px;margin-bottom:14px">'+av(pn(p),52)+
+    '<div><div style="font-size:21px;font-weight:800;color:#1a3a6e">'+pn(p)+'</div>'+
     '<div style="margin-top:5px">'+bdg(p.sport)+'</div></div></div>'+
     (p.injury?'<div style="background:rgba(43,108,196,0.08);border-radius:8px;padding:11px 15px;border-left:3px solid #2B6CC4;margin-bottom:8px">'+
     '<div style="font-size:11px;color:#2B6CC4;font-weight:700;text-transform:uppercase;margin-bottom:3px">'+L().ij+'</div>'+
@@ -1027,14 +1033,14 @@ function getExerciseAnimation(name, isFemale, skin, hair, shirt, pants){
 
 // ── Save patient / exercise / follow-up ──
 function sp2(){
-  var nm=g("fn").value.trim();
-  if(!nm){ 
-    var fn=g("fn"); fn.style.border="2px solid #e74c3c"; fn.placeholder="Name is required!";
-    setTimeout(function(){ fn.style.border=""; },2000);
-    return; 
+  var nm=g("fn")?g("fn").value.trim():"";
+  var nhe=g("fnhe")?g("fnhe").value.trim():"";
+  if(!nm&&!nhe){
+    var fn=g("fn")||g("fnhe"); if(fn){ fn.style.border="2px solid #e74c3c"; setTimeout(function(){ fn.style.border=""; },2000); }
+    return;
   }
-  var sp=g("fsp").value||"General";
-  var d={name:nm,nameHe:g("fnhe")?g("fnhe").value.trim():"",sport:sp,age:g("fa")?g("fa").value:"",phone:g("fph")?g("fph").value:"",injury:g("fij")?g("fij").value:"",pin:g("fpi")?g("fpi").value||"0000":"0000",status:g("fst")?g("fst").value:"Active",notes:g("fno")?g("fno").value:""};
+  var sp=g("fsp")?g("fsp").value||"General":"General";
+  var d={name:nm||(nhe),nameHe:nhe||(nm),sport:sp,age:g("fa")?g("fa").value:"",phone:g("fph")?g("fph").value:"",injury:g("fij")?g("fij").value:"",pin:g("fpi")?g("fpi").value||"0000":"0000",status:g("fst")?g("fst").value:"Active",notes:g("fno")?g("fno").value:""};
   if(mmode==="ep"&&cur){ Object.assign(cur,d); pts=pts.map(function(p){ return p.id===cur.id?cur:p; }); }
   else{ pts.push(Object.assign({},d,{id:Date.now(),sessions:0,startDate:new Date().toISOString().split("T")[0],exercises:[],followUps:[],files:[],eval:""})); }
   sv(); cm(); rpl(); if(mmode==="ep") rpd();
