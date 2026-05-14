@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════
-   ElitePhysio — app.js
+   ElitePhysio — app.js v3
    All application logic and rendering
 ═══════════════════════════════════════ */
 
