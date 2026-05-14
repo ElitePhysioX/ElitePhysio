@@ -104,7 +104,15 @@ export default {
       return json({ error: "Not found" }, 404);
     }
 
-    // ── Serve all static files (HTML, CSS, JS, images) ──
-    return env.ASSETS.fetch(request);
+    // ── Serve all static files with no-cache for JS/CSS ──
+    const response = await env.ASSETS.fetch(request);
+    const url2 = new URL(request.url);
+    if(url2.pathname.endsWith('.js') || url2.pathname.endsWith('.css')){
+      const newResp = new Response(response.body, response);
+      newResp.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+      newResp.headers.set('Pragma', 'no-cache');
+      return newResp;
+    }
+    return response;
   }
 };
