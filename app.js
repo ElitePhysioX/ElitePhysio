@@ -9,8 +9,10 @@ var SK  = "ep12";
 var AI_KEY = "";
 var pts = [], lng = "en", auth = null, cur = null, ctab = "ex", ptab = "ex", stmr = null, mmode = "";
 
-// ── Secure API (all calls go through our worker, secrets never in browser) ──
-var ADMIN_TOKEN = ""; // set after admin logs in
+// ── Secure API ──
+var ADMIN_TOKEN = "";
+var SB_URL = "https://akovtufhkfnjrzqvzdyv.supabase.co";
+var SB_KEY = ""; // loaded from worker at runtime
 
 function apiCall(path, method, body, cb){
   var opts = { method: method||"GET", headers: { "Content-Type":"application/json" } };
@@ -41,16 +43,38 @@ function fromRow(r){
   };
 }
 
+function sbHeaders(){
+  return { "Content-Type":"application/json", "apikey":SB_KEY, "Authorization":"Bearer "+SB_KEY };
+}
+
 function sbLoad(cb){
-  apiCall("patients","GET",null,function(err,rows){
-    if(!err && Array.isArray(rows)){
-      pts = rows.map(fromRow);
-      try{ localStorage.setItem(SK, JSON.stringify(pts)); }catch(e){}
-    } else {
-      try{ var d=localStorage.getItem(SK); if(d) pts=JSON.parse(d); }catch(e){}
-    }
-    if(cb) cb();
-  });
+  if(!SB_KEY){ if(cb) cb(); return; }
+  fetch(SB_URL+"/rest/v1/patients?select=*&order=id.asc", { headers: sbHeaders() })
+    .then(function(r){ return r.json(); })
+    .then(function(rows){
+      if(Array.isArray(rows)){
+        pts = rows.map(fromRow);
+        try{ localStorage.setItem(SK, JSON.stringify(pts)); }catch(e){}
+      }
+      if(cb) cb();
+    })
+    .catch(function(){ if(cb) cb(); });
+}
+
+function sbSave(p){
+  if(!SB_KEY) return;
+  fetch(SB_URL+"/rest/v1/patients", {
+    method:"POST",
+    headers: Object.assign({}, sbHeaders(), {"Prefer":"resolution=merge-duplicates"}),
+    body: JSON.stringify(toRow(p))
+  }).catch(function(){});
+}
+
+function sbDelete(id){
+  if(!SB_KEY) return;
+  fetch(SB_URL+"/rest/v1/patients?id=eq."+id, {
+    method:"DELETE", headers: sbHeaders()
+  }).catch(function(){});
 }
 
 // ── Storage ──
@@ -68,15 +92,13 @@ function sv(){
   },300);
   sbSaveTimer = setTimeout(function(){
     var toSync = cur ? [cur] : pts;
-    toSync.forEach(function(p){ apiCall("patients","POST",toRow(p)); });
+    toSync.forEach(function(p){ sbSave(p); });
   },500);
 }
 
 function dp(id){
   pts=pts.filter(function(p){ return p.id!==id; });
-  lsave();
-  apiCall("patients/"+id,"DELETE");
-  cm(); rpl();
+  lsave(); sbDelete(id); cm(); rpl();
 }
 
 
@@ -155,43 +177,28 @@ function alog(){
   apiCall("admin-login","POST",{password:pw},function(err,d){
     if(!err && d && d.ok){
       ADMIN_TOKEN = pw;
-      auth = "admin";
-      g("apw").value = "";
+      SB_KEY = d.sbKey||"";
+      auth = "admin"; g("apw").value = "";
       ss2("a");
-      // Load patients from cloud
       sbLoad(function(){
-        // Migrate any local-only patients to cloud
         var local = lload();
-        if(local){
-          local.forEach(function(lp){
-            var exists = pts.find(function(p){ return p.id===lp.id; });
-            if(!exists){
-              pts.push(lp);
-              apiCall("patients","POST",toRow(lp));
-            }
-          });
-          lsave();
-        }
+        if(local){ local.forEach(function(lp){ if(!pts.find(function(p){return p.id===lp.id;})){pts.push(lp); sbSave(lp);} }); lsave(); }
         gv("d");
       });
     } else {
-      g("le1").textContent="Incorrect password.";
-      g("le1").style.display="block";
+      g("le1").textContent="Incorrect password."; g("le1").style.display="block";
     }
   });
 }
 function plog(){
-  var name = g("pnm").value.trim(), pin = g("ppi").value.trim();
+  var name=g("pnm").value.trim(), pin=g("ppi").value.trim();
   if(!name||!pin) return;
   apiCall("patient-login","POST",{name:name,pin:pin},function(err,d){
     if(!err && d && d.ok && d.patient){
-      var p = fromRow(d.patient);
-      // Update local cache
-      var idx = pts.findIndex(function(x){ return x.id===p.id; });
+      var p=fromRow(d.patient);
+      var idx=pts.findIndex(function(x){return x.id===p.id;}); 
       if(idx>=0) pts[idx]=p; else pts.push(p);
-      lsave();
-      auth=p.id; cur=p; ptab="ex";
-      g("ppi").value=""; ss2("p"); rpv();
+      lsave(); auth=p.id; cur=p; ptab="ex"; g("ppi").value=""; ss2("p"); rpv();
     } else {
       g("le2").textContent=L().le; g("le2").style.display="block";
     }
