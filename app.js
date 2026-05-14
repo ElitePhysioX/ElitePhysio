@@ -155,10 +155,28 @@ function alog(){
   apiCall("admin-login","POST",{password:pw},function(err,d){
     if(!err && d && d.ok){
       ADMIN_TOKEN = pw;
-      auth="admin"; g("apw").value="";
-      sbLoad(function(){ ss2("a"); gv("d"); });
+      auth = "admin";
+      g("apw").value = "";
+      ss2("a");
+      // Load patients from cloud
+      sbLoad(function(){
+        // Migrate any local-only patients to cloud
+        var local = lload();
+        if(local){
+          local.forEach(function(lp){
+            var exists = pts.find(function(p){ return p.id===lp.id; });
+            if(!exists){
+              pts.push(lp);
+              apiCall("patients","POST",toRow(lp));
+            }
+          });
+          lsave();
+        }
+        gv("d");
+      });
     } else {
-      g("le1").textContent="Incorrect password."; g("le1").style.display="block";
+      g("le1").textContent="Incorrect password.";
+      g("le1").style.display="block";
     }
   });
 }
@@ -1255,22 +1273,5 @@ function dprint(id){
 
 // ── Init ──
 ss2("l");
-// Show loading state
-pts = lload() || DM; // load local first for instant display
+pts = lload() || DM;
 setL("en");
-// Then sync from Supabase
-sbLoad(function(){
-  // Migrate existing localStorage patients to Supabase if needed
-  var local = lload();
-  if(local && local.length > 0){
-    var sbIds = pts.map(function(p){ return p.id; });
-    var toMigrate = local.filter(function(p){ return sbIds.indexOf(p.id) === -1; });
-    if(toMigrate.length > 0){
-      toMigrate.forEach(function(p){ sbSave(p); });
-      pts = pts.concat(toMigrate);
-      lsave();
-    }
-  }
-  // Re-render if admin is logged in
-  if(auth==="admin") rd();
-});
