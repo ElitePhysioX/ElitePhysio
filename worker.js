@@ -4,8 +4,8 @@
 // ═══════════════════════════════════════
 
 const SB_URL = "https://akovtufhkfnjrzqvzdyv.supabase.co";
-const SB_KEY = "REPLACE_WITH_NEW_SUPABASE_KEY"; // paste new key here
-const ADMIN_PASSWORD = "REPLACE_WITH_YOUR_PASSWORD"; // set your admin password here
+const SB_KEY = "sb_publishable_CjOEaHEE44FTg41AOo4iBQ_1ox7cVxr"; // paste new key here
+const ADMIN_PASSWORD = "elitephysio39"; // set your admin password here
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
