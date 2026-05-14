@@ -4,39 +4,81 @@
 ═══════════════════════════════════════ */
 
 // ── App State ──
-var APW = "elitephysio2024";   // Admin password
-var SK  = "ep12";              // localStorage key
-var AI_KEY = "";               // Set your Anthropic API key here
+var APW = ""; // password verified server-side
+var SK  = "ep12";
+var AI_KEY = "";
 var pts = [], lng = "en", auth = null, cur = null, ctab = "ex", ptab = "ex", stmr = null, mmode = "";
 
-// ── Helpers ──
-function L(){ return T[lng]; }
-function g(id){ return document.getElementById(id); }
+// ── Secure API (all calls go through our worker, secrets never in browser) ──
+var ADMIN_TOKEN = ""; // set after admin logs in
 
-function av(n, s){
-  s = s || 38;
-  var i = (n || "?").split(" ").map(function(x){ return x[0]; }).join("").slice(0, 2);
-  return '<div class="av" style="width:'+s+'px;height:'+s+'px;font-size:'+(s>44?17:13)+'px">'+i+'</div>';
+function apiCall(path, method, body, cb){
+  var opts = { method: method||"GET", headers: { "Content-Type":"application/json" } };
+  if(ADMIN_TOKEN) opts.headers["Authorization"] = "Bearer "+ADMIN_TOKEN;
+  if(body) opts.body = JSON.stringify(body);
+  fetch("/api/"+path, opts)
+    .then(function(r){ return r.json(); })
+    .then(function(d){ if(cb) cb(null,d); })
+    .catch(function(e){ if(cb) cb(e); });
 }
-function bdg(t, c){ c = c || "#2B6CC4"; return '<span class="bdg" style="background:'+c+'15;color:'+c+';border:1px solid '+c+'40">'+t+'</span>'; }
-function sbdg(s){ return bdg(s || "Active", SC[s] || "#2B6CC4"); }
-function waLink(p){
-  return p.phone ? '<a href="https://wa.me/972'+p.phone.replace(/^0/,"").replace(/-/g,"")
-    +'" target="_blank" onclick="event.stopPropagation()" style="font-size:12px;color:#16a34a;border:1px solid #bbf7d0;border-radius:4px;padding:2px 8px;text-decoration:none;font-weight:600">'+L().wa+'</a>' : "";
+
+function toRow(p){
+  return {
+    id:p.id, name:p.name||"", name_he:p.nameHe||"", sport:p.sport||"",
+    age:p.age||"", phone:p.phone||"", injury:p.injury||"", pin:p.pin||"0000",
+    status:p.status||"Active", notes:p.notes||"", sessions:p.sessions||0,
+    start_date:p.startDate||"", exercises:p.exercises||[],
+    follow_ups:p.followUps||[], eval:p.eval||""
+  };
 }
-function ytUrl(n){ return "https://www.youtube.com/results?search_query="+encodeURIComponent((n||"exercise")+" physical therapy technique"); }
+function fromRow(r){
+  return {
+    id:r.id, name:r.name||"", nameHe:r.name_he||"", sport:r.sport||"",
+    age:r.age||"", phone:r.phone||"", injury:r.injury||"", pin:r.pin||"0000",
+    status:r.status||"Active", notes:r.notes||"", sessions:r.sessions||0,
+    startDate:r.start_date||"", exercises:r.exercises||[],
+    followUps:r.follow_ups||[], files:[], eval:r.eval||""
+  };
+}
+
+function sbLoad(cb){
+  apiCall("patients","GET",null,function(err,rows){
+    if(!err && Array.isArray(rows)){
+      pts = rows.map(fromRow);
+      try{ localStorage.setItem(SK, JSON.stringify(pts)); }catch(e){}
+    } else {
+      try{ var d=localStorage.getItem(SK); if(d) pts=JSON.parse(d); }catch(e){}
+    }
+    if(cb) cb();
+  });
+}
 
 // ── Storage ──
 function lsave(){ try{ localStorage.setItem(SK, JSON.stringify(pts)); }catch(e){} }
-function lload(){ try{ var d = localStorage.getItem(SK); if(d) return JSON.parse(d); }catch(e){} return null; }
+function lload(){ try{ var d=localStorage.getItem(SK); if(d) return JSON.parse(d); }catch(e){} return null; }
+
+var sbSaveTimer = null;
 function sv(){
   clearTimeout(stmr);
+  clearTimeout(sbSaveTimer);
+  lsave();
   stmr = setTimeout(function(){
-    g("svi").style.display = "flex";
-    lsave();
-    setTimeout(function(){ g("svi").style.display = "none"; }, 700);
-  }, 300);
+    var svi=g("svi"); if(svi) svi.style.display="flex";
+    setTimeout(function(){ var svi=g("svi"); if(svi) svi.style.display="none"; },700);
+  },300);
+  sbSaveTimer = setTimeout(function(){
+    var toSync = cur ? [cur] : pts;
+    toSync.forEach(function(p){ apiCall("patients","POST",toRow(p)); });
+  },500);
 }
+
+function dp(id){
+  pts=pts.filter(function(p){ return p.id!==id; });
+  lsave();
+  apiCall("patients/"+id,"DELETE");
+  cm(); rpl();
+}
+
 
 // ── Language ──
 function setL(l){
@@ -109,30 +151,33 @@ function setL(l){
 function toggleAdmin(){ var box=g("admin-box"); box.classList.toggle("hid"); if(!box.classList.contains("hid")) g("apw").focus(); }
 function ss2(s){ g("LS").classList.toggle("hid",s!=="l"); g("AS").classList.toggle("hid",s!=="a"); g("PS").classList.toggle("hid",s!=="p"); }
 function alog(){
-  if(g("apw").value===APW){ auth="admin"; g("apw").value=""; ss2("a"); gv("d"); }
-  else{ g("le1").textContent="Incorrect password."; g("le1").style.display="block"; }
-}
-function normName(s){ return (s||"").trim().toLowerCase().replace(/\s+/g," "); }
-function plog(){
-  var entered=normName(g("pnm").value), pi=g("ppi").value.trim(), m=null;
-  for(var i=0;i<pts.length;i++){
-    var p=pts[i];
-    var names=[p.name,p.nameHe,p.name+" / "+p.nameHe,p.nameHe+" / "+p.name].map(normName);
-    if(names.some(function(n){return n&&n===entered;})&&p.pin===pi){ m=p; break; }
-  }
-  // Fallback: try matching just first word of name (for "Eyal" matching "Eyal Carmel" etc)
-  if(!m){
-    for(var i=0;i<pts.length;i++){
-      var p=pts[i];
-      var allNames=[normName(p.name),normName(p.nameHe)];
-      var enteredFirst=entered.split(" ")[0];
-      if(allNames.some(function(n){return n&&(n.indexOf(entered)>-1||entered.indexOf(n)>-1);})){
-        if(p.pin===pi){ m=p; break; }
-      }
+  var pw = g("apw").value;
+  apiCall("admin-login","POST",{password:pw},function(err,d){
+    if(!err && d && d.ok){
+      ADMIN_TOKEN = pw;
+      auth="admin"; g("apw").value="";
+      sbLoad(function(){ ss2("a"); gv("d"); });
+    } else {
+      g("le1").textContent="Incorrect password."; g("le1").style.display="block";
     }
-  }
-  if(m){ auth=m.id; cur=m; ptab="ex"; g("ppi").value=""; ss2("p"); rpv(); }
-  else{ g("le2").textContent=L().le; g("le2").style.display="block"; }
+  });
+}
+function plog(){
+  var name = g("pnm").value.trim(), pin = g("ppi").value.trim();
+  if(!name||!pin) return;
+  apiCall("patient-login","POST",{name:name,pin:pin},function(err,d){
+    if(!err && d && d.ok && d.patient){
+      var p = fromRow(d.patient);
+      // Update local cache
+      var idx = pts.findIndex(function(x){ return x.id===p.id; });
+      if(idx>=0) pts[idx]=p; else pts.push(p);
+      lsave();
+      auth=p.id; cur=p; ptab="ex";
+      g("ppi").value=""; ss2("p"); rpv();
+    } else {
+      g("le2").textContent=L().le; g("le2").style.display="block";
+    }
+  });
 }
 function dout(){ auth=null; cur=null; ss2("l"); g("le2").style.display="none"; g("le1").style.display="none"; }
 
@@ -1209,6 +1254,23 @@ function dprint(id){
 }
 
 // ── Init ──
-pts = lload() || DM;
 ss2("l");
+// Show loading state
+pts = lload() || DM; // load local first for instant display
 setL("en");
+// Then sync from Supabase
+sbLoad(function(){
+  // Migrate existing localStorage patients to Supabase if needed
+  var local = lload();
+  if(local && local.length > 0){
+    var sbIds = pts.map(function(p){ return p.id; });
+    var toMigrate = local.filter(function(p){ return sbIds.indexOf(p.id) === -1; });
+    if(toMigrate.length > 0){
+      toMigrate.forEach(function(p){ sbSave(p); });
+      pts = pts.concat(toMigrate);
+      lsave();
+    }
+  }
+  // Re-render if admin is logged in
+  if(auth==="admin") rd();
+});
