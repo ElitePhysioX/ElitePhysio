@@ -187,15 +187,16 @@ function alog(){
     if(!err && d && d.ok){
       ADMIN_TOKEN = pw;
       SB_KEY = d.sbKey||"";
-      auth = "admin"; g("apw").value = "";
+      auth="admin"; g("apw").value="";
       ss2("a");
       sbLoad(function(){
-        var local = lload();
+        var local=lload();
         if(local){ local.forEach(function(lp){ if(!pts.find(function(p){return p.id===lp.id;})){pts.push(lp); sbSave(lp);} }); lsave(); }
         gv("d");
       });
     } else {
-      g("le1").textContent="Incorrect password."; g("le1").style.display="block";
+      g("le1").textContent="Incorrect password. Check worker.js has the right password.";
+      g("le1").style.display="block";
     }
   });
 }
@@ -205,11 +206,19 @@ function plog(){
   apiCall("patient-login","POST",{name:name,pin:pin},function(err,d){
     if(!err && d && d.ok && d.patient){
       var p=fromRow(d.patient);
-      var idx=pts.findIndex(function(x){return x.id===p.id;}); 
+      var idx=pts.findIndex(function(x){return x.id===p.id;});
       if(idx>=0) pts[idx]=p; else pts.push(p);
       lsave(); auth=p.id; cur=p; ptab="ex"; g("ppi").value=""; ss2("p"); rpv();
     } else {
-      g("le2").textContent=L().le; g("le2").style.display="block";
+      // Fallback to local data if worker fails
+      var norm=function(s){return (s||"").trim().toLowerCase().replace(/\s+/g," ");};
+      var entered=norm(name);
+      var m=pts.find(function(p){
+        return [norm(p.name),norm(p.nameHe)].some(function(n){return n&&(n===entered||n.includes(entered)||entered.includes(n));})
+          && p.pin===pin;
+      });
+      if(m){ auth=m.id; cur=m; ptab="ex"; g("ppi").value=""; ss2("p"); rpv(); }
+      else { g("le2").textContent=L().le; g("le2").style.display="block"; }
     }
   });
 }
