@@ -9,6 +9,15 @@ var SK  = "ep12";
 var AI_KEY = "";
 var pts = [], lng = "en", auth = null, cur = null, ctab = "ex", ptab = "ex", stmr = null, mmode = "";
 
+// ── Helpers ──
+function L(){ return T[lng]; }
+function g(id){ return document.getElementById(id); }
+function av(n,s){ s=s||38; var i=(n||"?").split(" ").map(function(x){return x[0];}).join("").slice(0,2); return '<div class="av" style="width:'+s+'px;height:'+s+'px;font-size:'+(s>44?17:13)+'px">'+i+'</div>'; }
+function bdg(t,c){ c=c||"#2B6CC4"; return '<span class="bdg" style="background:'+c+'15;color:'+c+';border:1px solid '+c+'40">'+t+'</span>'; }
+function sbdg(s){ return bdg(s||"Active",SC[s]||"#2B6CC4"); }
+function waLink(p){ return p.phone?'<a href="https://wa.me/972'+p.phone.replace(/^0/,"").replace(/-/g,"")+'\" target="_blank" onclick="event.stopPropagation()" style="font-size:12px;color:#16a34a;border:1px solid #bbf7d0;border-radius:4px;padding:2px 8px;text-decoration:none;font-weight:600">'+L().wa+'</a>':""; }
+function ytUrl(n){ return "https://www.youtube.com/results?search_query="+encodeURIComponent((n||"exercise")+" physical therapy technique"); }
+
 // ── Secure API ──
 var ADMIN_TOKEN = "";
 var SB_URL = "https://akovtufhkfnjrzqvzdyv.supabase.co";
