@@ -183,22 +183,20 @@ function toggleAdmin(){ var box=g("admin-box"); box.classList.toggle("hid"); if(
 function ss2(s){ g("LS").classList.toggle("hid",s!=="l"); g("AS").classList.toggle("hid",s!=="a"); g("PS").classList.toggle("hid",s!=="p"); }
 function alog(){
   var pw = g("apw").value;
-  apiCall("admin-login","POST",{password:pw},function(err,d){
-    if(!err && d && d.ok){
-      ADMIN_TOKEN = pw;
-      SB_KEY = d.sbKey||"";
-      auth="admin"; g("apw").value="";
-      ss2("a");
-      sbLoad(function(){
-        var local=lload();
-        if(local){ local.forEach(function(lp){ if(!pts.find(function(p){return p.id===lp.id;})){pts.push(lp); sbSave(lp);} }); lsave(); }
-        gv("d");
-      });
-    } else {
-      g("le1").textContent="Incorrect password. Check worker.js has the right password.";
-      g("le1").style.display="block";
-    }
-  });
+  if(pw === "elitephysio39"){
+    ADMIN_TOKEN = pw;
+    SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFrb3Z0dWZoa2ZuanJ6cXZ6ZHl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MzQwODYsImV4cCI6MjA5NDMxMDA4Nn0.2J-NgkPEas1_SMYHHuovfrdTggUfJlyitRu5K-pbMSM";
+    auth="admin"; g("apw").value="";
+    ss2("a");
+    sbLoad(function(){
+      var local=lload();
+      if(local){ local.forEach(function(lp){ if(!pts.find(function(p){return p.id===lp.id;})){pts.push(lp); sbSave(lp);} }); lsave(); }
+      gv("d");
+    });
+  } else {
+    g("le1").textContent="Incorrect password.";
+    g("le1").style.display="block";
+  }
 }
 function plog(){
   var name=g("pnm").value.trim(), pin=g("ppi").value.trim();
