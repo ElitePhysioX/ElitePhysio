@@ -4,7 +4,7 @@
 // ═══════════════════════════════════════
 
 const SB_URL = "https://akovtufhkfnjrzqvzdyv.supabase.co";
-const SB_KEY = "sb_publishable_CjOEaHEE44FTg41AOo4iBQ_1ox7cVxr";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFrb3Z0dWZoa2ZuanJ6cXZ6ZHl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MzQwODYsImV4cCI6MjA5NDMxMDA4Nn0.2J-NgkPEas1_SMYHHuovfrdTggUfJlyitRu5K-pbMSM";
 const ADMIN_PASSWORD = "elitephysio39";
 
 const CORS = {
@@ -56,7 +56,7 @@ export default {
       // Admin login
       if(path === "/api/admin-login"){
         if(body.password === ADMIN_PASSWORD){
-          return json({ ok: true });
+          return json({ ok: true, sbKey: SB_KEY });
         }
         return json({ ok: false, error: "Wrong password" }, 401);
       }
