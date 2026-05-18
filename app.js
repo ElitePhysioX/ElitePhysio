@@ -188,9 +188,26 @@ function alog(){
     SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFrb3Z0dWZoa2ZuanJ6cXZ6ZHl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MzQwODYsImV4cCI6MjA5NDMxMDA4Nn0.2J-NgkPEas1_SMYHHuovfrdTggUfJlyitRu5K-pbMSM";
     auth="admin"; g("apw").value="";
     ss2("a");
+    // First load local data so we never show empty
+    var local = lload();
+    if(local && local.length > 0) pts = local;
+    // Then sync with Supabase
     sbLoad(function(){
-      var local=lload();
-      if(local){ local.forEach(function(lp){ if(!pts.find(function(p){return p.id===lp.id;})){pts.push(lp); sbSave(lp);} }); lsave(); }
+      // If Supabase is empty but we have local data, migrate it up
+      if(pts.length === 0 && local && local.length > 0){
+        pts = local;
+        pts.forEach(function(p){ sbSave(p); });
+        lsave();
+      } else if(local && local.length > 0){
+        // Merge: add any local patients not yet in Supabase
+        local.forEach(function(lp){
+          if(!pts.find(function(p){ return p.id===lp.id; })){
+            pts.push(lp);
+            sbSave(lp);
+          }
+        });
+        lsave();
+      }
       gv("d");
     });
   } else {
