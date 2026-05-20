@@ -218,43 +218,14 @@ function alog(){
 function plog(){
   var name=g("pnm").value.trim(), pin=g("ppi").value.trim();
   if(!name||!pin) return;
-  var SB_KEY_P="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFrb3Z0dWZoa2ZuanJ6cXZ6ZHl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MzQwODYsImV4cCI6MjA5NDMxMDA4Nn0.2J-NgkPEas1_SMYHHuovfrdTggUfJlyitRu5K-pbMSM";
-  var norm=function(s){return (s||"").trim().toLowerCase().replace(/\s+/g," ");};
-  var entered=norm(name);
-  // Fetch all patients from Supabase and match
-  fetch("https://akovtufhkfnjrzqvzdyv.supabase.co/rest/v1/patients?select=*",{
-    headers:{"apikey":SB_KEY_P,"Authorization":"Bearer "+SB_KEY_P}
-  }).then(function(r){return r.json();}).then(function(rows){
-    var match=null;
-    if(Array.isArray(rows)){
-      match=rows.find(function(p){
-        return [norm(p.name),norm(p.name_he)].some(function(n){
-          return n&&(n===entered||n.includes(entered)||entered.includes(n));
-        }) && p.pin===pin;
-      });
-    }
-    if(match){
-      var p=fromRow(match);
-      var idx=pts.findIndex(function(x){return x.id===p.id;});
-      if(idx>=0) pts[idx]=p; else pts.push(p);
-      lsave(); auth=p.id; cur=p; ptab="ex"; g("ppi").value=""; ss2("p"); rpv();
+  apiCall("patient-login","POST",{name:name,pin:pin},function(err,d){
+    if(!err && d && d.ok && d.patient){
+      var p=fromRow(d.patient);
+      pts=[p]; lsave();
+      auth=p.id; cur=p; ptab="ex"; g("ppi").value=""; ss2("p"); rpv();
     } else {
-      // Fallback to local
-      var m=pts.find(function(p){
-        return [norm(p.name),norm(p.nameHe)].some(function(n){return n&&(n===entered||n.includes(entered)||entered.includes(n));})
-          && p.pin===pin;
-      });
-      if(m){ auth=m.id; cur=m; ptab="ex"; g("ppi").value=""; ss2("p"); rpv(); }
-      else { g("le2").textContent=L().le; g("le2").style.display="block"; }
+      g("le2").textContent=L().le; g("le2").style.display="block";
     }
-  }).catch(function(){
-    // Network error - try local
-    var m=pts.find(function(p){
-      return [norm(p.name),norm(p.nameHe)].some(function(n){return n&&(n===entered||n.includes(entered)||entered.includes(n));})
-        && p.pin===pin;
-    });
-    if(m){ auth=m.id; cur=m; ptab="ex"; g("ppi").value=""; ss2("p"); rpv(); }
-    else { g("le2").textContent=L().le; g("le2").style.display="block"; }
   });
 }
 function dout(){ auth=null; cur=null; ss2("l"); g("le2").style.display="none"; g("le1").style.display="none"; }
