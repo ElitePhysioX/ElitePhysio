@@ -474,7 +474,7 @@ function renderPatientView(p){
       var eDesc = isHe&&e.descHe ? e.descHe : (e.desc||e.descHe);
       var eTips = isHe&&e.tipsHe ? e.tipsHe : (e.tips||e.tipsHe);
       var checked = workoutMode && exChecked[i];
-      var hasTimer = e.timerSecs && parseInt(e.timerSecs)>0;
+      card += '<div style="font-size:13px;color:#4a6a8a;margin-bottom:6px"><span style="font-weight:600;color:#2B6CC4">'+e.sets+'</span> &times; <span style="font-weight:600;color:#2B6CC4">'+e.reps+'</span> reps</div>';
 
       var cardStyle = 'direction:'+(isHe?"rtl":"ltr")+';transition:all 0.2s ease;';
       if(checked) cardStyle += 'background:#f0fff8;border-color:#00a86b;opacity:0.8;';
@@ -496,14 +496,18 @@ function renderPatientView(p){
       card += '</div>';
 
       // Sets × reps OR timer
-      if(hasTimer){
-        card += '<div style="font-size:13px;color:#4a6a8a;margin-bottom:6px"><span style="font-weight:600;color:#2B6CC4">'+e.sets+'</span> sets &times; <span style="font-weight:600;color:#e67e22">⏱ '+e.timerSecs+'s</span></div>';
-        if(workoutMode){
-          card += '<button onclick="startTimer('+i+','+e.timerSecs+')" id="tbtn'+i+'" style="background:#e67e22;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px">⏱ '+(lng==="he"?"הפעל טיימר":"Start Timer")+'</button>'+
-            '<div id="tdisp'+i+'" style="font-size:22px;font-weight:800;color:#e67e22;display:none;margin-bottom:8px"></div>';
-        }
-      } else {
-        card += '<div style="font-size:13px;color:#4a6a8a;margin-bottom:6px"><span style="font-weight:600;color:#2B6CC4">'+e.sets+'</span> &times; <span style="font-weight:600;color:#2B6CC4">'+e.reps+'</span> reps</div>';
+      // Timer section - always show in workout mode, patient controls it
+      if(workoutMode){
+        var timerDefault = (e.timerSecs && parseInt(e.timerSecs)>0) ? e.timerSecs : 30;
+        card += '<div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap">'+
+          '<input id="tsec'+i+'" type="number" min="1" max="300" value="'+timerDefault+'" '+
+          'style="width:65px;padding:5px 8px;border:1.5px solid #e67e22;border-radius:8px;font-size:14px;font-weight:700;color:#e67e22;text-align:center">'+
+          '<span style="font-size:12px;color:#4a6a8a">'+(lng==="he"?"שניות":"sec")+'</span>'+
+          '<button onclick="startTimer('+i+',document.getElementById(\'tsec'+i+'\').value)" id="tbtn'+i+'" '+
+          'style="background:#e67e22;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer">'+
+          '⏱ '+(lng==="he"?"טיימר":"Timer")+'</button>'+
+          '<div id="tdisp'+i+'" style="font-size:22px;font-weight:800;color:#e67e22;display:none"></div>'+
+          '</div>';
       }
 
       if(eDesc) card += '<div style="font-size:13px;color:#1a2535;margin-bottom:3px">'+eDesc+'</div>';
@@ -547,19 +551,24 @@ function toggleCheck(i){
 function startTimer(idx, secs){
   if(activeTimer){ clearInterval(activeTimer); activeTimer=null; }
   var s = parseInt(secs);
+  if(!s || s<=0) s=30;
   var disp = g("tdisp"+idx);
   var btn = g("tbtn"+idx);
+  var inp = g("tsec"+idx);
   if(!disp) return;
   disp.style.display="block";
-  if(btn) btn.style.display="none";
+  if(btn) btn.textContent="⏹ Stop";
+  if(btn) btn.onclick=function(){ clearInterval(activeTimer); activeTimer=null; disp.style.display="none"; btn.textContent="⏱ "+(lng==="he"?"טיימר":"Timer"); btn.onclick=function(){startTimer(idx,g("tsec"+idx).value);}; };
+  if(inp) inp.style.display="none";
   var tick = function(){
     var m=Math.floor(s/60), sec=s%60;
     disp.textContent = m+":"+(sec<10?"0":"")+sec;
     if(s<=0){
       clearInterval(activeTimer); activeTimer=null;
-      disp.textContent="✓ Done!";
+      disp.textContent="✓ "+(lng==="he"?"סיום!":"Done!");
       disp.style.color="#00a86b";
-      // Play beep sound
+      if(btn){ btn.textContent="⏱ "+(lng==="he"?"טיימר":"Timer"); btn.onclick=function(){startTimer(idx,g("tsec"+idx).value);}; }
+      if(inp) inp.style.display="";
       try{
         var ctx=new (window.AudioContext||window.webkitAudioContext)();
         for(var b=0;b<3;b++){
