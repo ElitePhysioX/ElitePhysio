@@ -183,37 +183,30 @@ function toggleAdmin(){ var box=g("admin-box"); box.classList.toggle("hid"); if(
 function ss2(s){ g("LS").classList.toggle("hid",s!=="l"); g("AS").classList.toggle("hid",s!=="a"); g("PS").classList.toggle("hid",s!=="p"); }
 function alog(){
   var pw = g("apw").value;
-  if(pw === "elitephysio39"){
-    ADMIN_TOKEN = pw;
-    SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFrb3Z0dWZoa2ZuanJ6cXZ6ZHl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MzQwODYsImV4cCI6MjA5NDMxMDA4Nn0.2J-NgkPEas1_SMYHHuovfrdTggUfJlyitRu5K-pbMSM";
-    auth="admin"; g("apw").value="";
-    ss2("a");
-    // First load local data so we never show empty
-    var local = lload();
-    if(local && local.length > 0) pts = local;
-    // Then sync with Supabase
-    sbLoad(function(){
-      // If Supabase is empty but we have local data, migrate it up
-      if(pts.length === 0 && local && local.length > 0){
-        pts = local;
-        pts.forEach(function(p){ sbSave(p); });
-        lsave();
-      } else if(local && local.length > 0){
-        // Merge: add any local patients not yet in Supabase
-        local.forEach(function(lp){
-          if(!pts.find(function(p){ return p.id===lp.id; })){
-            pts.push(lp);
-            sbSave(lp);
-          }
-        });
-        lsave();
-      }
-      gv("d");
-    });
-  } else {
-    g("le1").textContent="Incorrect password.";
-    g("le1").style.display="block";
-  }
+  apiCall("admin-login","POST",{password:pw},function(err,d){
+    if(!err && d && d.ok){
+      ADMIN_TOKEN = pw;
+      SB_KEY = d.sbKey||"";
+      auth="admin"; g("apw").value="";
+      sessionStorage.setItem("ep_session", JSON.stringify({auth:"admin", token:pw, sbKey:SB_KEY, lng:lng}));
+      ss2("a");
+      sbLoad(function(){
+        var local=lload();
+        if(local && local.length>0){
+          local.forEach(function(lp){
+            if(!pts.find(function(p){return p.id===lp.id;})){
+              pts.push(lp); sbSave(lp);
+            }
+          });
+          lsave();
+        }
+        gv("d");
+      });
+    } else {
+      g("le1").textContent="Incorrect password.";
+      g("le1").style.display="block";
+    }
+  });
 }
 function plog(){
   var name=g("pnm").value.trim(), pin=g("ppi").value.trim();
@@ -222,13 +215,15 @@ function plog(){
     if(!err && d && d.ok && d.patient){
       var p=fromRow(d.patient);
       pts=[p]; lsave();
-      auth=p.id; cur=p; ptab="ex"; g("ppi").value=""; ss2("p"); rpv();
+      auth=p.id; cur=p; ptab="ex"; g("ppi").value="";
+      sessionStorage.setItem("ep_session", JSON.stringify({auth:p.id, ptab:"ex", lng:lng}));
+      ss2("p"); rpv();
     } else {
       g("le2").textContent=L().le; g("le2").style.display="block";
     }
   });
 }
-function dout(){ auth=null; cur=null; ss2("l"); g("le2").style.display="none"; g("le1").style.display="none"; }
+function dout(){ auth=null; cur=null; ADMIN_TOKEN=""; SB_KEY=""; sessionStorage.removeItem("ep_session"); ss2("l"); g("le2").style.display="none"; g("le1").style.display="none"; }
 
 // ── Navigation ──
 function gv(v){
@@ -437,6 +432,10 @@ function rpv(){
   renderPatientView(p);
 }
 
+var workoutMode = false;
+var exChecked = {};
+var activeTimer = null;
+
 function renderPatientView(p){
   g("psh").innerHTML=
     '<div style="display:flex;align-items:center;gap:15px;margin-bottom:14px">'+av(pn(p),52)+
@@ -452,32 +451,132 @@ function renderPatientView(p){
     return '<button class="nb'+(ptab===t[0]?" on":"")+'" onclick="spt(\''+t[0]+'\')">'+t[1]+
       ' <span style="background:rgba(255,255,255,0.25);border-radius:9px;padding:1px 7px;font-size:11px">'+t[2]+'</span></button>';
   }).join("");
-  g("psex").innerHTML=(p.exercises||[]).length?(p.exercises||[]).map(function(e,i){
-    var isHe;
-    if(lng==="he" && e.nameHe) isHe=true;
-    else if(lng==="en" && e.name) isHe=false;
-    else isHe = e.displayLng==="he" || (!e.name && e.nameHe);
-    var eName = isHe&&e.nameHe ? e.nameHe : (e.name||e.nameHe);
-    var eDesc = isHe&&e.descHe ? e.descHe : (e.desc||e.descHe);
-    var eTips = isHe&&e.tipsHe ? e.tipsHe : (e.tips||e.tipsHe);
-    var eid = JSON.stringify({name:e.name||"",nameHe:e.nameHe||"",desc:e.desc||"",descHe:e.descHe||"",tips:e.tips||"",tipsHe:e.tipsHe||"",sets:e.sets,reps:e.reps}).replace(/"/g,"&quot;");
-    return '<div class="xcard" onclick="showExDetail('+i+')" style="direction:'+(isHe?"rtl":"ltr")+';cursor:pointer;transition:all 0.2s ease" '+
-      'onmouseover="this.style.background=\'#e8f2ff\';this.style.borderColor=\'rgba(43,108,196,0.4)\';this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 20px rgba(43,108,196,0.15)\'" '+
-      'onmouseout="this.style.background=\'\';this.style.borderColor=\'\';this.style.transform=\'\';this.style.boxShadow=\'\'">'+
-      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">'+bdg("#"+(i+1))+
-      '<span style="font-weight:700;font-size:15px;color:#1a3a6e">'+eName+'</span>'+
-      '<span style="font-size:11px;color:#4a6a8a;margin-left:auto">tap for details →</span></div>'+
-      '<div style="font-size:13px;color:#4a6a8a;margin-bottom:3px"><span style="font-weight:600;color:#2B6CC4">'+e.sets+'</span> &times; <span style="font-weight:600;color:#2B6CC4">'+e.reps+'</span> reps</div>'+
-      (eDesc?'<div style="font-size:13px;color:#1a2535;margin-bottom:3px">'+eDesc+'</div>':"")+
-      (eTips?'<div style="font-size:13px;color:#00a86b;margin-bottom:8px">&#128161; '+eTips+'</div>':"")+
-      '<a href="'+ytUrl(eName)+'" target="_blank" onclick="event.stopPropagation()" style="font-size:12px;color:#6d28d9;border:1px solid rgba(109,40,217,0.3);border-radius:5px;padding:4px 11px;text-decoration:none;font-weight:600;display:inline-block">'+L().wv+'</a></div>';
-  }).join(""):'<div style="color:#4a6a8a;font-size:14px;padding:14px 0">'+L().nx+'</div>';
+
+  var exHtml = '';
+  if((p.exercises||[]).length){
+    // Start Program / End Program button
+    exHtml += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
+    if(!workoutMode){
+      exHtml += '<button onclick="startWorkout()" style="background:linear-gradient(135deg,#00a86b,#00c47d);color:#fff;border:none;border-radius:10px;padding:10px 20px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(0,168,107,0.3)">▶ '+(lng==="he"?"התחל תוכנית":"Start Program")+'</button>';
+    } else {
+      var done = Object.values(exChecked).filter(Boolean).length;
+      exHtml += '<div style="font-size:14px;font-weight:700;color:#00a86b">✓ '+done+' / '+(p.exercises||[]).length+' '+(lng==="he"?"הושלמו":"done")+'</div>';
+      exHtml += '<button onclick="endWorkout()" style="background:#e74c3c;color:#fff;border:none;border-radius:10px;padding:10px 20px;font-size:14px;font-weight:700;cursor:pointer">■ '+(lng==="he"?"סיים":"Finish")+'</button>';
+    }
+    exHtml += '</div>';
+
+    exHtml += (p.exercises||[]).map(function(e,i){
+      var isHe;
+      if(lng==="he" && e.nameHe) isHe=true;
+      else if(lng==="en" && e.name) isHe=false;
+      else isHe = e.displayLng==="he" || (!e.name && e.nameHe);
+      var eName = isHe&&e.nameHe ? e.nameHe : (e.name||e.nameHe);
+      var eDesc = isHe&&e.descHe ? e.descHe : (e.desc||e.descHe);
+      var eTips = isHe&&e.tipsHe ? e.tipsHe : (e.tips||e.tipsHe);
+      var checked = workoutMode && exChecked[i];
+      var hasTimer = e.timerSecs && parseInt(e.timerSecs)>0;
+
+      var cardStyle = 'direction:'+(isHe?"rtl":"ltr")+';transition:all 0.2s ease;';
+      if(checked) cardStyle += 'background:#f0fff8;border-color:#00a86b;opacity:0.8;';
+
+      var card = '<div class="xcard" style="'+cardStyle+'">';
+
+      // Workout mode: checkbox on the left
+      if(workoutMode){
+        card += '<div style="display:flex;align-items:flex-start;gap:12px">';
+        card += '<div onclick="toggleCheck('+i+')" style="width:28px;height:28px;border-radius:50%;border:2.5px solid '+(checked?'#00a86b':'#2B6CC4')+';background:'+(checked?'#00a86b':'transparent')+';display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;margin-top:2px;transition:all 0.2s">'+(checked?'<span style="color:#fff;font-size:16px">✓</span>':'')+'</div>';
+        card += '<div style="flex:1">';
+      } else {
+        card += '<div onclick="showExDetail('+i+')" style="cursor:pointer" onmouseover="this.parentElement.style.background=\'#e8f2ff\';this.parentElement.style.transform=\'translateY(-2px)\'" onmouseout="this.parentElement.style.background=\'\';this.parentElement.style.transform=\'\'">';
+      }
+
+      card += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">'+bdg("#"+(i+1))+
+        '<span style="font-weight:700;font-size:15px;color:'+(checked?'#00a86b':'#1a3a6e')+'">'+eName+'</span>';
+      if(!workoutMode) card += '<span style="font-size:11px;color:#4a6a8a;margin-left:auto">tap for details →</span>';
+      card += '</div>';
+
+      // Sets × reps OR timer
+      if(hasTimer){
+        card += '<div style="font-size:13px;color:#4a6a8a;margin-bottom:6px"><span style="font-weight:600;color:#2B6CC4">'+e.sets+'</span> sets &times; <span style="font-weight:600;color:#e67e22">⏱ '+e.timerSecs+'s</span></div>';
+        if(workoutMode){
+          card += '<button onclick="startTimer('+i+','+e.timerSecs+')" id="tbtn'+i+'" style="background:#e67e22;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px">⏱ '+(lng==="he"?"הפעל טיימר":"Start Timer")+'</button>'+
+            '<div id="tdisp'+i+'" style="font-size:22px;font-weight:800;color:#e67e22;display:none;margin-bottom:8px"></div>';
+        }
+      } else {
+        card += '<div style="font-size:13px;color:#4a6a8a;margin-bottom:6px"><span style="font-weight:600;color:#2B6CC4">'+e.sets+'</span> &times; <span style="font-weight:600;color:#2B6CC4">'+e.reps+'</span> reps</div>';
+      }
+
+      if(eDesc) card += '<div style="font-size:13px;color:#1a2535;margin-bottom:3px">'+eDesc+'</div>';
+      if(eTips) card += '<div style="font-size:13px;color:#00a86b;margin-bottom:8px">&#128161; '+eTips+'</div>';
+      if(!workoutMode) card += '<a href="'+ytUrl(eName)+'" target="_blank" onclick="event.stopPropagation()" style="font-size:12px;color:#6d28d9;border:1px solid rgba(109,40,217,0.3);border-radius:5px;padding:4px 11px;text-decoration:none;font-weight:600;display:inline-block">'+L().wv+'</a>';
+
+      card += '</div>';
+      if(workoutMode) card += '</div>';
+      card += '</div>';
+      return card;
+    }).join("");
+  } else {
+    exHtml = '<div style="color:#4a6a8a;font-size:14px;padding:14px 0">'+L().nx+'</div>';
+  }
+  g("psex").innerHTML = exHtml;
+
   g("psfu").innerHTML=(p.followUps||[]).length?(p.followUps||[]).map(function(f){
     return '<div class="xcard"><div style="font-size:12px;color:#2B6CC4;font-weight:600;margin-bottom:4px">'+f.date+'</div>'+
       '<div style="font-size:14px;color:#1a2535;line-height:1.7">'+f.note+'</div></div>';
   }).join(""):'<div style="color:#4a6a8a;font-size:14px;padding:14px 0">'+L().nf+'</div>';
   spt(ptab);
 }
+
+function startWorkout(){
+  workoutMode=true; exChecked={};
+  renderPatientView(cur);
+}
+
+function endWorkout(){
+  workoutMode=false; exChecked={};
+  if(activeTimer){ clearInterval(activeTimer); activeTimer=null; }
+  renderPatientView(cur);
+}
+
+function toggleCheck(i){
+  exChecked[i] = !exChecked[i];
+  // Update just that card's checkbox visually
+  renderPatientView(cur);
+}
+
+function startTimer(idx, secs){
+  if(activeTimer){ clearInterval(activeTimer); activeTimer=null; }
+  var s = parseInt(secs);
+  var disp = g("tdisp"+idx);
+  var btn = g("tbtn"+idx);
+  if(!disp) return;
+  disp.style.display="block";
+  if(btn) btn.style.display="none";
+  var tick = function(){
+    var m=Math.floor(s/60), sec=s%60;
+    disp.textContent = m+":"+(sec<10?"0":"")+sec;
+    if(s<=0){
+      clearInterval(activeTimer); activeTimer=null;
+      disp.textContent="✓ Done!";
+      disp.style.color="#00a86b";
+      // Play beep sound
+      try{
+        var ctx=new (window.AudioContext||window.webkitAudioContext)();
+        for(var b=0;b<3;b++){
+          var osc=ctx.createOscillator(); var gain=ctx.createGain();
+          osc.connect(gain); gain.connect(ctx.destination);
+          osc.frequency.value=880; gain.gain.value=0.3;
+          osc.start(ctx.currentTime+b*0.3); osc.stop(ctx.currentTime+b*0.3+0.2);
+        }
+      }catch(e){}
+      return;
+    }
+    s--;
+  };
+  tick();
+  activeTimer = setInterval(tick, 1000);
+}
+
 function spt(t){ ptab=t; document.querySelectorAll("#pstb .nb").forEach(function(b,i){ b.classList.toggle("on",["ex","fu"][i]===t); }); g("psex").classList.toggle("hid",t!=="ex"); g("psfu").classList.toggle("hid",t!=="fu"); }
 
 // ── Modals ──
@@ -512,7 +611,8 @@ function om(m, editId){
       '<div style="grid-column:1/-1"><label class="lbl">Exercise Name (EN)</label><input class="inp" id="fen" placeholder="English name" value="'+(editEx?editEx.name:'')+'"></div>'+
       '<div style="grid-column:1/-1"><label class="lbl">שם תרגיל (עברית)</label><input class="inp" id="fenhe" dir="rtl" placeholder="שם בעברית" value="'+(editEx&&editEx.nameHe?editEx.nameHe:'')+'"></div>'+
       '<div><label class="lbl">'+Lx.se+'</label><input class="inp" id="fse" value="'+(editEx?editEx.sets:'')+'"></div>'+
-      '<div><label class="lbl">'+Lx.rp+'</label><input class="inp" id="frp" value="'+(editEx?editEx.reps:'')+'"></div>'+
+      '<div><label class="lbl">'+Lx.rp+' (or 0 for timer)</label><input class="inp" id="frp" value="'+(editEx?editEx.reps:'')+'"></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">⏱ Timer per set (seconds, 0 = use reps)</label><input class="inp" id="ftimer" type="number" min="0" placeholder="e.g. 30" value="'+(editEx&&editEx.timerSecs?editEx.timerSecs:'0')+'"></div>'+
       '<div style="grid-column:1/-1"><label class="lbl">Description (EN)</label><textarea class="inp" id="fde" style="height:44px">'+(editEx?editEx.desc:'')+'</textarea></div>'+
       '<div style="grid-column:1/-1"><label class="lbl">תיאור (עברית)</label><textarea class="inp" id="fdehe" dir="rtl" style="height:44px">'+(editEx&&editEx.descHe?editEx.descHe:'')+'</textarea></div>'+
       '<div style="grid-column:1/-1"><label class="lbl">Tips (EN)</label><textarea class="inp" id="fti" style="height:44px">'+(editEx?editEx.tips:'')+'</textarea></div>'+
@@ -1155,6 +1255,7 @@ function se2(editId){
     nameHe: finalNameHe,
     sets: g("fse").value,
     reps: g("frp").value,
+    timerSecs: g("ftimer")?parseInt(g("ftimer").value)||0:0,
     desc: g("fde")?g("fde").value.trim():"",
     descHe: g("fdehe")?g("fdehe").value.trim():"",
     tips: g("fti")?g("fti").value.trim():"",
@@ -1303,6 +1404,26 @@ function dprint(id){
 }
 
 // ── Init ──
-ss2("l");
 pts = lload() || DM;
-setL("en");
+// Restore session on refresh
+var _sess = null;
+try{ _sess = JSON.parse(sessionStorage.getItem("ep_session")); }catch(e){}
+if(_sess && _sess.auth){
+  auth = _sess.auth;
+  lng = _sess.lng || "en";
+  if(auth === "admin"){
+    ADMIN_TOKEN = _sess.token || "";
+    SB_KEY = _sess.sbKey || "";
+    ss2("a"); setL(lng); gv("d");
+    // Refresh data from Supabase in background
+    if(SB_KEY) sbLoad(function(){ rd(); });
+  } else {
+    // Patient session - find their data
+    var _sp = pts.find(function(p){ return p.id === auth; });
+    if(_sp){ cur = _sp; ptab = _sess.ptab||"ex"; ss2("p"); setL(lng); rpv(); }
+    else { ss2("l"); setL(lng); }
+  }
+} else {
+  ss2("l");
+  setL("en");
+}
