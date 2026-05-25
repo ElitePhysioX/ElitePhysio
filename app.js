@@ -459,6 +459,7 @@ function renderPatientView(p){
     (p.notes?'<div style="background:rgba(0,168,107,0.07);border-radius:8px;padding:11px 15px;border-left:3px solid #00a86b">'+
     '<div style="font-size:11px;color:#00a86b;font-weight:700;text-transform:uppercase;margin-bottom:3px">'+L().no+'</div>'+
     '<div style="font-size:14px;color:#1a2535">'+p.notes+'</div></div>':"");
+  var isHe = lng==="he";
   g("pstb").innerHTML=[["ex",L().mp,(p.exercises||[]).length],["fu",L().mn,(p.followUps||[]).length],["hi",isHe?"היסטוריה":"History",(p.workoutHistory||[]).length]].map(function(t){
     return '<button class="nb'+(ptab===t[0]?" on":"")+'" onclick="spt(\''+t[0]+'\')">'+t[1]+
       ' <span style="background:rgba(255,255,255,0.25);border-radius:9px;padding:1px 7px;font-size:11px">'+t[2]+'</span></button>';
