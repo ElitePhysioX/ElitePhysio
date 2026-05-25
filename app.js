@@ -504,8 +504,10 @@ function renderPatientView(p){
       if(!workoutMode) card += '<span style="font-size:11px;color:#4a6a8a;margin-left:auto">tap for details →</span>';
       card += '</div>';
 
-      // Sets × reps always visible
-      card += '<div style="font-size:13px;color:#4a6a8a;margin-bottom:6px"><span style="font-weight:600;color:#2B6CC4">'+e.sets+'</span> &times; <span style="font-weight:600;color:#2B6CC4">'+e.reps+'</span> reps</div>';
+      // Sets × reps + desc + tips tightly packed
+      card += '<div style="font-size:13px;color:#4a6a8a;margin-bottom:'+(workoutMode?'4':'6')+'px"><span style="font-weight:600;color:#2B6CC4">'+e.sets+'</span> &times; <span style="font-weight:600;color:#2B6CC4">'+e.reps+'</span> reps</div>';
+      if(eDesc) card += '<div style="font-size:13px;color:#1a2535;margin-bottom:3px">'+eDesc+'</div>';
+      if(eTips) card += '<div style="font-size:13px;color:#00a86b;margin-bottom:'+(workoutMode?'8':'8')+'px">&#128161; '+eTips+'</div>';
 
       // Timer + set counter in workout mode
       if(workoutMode){
@@ -513,46 +515,44 @@ function renderPatientView(p){
         var doneKey = "sets_"+i;
         var timeKey = "time_"+i;
         if(!exChecked[doneKey]) exChecked[doneKey]=0;
-        // Remember patient's custom time, fall back to preset or 30s
         if(!exChecked[timeKey]) exChecked[timeKey]=(e.timerSecs&&parseInt(e.timerSecs)>0)?e.timerSecs:30;
         var doneSets = exChecked[doneKey]||0;
         var savedTime = exChecked[timeKey]||30;
-        // Convert seconds to min:sec for display in input
         var tMin = Math.floor(savedTime/60), tSec = savedTime%60;
 
-        // Full width row below the exercise info, always direction:ltr for layout
-        card += '<div style="border-top:1px solid #f0f0f0;margin-top:10px;padding-top:10px;direction:ltr">';
+        // direction: sets on natural side, timer on opposite side
+        // Hebrew: text flows right-to-left → sets on right, timer on LEFT
+        // English: text flows left-to-right → sets on left, timer on RIGHT
+        card += '<div style="display:flex;justify-content:space-between;align-items:center;flex-direction:'+(isHe?'row-reverse':'row')+';gap:10px;flex-wrap:wrap;border-top:1px solid #f0f0f0;padding-top:10px">';
 
-        // Row 1: sets counter + manual +set button
-        card += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">'+
+        // Sets counter + manual button
+        card += '<div style="display:flex;align-items:center;gap:8px">'+
           '<div style="font-size:24px;font-weight:800;color:'+(doneSets>=totalSets?'#00a86b':'#2B6CC4')+'">'+doneSets+'/'+totalSets+'</div>'+
           '<div style="font-size:11px;color:#4a6a8a;line-height:1.3">'+(lng==="he"?"סטים<br>הושלמו":"sets<br>done")+'</div>'+
-          '<button onclick="exChecked[\'sets_'+i+'\']=Math.min('+(totalSets+1)+',(exChecked[\'sets_'+i+'\']+1)||1);renderPatientView(cur)" '+
-          'style="background:#00a86b;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:700;cursor:pointer">'+
-          '+ '+(lng==="he"?"סט":"Set")+'</button>'+
-          (doneSets>0?'<button onclick="exChecked[\'sets_'+i+'\']=Math.max(0,(exChecked[\'sets_'+i+'\']-1)||0);renderPatientView(cur)" style="background:rgba(0,0,0,0.06);border:none;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:13px">↩</button>':'')+'</div>';
+          '<button onclick="exChecked[\'sets_'+i+'\']=Math.min('+totalSets+',(exChecked[\'sets_'+i+'\']||0)+1);renderPatientView(cur)" '+
+          'style="background:#00a86b;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:13px;font-weight:700;cursor:pointer">'+
+          '+'+(lng==="he"?" סט":" Set")+'</button>'+
+          (doneSets>0?'<button onclick="exChecked[\'sets_'+i+'\']=Math.max(0,(exChecked[\'sets_'+i+'\']||0)-1);renderPatientView(cur)" style="background:rgba(0,0,0,0.06);border:none;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:13px">↩</button>':'')+'</div>';
 
-        // Row 2: timer controls on the RIGHT always
-        card += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'+
+        // Timer controls
+        card += '<div style="display:flex;flex-direction:column;align-items:'+(isHe?'flex-start':'flex-end')+';gap:4px">'+
           '<button onclick="startTimer('+i+',((parseInt(document.getElementById(\'tmin'+i+'\').value)||0)*60)+(parseInt(document.getElementById(\'tsec'+i+'\').value)||0),'+i+')" id="tbtn'+i+'" '+
           'style="background:#e67e22;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">'+
           '⏱ '+(lng==="he"?"טיימר":"Timer")+'</button>'+
-          '<div style="display:flex;align-items:center;gap:4px">'+
+          '<div style="display:flex;align-items:center;gap:3px">'+
           '<input id="tmin'+i+'" type="number" min="0" max="60" value="'+tMin+'" onchange="exChecked[\'time_'+i+'\']=((parseInt(this.value)||0)*60)+(parseInt(document.getElementById(\'tsec'+i+'\').value)||0)" '+
-          'style="width:48px;padding:5px 6px;border:1.5px solid #e67e22;border-radius:8px;font-size:14px;font-weight:700;color:#e67e22;text-align:center" placeholder="min">'+
-          '<span style="color:#e67e22;font-weight:700">:</span>'+
+          'style="width:44px;padding:4px 5px;border:1.5px solid #e67e22;border-radius:7px;font-size:13px;font-weight:700;color:#e67e22;text-align:center" placeholder="m">'+
+          '<span style="color:#e67e22;font-weight:800;font-size:15px">:</span>'+
           '<input id="tsec'+i+'" type="number" min="0" max="59" value="'+tSec+'" onchange="exChecked[\'time_'+i+'\']=((parseInt(document.getElementById(\'tmin'+i+'\').value)||0)*60)+(parseInt(this.value)||0)" '+
-          'style="width:48px;padding:5px 6px;border:1.5px solid #e67e22;border-radius:8px;font-size:14px;font-weight:700;color:#e67e22;text-align:center" placeholder="sec">'+
+          'style="width:44px;padding:4px 5px;border:1.5px solid #e67e22;border-radius:7px;font-size:13px;font-weight:700;color:#e67e22;text-align:center" placeholder="s">'+
           '</div>'+
-          '<div id="tdisp'+i+'" style="font-size:24px;font-weight:800;color:#e67e22;display:none;min-width:60px"></div>'+
+          '<div id="tdisp'+i+'" style="font-size:24px;font-weight:800;color:#e67e22;display:none;min-width:60px;text-align:center"></div>'+
           '</div>';
-
         card += '</div>';
       }
 
-      if(eDesc) card += '<div style="font-size:13px;color:#1a2535;margin-bottom:3px">'+eDesc+'</div>';
-      if(eTips) card += '<div style="font-size:13px;color:#00a86b;margin-bottom:8px">&#128161; '+eTips+'</div>';
       if(!workoutMode) card += '<a href="'+ytUrl(eName)+'" target="_blank" onclick="event.stopPropagation()" style="font-size:12px;color:#6d28d9;border:1px solid rgba(109,40,217,0.3);border-radius:5px;padding:4px 11px;text-decoration:none;font-weight:600;display:inline-block">'+L().wv+'</a>';
+      else card += '<a href="'+ytUrl(eName)+'" target="_blank" style="font-size:12px;color:#6d28d9;border:1px solid rgba(109,40,217,0.3);border-radius:5px;padding:4px 11px;text-decoration:none;font-weight:600;display:inline-block;margin-bottom:8px">'+L().wv+'</a>';
 
       card += '</div>';
       if(workoutMode) card += '</div>';
