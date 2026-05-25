@@ -24,12 +24,12 @@ async function sbFetch(SB_KEY, path, method="GET", body=null){
       "Content-Type": "application/json",
       "apikey": SB_KEY,
       "Authorization": "Bearer " + SB_KEY,
-      "Prefer": "resolution=merge-duplicates"
+      "Prefer": method==="PATCH" ? "return=minimal" : "resolution=merge-duplicates"
     }
   };
   if(body) opts.body = JSON.stringify(body);
   const r = await fetch(SB_URL + "/rest/v1/" + path, opts);
-  if(r.status === 204) return [];
+  if(r.status === 204 || r.status === 200 && method==="PATCH") return [];
   return r.json();
 }
 
@@ -58,6 +58,14 @@ export default {
           return json({ ok: true, sbKey: SB_KEY });
         }
         return json({ ok: false, error: "Wrong password" }, 401);
+      }
+
+      // Patient saves own workout history (no admin token needed, just their ID)
+      if(path === "/api/patient-save-history"){
+        const { id, workoutHistory } = body;
+        if(!id) return json({ ok:false }, 400);
+        await sbFetch(SB_KEY, "patients?id=eq."+id, "PATCH", { workout_history: workoutHistory||[] });
+        return json({ ok: true });
       }
 
       // Patient login by ID (session restore)
