@@ -261,19 +261,28 @@ function rd(){
 }
 
 // ── Patient List ──
+// ── Bilingual sports list ──
+var SP_HE = ["ריצה","קרוספיט","שחייה","רכיבה על אופניים","כדורגל","כדורסל","טניס","כדורעף","אומנויות לחימה","התעמלות","הרמת משקולות","יוגה","פילאטיס","גולף","איגרוף","חתירה","הוקי","בייסבול","סקי","אחר"];
+function spName(s){ 
+  if(lng==="he"){ var i=SP.indexOf(s); return (i>=0&&SP_HE[i])?SP_HE[i]:s; }
+  if(lng==="en"){ var i=SP_HE.indexOf(s); return (i>=0&&SP[i])?SP[i]:s; }
+  return s;
+}
 function pn(p){ return (lng==="he"&&p.nameHe)?p.nameHe:(p.name||p.nameHe||""); }
 function rpl(){
   var q=(g("psr").value||"").toLowerCase();
   var list=pts.filter(function(p){
-    return (p.name||"").toLowerCase().includes(q)||(p.nameHe||"").toLowerCase().includes(q)||(p.sport||"").toLowerCase().includes(q)||(p.injury||"").toLowerCase().includes(q);
+    return (p.name||"").toLowerCase().includes(q)||(p.nameHe||"").toLowerCase().includes(q)||(p.sport||"").toLowerCase().includes(q)||(p.injury||"").toLowerCase().includes(q)||(spName(p.sport)||"").toLowerCase().includes(q);
   });
+  // Sort alphabetically by display name
+  list.sort(function(a,b){ return pn(a).localeCompare(pn(b), lng==="he"?"he":"en"); });
   g("ptit").textContent=L().pats+" ("+pts.length+")";
   g("pls").innerHTML=list.length?list.map(function(p){
     var dn=pn(p);
     return '<div class="card" onclick="op('+p.id+')"><div style="display:flex;align-items:center;justify-content:space-between">'+
       '<div style="display:flex;align-items:center;gap:13px">'+av(dn)+
       '<div><div class="pat-name">'+dn+'</div><div class="pat-sub">'+(p.injury||"—")+' &middot; '+(p.age||"—")+'</div></div></div>'+
-      '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">'+bdg(p.sport)+' '+sbdg(p.status)+'</div></div></div>';
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">'+bdg(spName(p.sport))+' '+sbdg(p.status)+'</div></div></div>';
   }).join(""):'<div style="color:#4a6a8a;text-align:center;padding:32px 0;font-size:14px">No patients found</div>';
 }
 
@@ -495,19 +504,35 @@ function renderPatientView(p){
       if(!workoutMode) card += '<span style="font-size:11px;color:#4a6a8a;margin-left:auto">tap for details →</span>';
       card += '</div>';
 
-      // Sets × reps OR timer
-      // Timer section - always show in workout mode, patient controls it
+      // Sets × reps always visible
+      card += '<div style="font-size:13px;color:#4a6a8a;margin-bottom:6px"><span style="font-weight:600;color:#2B6CC4">'+e.sets+'</span> &times; <span style="font-weight:600;color:#2B6CC4">'+e.reps+'</span> reps</div>';
+
+      // Timer + set counter in workout mode
       if(workoutMode){
         var timerDefault = (e.timerSecs && parseInt(e.timerSecs)>0) ? e.timerSecs : 30;
-        card += '<div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap">'+
-          '<input id="tsec'+i+'" type="number" min="1" max="300" value="'+timerDefault+'" '+
+        var totalSets = parseInt(e.sets)||1;
+        var doneKey = "sets_"+i;
+        if(!exChecked[doneKey]) exChecked[doneKey]=0;
+        var doneSets = exChecked[doneKey]||0;
+        // Layout: sets counter on left, timer on right (flip for Hebrew)
+        card += '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;gap:10px;flex-wrap:wrap;direction:ltr">';
+        // Sets counter
+        card += '<div style="display:flex;align-items:center;gap:8px">'+
+          '<div style="font-size:22px;font-weight:800;color:'+(doneSets>=totalSets?'#00a86b':'#2B6CC4')+'">'+doneSets+'/'+totalSets+'</div>'+
+          '<div style="font-size:11px;color:#4a6a8a;line-height:1.3">'+(lng==="he"?"סטים<br>הושלמו":"sets<br>done")+'</div>'+
+          (doneSets>0?'<button onclick="exChecked[\'sets_'+i+'\']=Math.max(0,(exChecked[\'sets_'+i+'\']||0)-1);renderPatientView(cur)" style="background:rgba(0,0,0,0.06);border:none;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:13px" title="Undo">↩</button>':'')+'</div>';
+        // Timer controls
+        card += '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">'+
+          '<button onclick="startTimer('+i+',document.getElementById(\'tsec'+i+'\').value,'+i+')" id="tbtn'+i+'" '+
+          'style="background:#e67e22;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">'+
+          '⏱ '+(lng==="he"?"הפעל טיימר":"Start Timer")+'</button>'+
+          '<div style="display:flex;align-items:center;gap:5px">'+
+          '<input id="tsec'+i+'" type="number" min="1" max="600" value="'+timerDefault+'" '+
           'style="width:65px;padding:5px 8px;border:1.5px solid #e67e22;border-radius:8px;font-size:14px;font-weight:700;color:#e67e22;text-align:center">'+
-          '<span style="font-size:12px;color:#4a6a8a">'+(lng==="he"?"שניות":"sec")+'</span>'+
-          '<button onclick="startTimer('+i+',document.getElementById(\'tsec'+i+'\').value)" id="tbtn'+i+'" '+
-          'style="background:#e67e22;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer">'+
-          '⏱ '+(lng==="he"?"טיימר":"Timer")+'</button>'+
-          '<div id="tdisp'+i+'" style="font-size:22px;font-weight:800;color:#e67e22;display:none"></div>'+
+          '<span style="font-size:11px;color:#4a6a8a">'+(lng==="he"?"שניות":"sec")+'</span></div>'+
+          '<div id="tdisp'+i+'" style="font-size:26px;font-weight:800;color:#e67e22;display:none;text-align:center;min-width:70px"></div>'+
           '</div>';
+        card += '</div>';
       }
 
       if(eDesc) card += '<div style="font-size:13px;color:#1a2535;margin-bottom:3px">'+eDesc+'</div>';
@@ -548,42 +573,35 @@ function toggleCheck(i){
   renderPatientView(cur);
 }
 
-function startTimer(idx, secs){
+function startTimer(idx, secs, exIdx){
   if(activeTimer){ clearInterval(activeTimer); activeTimer=null; }
-  var s = parseInt(secs);
-  if(!s || s<=0) s=30;
-  var disp = g("tdisp"+idx);
-  var btn = g("tbtn"+idx);
-  var inp = g("tsec"+idx);
+  var s = parseInt(secs); if(!s||s<=0) s=30;
+  var disp=g("tdisp"+idx), btn=g("tbtn"+idx), inp=g("tsec"+idx);
   if(!disp) return;
-  disp.style.display="block";
-  if(btn) btn.textContent="⏹ Stop";
-  if(btn) btn.onclick=function(){ clearInterval(activeTimer); activeTimer=null; disp.style.display="none"; btn.textContent="⏱ "+(lng==="he"?"טיימר":"Timer"); btn.onclick=function(){startTimer(idx,g("tsec"+idx).value);}; };
-  if(inp) inp.style.display="none";
-  var tick = function(){
+  disp.style.display="block"; disp.style.color="#e67e22";
+  if(btn){ btn.textContent="⏹ "+(lng==="he"?"עצור":"Stop"); btn.style.background="#e74c3c"; }
+  var stopFn=function(){
+    clearInterval(activeTimer); activeTimer=null; disp.style.display="none";
+    if(btn){ btn.textContent="⏱ "+(lng==="he"?"הפעל טיימר":"Start Timer"); btn.style.background="#e67e22"; btn.onclick=function(){startTimer(idx,g("tsec"+idx)?g("tsec"+idx).value:secs,exIdx);}; }
+  };
+  if(btn) btn.onclick=stopFn;
+  var tick=function(){
     var m=Math.floor(s/60), sec=s%60;
-    disp.textContent = m+":"+(sec<10?"0":"")+sec;
+    disp.textContent=m+":"+(sec<10?"0":"")+sec;
     if(s<=0){
       clearInterval(activeTimer); activeTimer=null;
       disp.textContent="✓ "+(lng==="he"?"סיום!":"Done!");
       disp.style.color="#00a86b";
-      if(btn){ btn.textContent="⏱ "+(lng==="he"?"טיימר":"Timer"); btn.onclick=function(){startTimer(idx,g("tsec"+idx).value);}; }
-      if(inp) inp.style.display="";
-      try{
-        var ctx=new (window.AudioContext||window.webkitAudioContext)();
-        for(var b=0;b<3;b++){
-          var osc=ctx.createOscillator(); var gain=ctx.createGain();
-          osc.connect(gain); gain.connect(ctx.destination);
-          osc.frequency.value=880; gain.gain.value=0.3;
-          osc.start(ctx.currentTime+b*0.3); osc.stop(ctx.currentTime+b*0.3+0.2);
-        }
-      }catch(e){}
+      // Count the set
+      var dk="sets_"+exIdx; if(!exChecked[dk]) exChecked[dk]=0; exChecked[dk]++;
+      // Beep
+      try{ var ctx=new (window.AudioContext||window.webkitAudioContext)(); for(var b=0;b<3;b++){ var osc=ctx.createOscillator(),gain=ctx.createGain(); osc.connect(gain); gain.connect(ctx.destination); osc.frequency.value=880; gain.gain.value=0.3; osc.start(ctx.currentTime+b*0.3); osc.stop(ctx.currentTime+b*0.3+0.2); } }catch(e2){}
+      setTimeout(function(){ renderPatientView(cur); }, 1200);
       return;
     }
     s--;
   };
-  tick();
-  activeTimer = setInterval(tick, 1000);
+  tick(); activeTimer=setInterval(tick,1000);
 }
 
 function spt(t){ ptab=t; document.querySelectorAll("#pstb .nb").forEach(function(b,i){ b.classList.toggle("on",["ex","fu"][i]===t); }); g("psex").classList.toggle("hid",t!=="ex"); g("psfu").classList.toggle("hid",t!=="fu"); }
@@ -602,7 +620,7 @@ function om(m, editId){
       '<div style="grid-column:1/-1"><label class="lbl">'+Lx.ij+'</label><input class="inp" id="fij" value="'+(p.injury||"")+'"></div>'+
       '<div><label class="lbl">'+Lx.pi+'</label><input class="inp" id="fpi" maxlength="4" value="'+(p.pin||"")+'" placeholder="1234"></div>'+
       '<div><label class="lbl">'+Lx.st+'</label><select class="inp" id="fst">'+ST.map(function(s){ return '<option'+(p.status===s?" selected":"")+'>'+s+'</option>'; }).join("")+'</select></div>'+
-      '<div style="grid-column:1/-1"><label class="lbl">'+Lx.sp+'</label><select class="inp" id="fsp"><option value="">'+Lx.ss+'</option>'+SP.map(function(s){ return '<option'+(p.sport===s?" selected":"")+'>'+s+'</option>'; }).join("")+'</select></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">'+Lx.sp+'</label><select class="inp" id="fsp"><option value="">'+Lx.ss+'</option>'+SP.map(function(s,i){ var label=lng==="he"&&SP_HE[i]?SP_HE[i]+" / "+s:s; return '<option value="'+s+'"'+(p.sport===s?" selected":"")+'>'+label+'</option>'; }).join("")+'</select></div>'+
       '<div style="grid-column:1/-1"><label class="lbl">'+Lx.no+'</label><textarea class="inp" id="fno" style="height:68px">'+(p.notes||"")+'</textarea></div></div>'+
       '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btnd" onclick="cm()">'+Lx.ca+'</button><button class="btn" onclick="sp2()">'+Lx.sa+'</button></div>';
   } else if(m==="ae"){
