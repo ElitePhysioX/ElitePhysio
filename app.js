@@ -509,29 +509,44 @@ function renderPatientView(p){
 
       // Timer + set counter in workout mode
       if(workoutMode){
-        var timerDefault = (e.timerSecs && parseInt(e.timerSecs)>0) ? e.timerSecs : 30;
         var totalSets = parseInt(e.sets)||1;
         var doneKey = "sets_"+i;
+        var timeKey = "time_"+i;
         if(!exChecked[doneKey]) exChecked[doneKey]=0;
+        // Remember patient's custom time, fall back to preset or 30s
+        if(!exChecked[timeKey]) exChecked[timeKey]=(e.timerSecs&&parseInt(e.timerSecs)>0)?e.timerSecs:30;
         var doneSets = exChecked[doneKey]||0;
-        // Layout: sets counter on left, timer on right (flip for Hebrew)
-        card += '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;gap:10px;flex-wrap:wrap;direction:ltr">';
-        // Sets counter
-        card += '<div style="display:flex;align-items:center;gap:8px">'+
-          '<div style="font-size:22px;font-weight:800;color:'+(doneSets>=totalSets?'#00a86b':'#2B6CC4')+'">'+doneSets+'/'+totalSets+'</div>'+
+        var savedTime = exChecked[timeKey]||30;
+        // Convert seconds to min:sec for display in input
+        var tMin = Math.floor(savedTime/60), tSec = savedTime%60;
+
+        // Full width row below the exercise info, always direction:ltr for layout
+        card += '<div style="border-top:1px solid #f0f0f0;margin-top:10px;padding-top:10px;direction:ltr">';
+
+        // Row 1: sets counter + manual +set button
+        card += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">'+
+          '<div style="font-size:24px;font-weight:800;color:'+(doneSets>=totalSets?'#00a86b':'#2B6CC4')+'">'+doneSets+'/'+totalSets+'</div>'+
           '<div style="font-size:11px;color:#4a6a8a;line-height:1.3">'+(lng==="he"?"סטים<br>הושלמו":"sets<br>done")+'</div>'+
-          (doneSets>0?'<button onclick="exChecked[\'sets_'+i+'\']=Math.max(0,(exChecked[\'sets_'+i+'\']||0)-1);renderPatientView(cur)" style="background:rgba(0,0,0,0.06);border:none;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:13px" title="Undo">↩</button>':'')+'</div>';
-        // Timer controls
-        card += '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">'+
-          '<button onclick="startTimer('+i+',document.getElementById(\'tsec'+i+'\').value,'+i+')" id="tbtn'+i+'" '+
-          'style="background:#e67e22;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">'+
-          '⏱ '+(lng==="he"?"הפעל טיימר":"Start Timer")+'</button>'+
-          '<div style="display:flex;align-items:center;gap:5px">'+
-          '<input id="tsec'+i+'" type="number" min="1" max="600" value="'+timerDefault+'" '+
-          'style="width:65px;padding:5px 8px;border:1.5px solid #e67e22;border-radius:8px;font-size:14px;font-weight:700;color:#e67e22;text-align:center">'+
-          '<span style="font-size:11px;color:#4a6a8a">'+(lng==="he"?"שניות":"sec")+'</span></div>'+
-          '<div id="tdisp'+i+'" style="font-size:26px;font-weight:800;color:#e67e22;display:none;text-align:center;min-width:70px"></div>'+
+          '<button onclick="exChecked[\'sets_'+i+'\']=Math.min('+(totalSets+1)+',(exChecked[\'sets_'+i+'\']+1)||1);renderPatientView(cur)" '+
+          'style="background:#00a86b;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:700;cursor:pointer">'+
+          '+ '+(lng==="he"?"סט":"Set")+'</button>'+
+          (doneSets>0?'<button onclick="exChecked[\'sets_'+i+'\']=Math.max(0,(exChecked[\'sets_'+i+'\']-1)||0);renderPatientView(cur)" style="background:rgba(0,0,0,0.06);border:none;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:13px">↩</button>':'')+'</div>';
+
+        // Row 2: timer controls on the RIGHT always
+        card += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'+
+          '<button onclick="startTimer('+i+',((parseInt(document.getElementById(\'tmin'+i+'\').value)||0)*60)+(parseInt(document.getElementById(\'tsec'+i+'\').value)||0),'+i+')" id="tbtn'+i+'" '+
+          'style="background:#e67e22;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">'+
+          '⏱ '+(lng==="he"?"טיימר":"Timer")+'</button>'+
+          '<div style="display:flex;align-items:center;gap:4px">'+
+          '<input id="tmin'+i+'" type="number" min="0" max="60" value="'+tMin+'" onchange="exChecked[\'time_'+i+'\']=((parseInt(this.value)||0)*60)+(parseInt(document.getElementById(\'tsec'+i+'\').value)||0)" '+
+          'style="width:48px;padding:5px 6px;border:1.5px solid #e67e22;border-radius:8px;font-size:14px;font-weight:700;color:#e67e22;text-align:center" placeholder="min">'+
+          '<span style="color:#e67e22;font-weight:700">:</span>'+
+          '<input id="tsec'+i+'" type="number" min="0" max="59" value="'+tSec+'" onchange="exChecked[\'time_'+i+'\']=((parseInt(document.getElementById(\'tmin'+i+'\').value)||0)*60)+(parseInt(this.value)||0)" '+
+          'style="width:48px;padding:5px 6px;border:1.5px solid #e67e22;border-radius:8px;font-size:14px;font-weight:700;color:#e67e22;text-align:center" placeholder="sec">'+
+          '</div>'+
+          '<div id="tdisp'+i+'" style="font-size:24px;font-weight:800;color:#e67e22;display:none;min-width:60px"></div>'+
           '</div>';
+
         card += '</div>';
       }
 
@@ -576,13 +591,16 @@ function toggleCheck(i){
 function startTimer(idx, secs, exIdx){
   if(activeTimer){ clearInterval(activeTimer); activeTimer=null; }
   var s = parseInt(secs); if(!s||s<=0) s=30;
-  var disp=g("tdisp"+idx), btn=g("tbtn"+idx), inp=g("tsec"+idx);
+  // Save the patient's chosen time so it persists
+  exChecked["time_"+exIdx] = s;
+  var disp=g("tdisp"+idx), btn=g("tbtn"+idx);
   if(!disp) return;
   disp.style.display="block"; disp.style.color="#e67e22";
   if(btn){ btn.textContent="⏹ "+(lng==="he"?"עצור":"Stop"); btn.style.background="#e74c3c"; }
   var stopFn=function(){
     clearInterval(activeTimer); activeTimer=null; disp.style.display="none";
-    if(btn){ btn.textContent="⏱ "+(lng==="he"?"הפעל טיימר":"Start Timer"); btn.style.background="#e67e22"; btn.onclick=function(){startTimer(idx,g("tsec"+idx)?g("tsec"+idx).value:secs,exIdx);}; }
+    if(btn){ btn.textContent="⏱ "+(lng==="he"?"טיימר":"Timer"); btn.style.background="#e67e22";
+      btn.onclick=function(){ startTimer(idx,((parseInt(g("tmin"+idx)?g("tmin"+idx).value:0)||0)*60)+(parseInt(g("tsec"+idx)?g("tsec"+idx).value:0)||0),exIdx); }; }
   };
   if(btn) btn.onclick=stopFn;
   var tick=function(){
@@ -592,9 +610,7 @@ function startTimer(idx, secs, exIdx){
       clearInterval(activeTimer); activeTimer=null;
       disp.textContent="✓ "+(lng==="he"?"סיום!":"Done!");
       disp.style.color="#00a86b";
-      // Count the set
       var dk="sets_"+exIdx; if(!exChecked[dk]) exChecked[dk]=0; exChecked[dk]++;
-      // Beep
       try{ var ctx=new (window.AudioContext||window.webkitAudioContext)(); for(var b=0;b<3;b++){ var osc=ctx.createOscillator(),gain=ctx.createGain(); osc.connect(gain); gain.connect(ctx.destination); osc.frequency.value=880; gain.gain.value=0.3; osc.start(ctx.currentTime+b*0.3); osc.stop(ctx.currentTime+b*0.3+0.2); } }catch(e2){}
       setTimeout(function(){ renderPatientView(cur); }, 1200);
       return;
@@ -955,9 +971,9 @@ function omLibAdd(customIdx){
 function saveLibEx(customIdx){
   var n=g("lib_en").value.trim(), nhe=g("lib_he").value.trim();
   if(!n&&!nhe){ alert("Enter at least one name."); return; }
-  var e={ name:n||nhe, nameHe:nhe||n, desc:g("lib_de").value.trim(), descHe:g("lib_dhe").value.trim(), tips:g("lib_ti").value.trim(), tipsHe:g("lib_the").value.trim() };
+  var e={ name:n||nhe, nameHe:nhe||n, desc:g("lib_de")?g("lib_de").value.trim():"", descHe:g("lib_dhe")?g("lib_dhe").value.trim():"", tips:g("lib_ti")?g("lib_ti").value.trim():"", tipsHe:g("lib_the")?g("lib_the").value.trim():"" };
   var custom = loadCustomLib();
-  if(customIdx!==null){ custom[customIdx]=e; } else { custom.push(e); }
+  if(customIdx!==null && customIdx>=0){ custom[customIdx]=e; } else { custom.push(e); }
   saveCustomLib(custom);
   omLib();
 }
