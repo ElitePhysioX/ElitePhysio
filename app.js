@@ -8,6 +8,8 @@ var APW = ""; // password verified server-side
 var SK  = "ep12";
 var AI_KEY = "";
 var pts = [], lng = "en", auth = null, cur = null, ctab = "ex", ptab = "ex", stmr = null, mmode = "";
+var deletedPatients = []; // recycle bin for patients
+var deletedExercises = []; // recycle bin for exercises
 
 // ── Helpers ──
 function L(){ return T[lng]; }
@@ -108,8 +110,15 @@ function sv(){
 }
 
 function dp(id){
-  pts=pts.filter(function(p){ return p.id!==id; });
-  lsave(); sbDelete(id); cm(); rpl();
+  var p = pts.find(function(x){ return x.id===id; });
+  var name = p ? pn(p) : "this patient";
+  if(!confirm("Delete patient \""+name+"\"?\n\nYou can restore them from the Recycle Bin.")) return;
+  deletedPatients.unshift({patient: JSON.parse(JSON.stringify(p)), deletedAt: new Date().toISOString()});
+  if(deletedPatients.length>20) deletedPatients=deletedPatients.slice(0,20);
+  pts=pts.filter(function(x){ return x.id!==id; });
+  lsave(); 
+  apiCall("patients/"+id,"DELETE");
+  cm(); rpl();
 }
 
 
@@ -252,7 +261,10 @@ function rd(){
         '<div style="font-size:28px;font-weight:800;color:'+x[0]+'">'+x[1]+'</div>'+
         '<div style="font-size:11px;color:#4a6a8a;text-transform:uppercase;letter-spacing:.8px;margin-top:3px">'+x[2]+'</div></div>';
     }).join("")+'</div>'+
-    '<div class="row"><span class="st">'+L().rp2+'</span><button class="btn" style="font-size:12px" onclick="gv(\'p\')">'+L().va+'</button></div>'+
+    '<div class="row"><span class="st">'+L().rp2+'</span>'+
+    '<div style="display:flex;gap:8px">'+
+    '<button class="btn" style="font-size:12px;background:#fff3f3;color:#e74c3c;border:1px solid rgba(231,76,60,0.3)" onclick="omRecycleBin()">🗑 Recycle Bin '+(deletedPatients.length+deletedExercises.length>0?'('+( deletedPatients.length+deletedExercises.length)+')':'')+'</button>'+
+    '<button class="btn" style="font-size:12px" onclick="gv(\'p\')">'+L().va+'</button></div></div>'+
     pts.slice(0,4).map(function(p){
       var dn=pn(p);
       return '<div class="card" onclick="op('+p.id+')"><div style="display:flex;align-items:center;justify-content:space-between">'+
@@ -345,6 +357,7 @@ function rpd(){
     '<span style="font-size:11px;color:#4a6a8a;border:1px solid rgba(43,108,196,0.25);border-radius:4px;padding:2px 8px">PIN: '+p.pin+'</span>'+
     waLink(p)+'</div></div></div>'+
     '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+    '<button class="btn" style="font-size:12px;background:#f0f5ff;color:#2B6CC4;border:1px solid rgba(43,108,196,0.3)" onclick="omWorkoutHistory('+p.id+')">📋 '+(lng==="he"?"היסטוריה":"History")+' ('+(p.workoutHistory||[]).length+')</button>'+
     '<button class="btn" style="font-size:12px" onclick="dprint('+p.id+')">'+L().pdf+'</button>'+
     '<button class="btn" style="font-size:12px" onclick="om(\'ep\')">'+L().ed+'</button>'+
     '<button class="btn btnd" style="font-size:12px" onclick="dp('+p.id+')">'+L().dl+'</button></div></div>'+
@@ -1386,6 +1399,124 @@ function getExerciseAnimation(name, isFemale, skin, hair, shirt, pants){
     '</g></svg>';
 }
 
+// ── Recycle Bin ──
+function omRecycleBin(){
+  var c=g("MC");
+  var pHtml = deletedPatients.length ?
+    '<div style="font-size:12px;font-weight:700;color:#e74c3c;text-transform:uppercase;margin-bottom:8px">🗑 Deleted Patients ('+deletedPatients.length+')</div>'+
+    deletedPatients.map(function(item,i){
+      var p=item.patient;
+      var d=item.deletedAt?item.deletedAt.split("T")[0]:"";
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 12px;background:#fff5f5;border:1px solid #ffd0d0;border-radius:8px;margin-bottom:6px">'+
+        '<div><div style="font-weight:600;font-size:13px;color:#1a3a6e">'+(p.name||p.nameHe)+'</div>'+
+        '<div style="font-size:11px;color:#4a6a8a">'+(p.sport||"")+(d?" · deleted "+d:"")+'</div></div>'+
+        '<button class="btn" style="font-size:12px;background:#e8f8f0;color:#00a86b;border:1px solid rgba(0,168,107,0.3)" onclick="restorePatient('+i+')">↩ Restore</button>'+
+        '</div>';
+    }).join("") : '<div style="color:#4a6a8a;font-size:13px;padding:8px 0">No deleted patients</div>';
+
+  var eHtml = deletedExercises.length ?
+    '<div style="font-size:12px;font-weight:700;color:#e67e22;text-transform:uppercase;margin:12px 0 8px">🗑 Deleted Exercises ('+deletedExercises.length+')</div>'+
+    deletedExercises.map(function(item,i){
+      var e=item.exercise;
+      var eName=(lng==="he"&&e.nameHe)?e.nameHe:(e.name||e.nameHe||"");
+      var d=item.deletedAt?item.deletedAt.split("T")[0]:"";
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 12px;background:#fff8f0;border:1px solid #ffd8a8;border-radius:8px;margin-bottom:6px">'+
+        '<div><div style="font-weight:600;font-size:13px;color:#1a3a6e">'+eName+'</div>'+
+        '<div style="font-size:11px;color:#4a6a8a">from: '+item.patientName+(d?" · deleted "+d:"")+'</div></div>'+
+        '<button class="btn" style="font-size:12px;background:#e8f8f0;color:#00a86b;border:1px solid rgba(0,168,107,0.3)" onclick="restoreExercise('+i+')">↩ Restore</button>'+
+        '</div>';
+    }).join("") : '<div style="color:#4a6a8a;font-size:13px;padding:8px 0">No deleted exercises</div>';
+
+  c.innerHTML=
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'+
+    '<span style="font-size:17px;font-weight:800;color:#1a3a6e">🗑 Recycle Bin</span>'+
+    '<button onclick="cm()" style="background:rgba(0,0,0,0.08);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:16px">✕</button></div>'+
+    '<div style="max-height:420px;overflow-y:auto">'+pHtml+eHtml+'</div>'+
+    '<div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center">'+
+    '<span style="font-size:11px;color:#4a6a8a">Items auto-clear after session</span>'+
+    '<button class="btn btnd" style="font-size:12px" onclick="deletedPatients=[];deletedExercises=[];cm();rd()">Clear All</button></div>';
+  g("MB").classList.add("on");
+}
+
+function restorePatient(i){
+  var item=deletedPatients[i];
+  if(!item) return;
+  pts.push(item.patient);
+  lsave(); apiCall("patients","POST",toRow(item.patient));
+  deletedPatients.splice(i,1);
+  rpl(); omRecycleBin();
+}
+
+function restoreExercise(i){
+  var item=deletedExercises[i];
+  if(!item) return;
+  var p=pts.find(function(x){ return x.id===item.patientId; });
+  if(!p){ alert("Patient not found — restore the patient first."); return; }
+  if(!p.exercises) p.exercises=[];
+  p.exercises.push(item.exercise);
+  pts=pts.map(function(x){ return x.id===p.id?p:x; });
+  if(cur&&cur.id===p.id) cur=p;
+  lsave(); sv();
+  deletedExercises.splice(i,1);
+  if(cur&&cur.id===p.id) rex();
+  omRecycleBin();
+}
+
+// ── Workout History Admin View ──
+function omWorkoutHistory(patientId){
+  var p=pts.find(function(x){ return x.id===patientId; });
+  if(!p) return;
+  var hist=p.workoutHistory||[];
+  var isHe=lng==="he";
+  var c=g("MC");
+  c.innerHTML=
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'+
+    '<span style="font-size:17px;font-weight:800;color:#1a3a6e">📋 '+pn(p)+' — '+(isHe?"היסטוריית אימונים":"Workout History")+'</span>'+
+    '<button onclick="cm()" style="background:rgba(0,0,0,0.08);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:16px">✕</button></div>'+
+    (hist.length?
+      '<div style="max-height:450px;overflow-y:auto">'+
+      hist.map(function(h,i){
+        return '<div class="xcard" style="margin-bottom:10px">'+
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'+
+          '<div style="font-size:14px;font-weight:700;color:#1a3a6e">'+h.date+'</div>'+
+          '<div style="display:flex;gap:8px;align-items:center">'+
+          '<span style="font-size:13px;color:#e67e22;font-weight:600">⏱ '+h.time+'</span>'+
+          '<button onclick="editHistoryNote('+patientId+','+i+')" style="background:#f0f5ff;border:1px solid #c8d8ee;border-radius:6px;padding:3px 8px;font-size:12px;cursor:pointer">✏️ Note</button>'+
+          '<button onclick="deleteHistoryEntry('+patientId+','+i+')" style="background:#fff0f0;border:1px solid #ffd0d0;border-radius:6px;padding:3px 8px;font-size:12px;cursor:pointer;color:#e74c3c">✕</button>'+
+          '</div></div>'+
+          (h.exercises||[]).map(function(e){
+            var n=(isHe&&e.nameHe)?e.nameHe:(e.name||"");
+            return '<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0;color:#4a6a8a">'+
+              '<span>'+n+'</span><span style="font-weight:600;color:#2B6CC4">'+e.sets+' × '+e.reps+'</span></div>';
+          }).join("")+
+          (h.note?'<div style="font-size:12px;color:#4a6a8a;margin-top:6px;padding:6px 8px;background:#f8f8f8;border-radius:6px;font-style:italic">💬 '+h.note+'</div>':'')+
+          '</div>';
+      }).join("")+'</div>'
+      :'<div style="color:#4a6a8a;padding:20px;text-align:center">'+(isHe?"אין היסטוריה עדיין":"No workout history yet")+'</div>'
+    );
+  g("MB").classList.add("on");
+}
+
+function editHistoryNote(patientId, idx){
+  var p=pts.find(function(x){ return x.id===patientId; });
+  if(!p||!p.workoutHistory||!p.workoutHistory[idx]) return;
+  var current=p.workoutHistory[idx].note||"";
+  var note=prompt("Edit note for workout on "+p.workoutHistory[idx].date+":", current);
+  if(note===null) return; // cancelled
+  p.workoutHistory[idx].note=note;
+  pts=pts.map(function(x){ return x.id===patientId?p:x; });
+  sv(); omWorkoutHistory(patientId);
+}
+
+function deleteHistoryEntry(patientId, idx){
+  if(!confirm("Delete this workout entry? This cannot be undone.")) return;
+  var p=pts.find(function(x){ return x.id===patientId; });
+  if(!p||!p.workoutHistory) return;
+  p.workoutHistory.splice(idx,1);
+  pts=pts.map(function(x){ return x.id===patientId?p:x; });
+  sv(); omWorkoutHistory(patientId);
+}
+
 // ── Save patient / exercise / follow-up ──
 function sp2(){
   var nm=g("fn")?g("fn").value.trim():"";
@@ -1437,7 +1568,16 @@ function se2(editId){
   pts=pts.map(function(p){ return p.id===cur.id?cur:p; }); sv(); cm(); rex();
   var sp=document.querySelectorAll("#ptbs .nb"); if(sp[0]&&sp[0].querySelector("span")) sp[0].querySelector("span").textContent=cur.exercises.length;
 }
-function de(eid){ cur.exercises=(cur.exercises||[]).filter(function(e){ return Number(e.id)!==Number(eid); }); pts=pts.map(function(p){ return p.id===cur.id?cur:p; }); sv(); rex(); }
+function de(eid){
+  var e = (cur.exercises||[]).find(function(x){ return Number(x.id)===Number(eid); });
+  if(!e) return;
+  var eName = (lng==="he"&&e.nameHe)?e.nameHe:(e.name||e.nameHe||"exercise");
+  if(!confirm("Delete exercise \""+eName+"\"?\n\nYou can restore it from the Recycle Bin.")) return;
+  deletedExercises.unshift({exercise: JSON.parse(JSON.stringify(e)), patientId: cur.id, patientName: pn(cur), deletedAt: new Date().toISOString()});
+  if(deletedExercises.length>50) deletedExercises=deletedExercises.slice(0,50);
+  cur.exercises=(cur.exercises||[]).filter(function(x){ return Number(x.id)!==Number(eid); });
+  pts=pts.map(function(p){ return p.id===cur.id?cur:p; }); sv(); rex();
+}
 function sfu(){
   var nt=g("fnt").value.trim(); if(!nt) return;
   var f={id:Date.now(),date:g("fdt").value,note:nt};
