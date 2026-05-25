@@ -468,7 +468,7 @@ function renderPatientView(p){
     if(!workoutMode){
       exHtml += '<button onclick="startWorkout()" style="background:linear-gradient(135deg,#00a86b,#00c47d);color:#fff;border:none;border-radius:10px;padding:10px 20px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(0,168,107,0.3)">▶ '+(lng==="he"?"התחל תוכנית":"Start Program")+'</button>';
     } else {
-      var done = Object.values(exChecked).filter(Boolean).length;
+      var done = (p.exercises||[]).filter(function(_,idx){ return exChecked[idx]; }).length;
       exHtml += '<div style="font-size:14px;font-weight:700;color:#00a86b">✓ '+done+' / '+(p.exercises||[]).length+' '+(lng==="he"?"הושלמו":"done")+'</div>';
       exHtml += '<button onclick="endWorkout()" style="background:#e74c3c;color:#fff;border:none;border-radius:10px;padding:10px 20px;font-size:14px;font-weight:700;cursor:pointer">■ '+(lng==="he"?"סיים":"Finish")+'</button>';
     }
@@ -539,7 +539,7 @@ function renderPatientView(p){
           '<button onclick="startTimer('+i+',((parseInt(document.getElementById(\'tmin'+i+'\').value)||0)*60)+(parseInt(document.getElementById(\'tsec'+i+'\').value)||0),'+i+')" id="tbtn'+i+'" '+
           'style="background:#e67e22;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">'+
           '⏱ '+(lng==="he"?"טיימר":"Timer")+'</button>'+
-          '<div style="display:flex;align-items:center;gap:3px">'+
+          '<div style="display:flex;align-items:center;gap:3px;direction:ltr">'+
           '<input id="tmin'+i+'" type="number" min="0" max="60" value="'+tMin+'" onchange="exChecked[\'time_'+i+'\']=((parseInt(this.value)||0)*60)+(parseInt(document.getElementById(\'tsec'+i+'\').value)||0)" '+
           'style="width:44px;padding:4px 5px;border:1.5px solid #e67e22;border-radius:7px;font-size:13px;font-weight:700;color:#e67e22;text-align:center" placeholder="m">'+
           '<span style="color:#e67e22;font-weight:800;font-size:15px">:</span>'+
