@@ -612,6 +612,7 @@ function omEditPlan(planId){
   var plan=(cur.workoutPlans||[]).find(function(p){ return p.id===planId; });
   if(!plan) return;
   var isHe=lng==="he";
+  var letters=["A","B","C","D","E","F","G"];
   var c=g("MC");
   c.innerHTML=
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'+
@@ -620,27 +621,53 @@ function omEditPlan(planId){
     '<div class="g2" style="gap:10px;margin-bottom:14px">'+
     '<div style="grid-column:1/-1"><label class="lbl">Program Name (EN)</label><input class="inp" id="ep_name_en" value="'+plan.name+'"></div>'+
     '<div style="grid-column:1/-1"><label class="lbl">שם (עברית)</label><input class="inp" id="ep_name_he" dir="rtl" value="'+(plan.nameHe||'')+'"></div></div>'+
-    // Edit day names
     '<div style="font-size:12px;font-weight:700;color:#1a3a6e;text-transform:uppercase;margin-bottom:8px">'+(isHe?"ימי אימון":"Workout Days")+'</div>'+
-    (plan.type==="repeating"?(plan.days||[]).map(function(d,i){
-      return '<div class="g2" style="gap:8px;margin-bottom:6px">'+
-        '<input class="inp" id="ep_dn_en_'+i+'" value="'+d.name+'">'+
-        '<input class="inp" id="ep_dn_he_'+i+'" dir="rtl" value="'+(d.nameHe||'')+'">'+
-        '</div>';
-    }).join(""):
+    (plan.type==="repeating"?
+      '<div id="ep_days_wrap">'+
+      (plan.days||[]).map(function(d,i){
+        return '<div style="display:flex;gap:8px;margin-bottom:6px;align-items:center">'+
+          '<input class="inp" id="ep_dn_en_'+i+'" value="'+d.name+'" style="flex:1">'+
+          '<input class="inp" id="ep_dn_he_'+i+'" dir="rtl" value="'+(d.nameHe||'')+'" style="flex:1">'+
+          '<button onclick="removeEditDay('+i+')" style="background:#fff0f0;border:1px solid #ffd0d0;border-radius:6px;padding:5px 10px;cursor:pointer;font-size:13px;color:#e74c3c;flex-shrink:0">✕</button>'+
+          '</div>';
+      }).join("")+'</div>'+
+      '<button onclick="addEditDay()" style="background:#f0f5ff;border:1px dashed #2B6CC4;border-radius:8px;padding:8px;width:100%;cursor:pointer;color:#2B6CC4;font-weight:600;font-size:13px;margin-bottom:12px">+ '+(isHe?"הוסף יום":"Add Day")+'</button>'
+    :
     (plan.phases||[]).map(function(ph,pi){
       return '<div style="background:#f8fbff;border-radius:8px;padding:8px;margin-bottom:8px">'+
         '<div style="font-size:11px;font-weight:700;color:#2B6CC4;margin-bottom:5px">'+(isHe&&ph.nameHe?ph.nameHe:ph.name)+(ph.weeks?' ('+ph.weeks+' '+(isHe?"שבועות":"weeks")+')':'')+'</div>'+
         (ph.days||[]).map(function(d,di){
-          return '<div class="g2" style="gap:8px;margin-bottom:5px">'+
-            '<input class="inp" id="ep_pd_en_'+pi+'_'+di+'" value="'+d.name+'">'+
-            '<input class="inp" id="ep_pd_he_'+pi+'_'+di+'" dir="rtl" value="'+(d.nameHe||'')+'"></div>';
+          return '<div style="display:flex;gap:8px;margin-bottom:5px">'+
+            '<input class="inp" id="ep_pd_en_'+pi+'_'+di+'" value="'+d.name+'" style="flex:1">'+
+            '<input class="inp" id="ep_pd_he_'+pi+'_'+di+'" dir="rtl" value="'+(d.nameHe||'')+'" style="flex:1">'+
+            '</div>';
         }).join("")+'</div>';
     }).join(""))+
     '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">'+
     '<button class="btn btnd" onclick="cm()">'+(isHe?"ביטול":"Cancel")+'</button>'+
     '<button class="btn" onclick="saveEditPlan('+planId+')">'+(isHe?"שמור":"Save")+'</button></div>';
   g("MB").classList.add("on");
+  // Store plan days count for add/remove
+  g("ep_days_wrap") && (g("ep_days_wrap").dataset.count=(plan.days||[]).length);
+}
+
+function addEditDay(){
+  var wrap=g("ep_days_wrap"); if(!wrap) return;
+  var n=parseInt(wrap.dataset.count)||0;
+  var letters=["A","B","C","D","E","F","G"];
+  var div=document.createElement("div");
+  div.style="display:flex;gap:8px;margin-bottom:6px;align-items:center";
+  div.innerHTML='<input class="inp" id="ep_dn_en_'+n+'" value="Day '+(letters[n]||n+1)+'" style="flex:1">'+
+    '<input class="inp" id="ep_dn_he_'+n+'" dir="rtl" value="יום '+(letters[n]||n+1)+'" style="flex:1">'+
+    '<button onclick="removeEditDay('+n+')" style="background:#fff0f0;border:1px solid #ffd0d0;border-radius:6px;padding:5px 10px;cursor:pointer;font-size:13px;color:#e74c3c;flex-shrink:0">✕</button>';
+  wrap.appendChild(div);
+  wrap.dataset.count=n+1;
+}
+
+function removeEditDay(i){
+  var inp_en=g("ep_dn_en_"+i), inp_he=g("ep_dn_he_"+i);
+  if(inp_en) inp_en.parentElement.style.display="none";
+  if(inp_en) inp_en.value="__DELETED__";
 }
 
 function saveEditPlan(planId){
@@ -649,10 +676,22 @@ function saveEditPlan(planId){
   plan.name=g("ep_name_en")?g("ep_name_en").value.trim():plan.name;
   plan.nameHe=g("ep_name_he")?g("ep_name_he").value.trim():plan.nameHe;
   if(plan.type==="repeating"){
-    (plan.days||[]).forEach(function(d,i){
-      if(g("ep_dn_en_"+i)) d.name=g("ep_dn_en_"+i).value.trim();
-      if(g("ep_dn_he_"+i)) d.nameHe=g("ep_dn_he_"+i).value.trim();
-    });
+    var wrap=g("ep_days_wrap");
+    var total=wrap?parseInt(wrap.dataset.count)||plan.days.length:plan.days.length;
+    var letters=["A","B","C","D","E","F","G"];
+    var newDays=[];
+    for(var i=0;i<total;i++){
+      var en_inp=g("ep_dn_en_"+i), he_inp=g("ep_dn_he_"+i);
+      if(!en_inp||en_inp.value==="__DELETED__") continue;
+      var existing=plan.days&&plan.days[i];
+      newDays.push({
+        id:existing?existing.id:Date.now()+i,
+        name:en_inp?en_inp.value.trim():"Day "+letters[i],
+        nameHe:he_inp?he_inp.value.trim():"יום "+letters[i],
+        exercises:existing?existing.exercises:[]
+      });
+    }
+    if(newDays.length>0) plan.days=newDays;
   } else {
     (plan.phases||[]).forEach(function(ph,pi){
       (ph.days||[]).forEach(function(d,di){
@@ -712,7 +751,7 @@ function rex(){
   g("pet").innerHTML=
     // Breadcrumb
     '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">'+
-    '<button class="btn" style="font-size:12px;background:#f0f5ff" onclick="cur._editingDay=null;rplans()">← '+(isHe?"תוכניות":"Programs")+'</button>'+
+    '<button onclick="cur._editingDay=null;rplans()" style="background:#f0f5ff;color:#2B6CC4;border:1px solid rgba(43,108,196,0.3);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">← '+(isHe?"תוכניות":"Programs")+'</button>'+
     '<span style="color:#4a6a8a;font-size:13px">›</span>'+
     '<span style="font-size:13px;color:#2B6CC4;font-weight:600">'+planName+'</span>'+
     '<span style="color:#4a6a8a;font-size:13px">›</span>'+
@@ -2176,46 +2215,145 @@ function aiev(){
 function dprint(id){
   var p=pts.find(function(x){ return x.id===id; }); if(!p) return;
   var today=new Date().toLocaleDateString("en-IL");
-  var h='<!DOCTYPE html><html><head><meta charset="utf-8"><title>ElitePhysio \u2014 '+p.name+'</title>'+
-    '<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;background:#fff;color:#1a2535;padding:36px}'+
-    '.hdr{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #2B6CC4;padding-bottom:16px;margin-bottom:24px}'+
-    'h2{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#2B6CC4;border-bottom:1px solid #c8d8ee;padding-bottom:7px;margin:20px 0 12px}'+
-    '.ig{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}'+
-    '.ii label{font-size:10px;text-transform:uppercase;color:#4a6a8a;display:block;margin-bottom:2px}.ii span{font-size:13px;font-weight:600}'+
-    '.ex{border:1px solid #c8d8ee;border-radius:9px;padding:13px 16px;margin-bottom:9px;background:#f8fbff;border-left:3px solid #2B6CC4}'+
-    '.fu{border-left:3px solid #2B6CC4;padding:9px 14px;margin-bottom:8px;background:#eef4ff;border-radius:0 7px 7px 0}'+
-    '.foot{margin-top:32px;border-top:1px solid #c8d8ee;padding-top:14px;font-size:10px;color:#4a6a8a;text-align:center;line-height:2}'+
-    '@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body>'+
-    '<div class="hdr"><div><div style="font-size:22px;font-weight:800;color:#2B6CC4">ElitePhysio</div>'+
-    '<div style="font-size:10px;color:#4a6a8a;text-transform:uppercase;letter-spacing:1.2px">\u05de\u05db\u05d5\u05df \u05e4\u05d9\u05d6\u05d9\u05d5\u05ea\u05e8\u05e4\u05d9\u05d4 \u05dc\u05e1\u05e4\u05d5\u05e8\u05d8\u05d0\u05d9\u05dd &middot; Yoqneam Ilit</div></div>'+
-    '<div style="text-align:right"><div style="font-size:18px;font-weight:700">'+p.name+'</div>'+
-    '<div style="font-size:12px;color:#2B6CC4;font-weight:600;margin-top:2px">'+p.sport+'</div>'+
-    '<div style="font-size:11px;color:#4a6a8a;margin-top:2px">'+today+'</div></div></div>'+
-    '<h2>Patient Info</h2><div class="ig">'+
-    '<div class="ii"><label>Sport</label><span>'+p.sport+'</span></div>'+
-    '<div class="ii"><label>Age</label><span>'+(p.age||"\u2014")+'</span></div>'+
-    '<div class="ii"><label>Phone</label><span>'+(p.phone||"\u2014")+'</span></div>'+
-    '<div class="ii"><label>Condition</label><span>'+(p.injury||"\u2014")+'</span></div>'+
-    '<div class="ii"><label>Status</label><span>'+(p.status||"\u2014")+'</span></div>'+
-    '<div class="ii"><label>Sessions</label><span>'+(p.sessions||0)+'</span></div></div>'+
-    (p.notes?'<div style="background:#eef4ff;border-radius:8px;padding:11px 15px;font-size:13px;color:#1a2535;margin-bottom:4px">'+p.notes+'</div>':"")+
-    '<h2>Exercise Plan ('+(p.exercises||[]).length+')</h2>'+
-    (p.exercises||[]).map(function(e,i){
-      var isHe = e.displayLng==="he" || (!e.displayLng && !e.name && e.nameHe);
-      var eName = isHe&&e.nameHe ? e.nameHe : (e.name||e.nameHe);
-      var eDesc = isHe&&e.descHe ? e.descHe : (e.desc||e.descHe);
-      var eTips = isHe&&e.tipsHe ? e.tipsHe : (e.tips||e.tipsHe);
-      var dir = isHe ? 'direction:rtl;text-align:right' : '';
-      return '<div class="ex" style="'+dir+'"><div style="font-size:15px;font-weight:700;margin-bottom:4px">'+(i+1)+'. '+eName+'</div>'+
-        '<div style="font-size:12px;color:#4a6a8a;margin-bottom:3px"><strong>'+e.sets+'</strong> &times; <strong>'+e.reps+'</strong> reps</div>'+
-        (eDesc?'<div style="font-size:12px;color:#1a2535;margin-bottom:3px">'+eDesc+'</div>':"")+
-        (eTips?'<div style="font-size:12px;color:#2B6CC4;font-weight:600">&#128161; '+eTips+'</div>':"")+
-        '</div>';
-    }).join("")||'<p style="color:#4a6a8a;font-size:13px">No exercises assigned yet.</p>'+
-    ((p.followUps||[]).length?'<h2>Progress Notes</h2>'+(p.followUps||[]).map(function(f){ return '<div class="fu"><div style="font-size:10px;color:#4a6a8a;margin-bottom:3px">'+f.date+'</div><div style="font-size:13px">'+f.note+'</div></div>'; }).join(""):"")+
-    '<div class="foot"><strong>ElitePhysio</strong> \u2014 \u05de\u05db\u05d5\u05df \u05e4\u05d9\u05d6\u05d9\u05d5\u05ea\u05e8\u05e4\u05d9\u05d4 \u05dc\u05e1\u05e4\u05d5\u05e8\u05d8\u05d0\u05d9\u05dd<br>'+
-    '\u05e4\u05d9\u05d6\u05d9\u05d5\u05ea\u05e8\u05e4\u05d9\u05d4 \u05dc\u05e1\u05e4\u05d5\u05e8\u05d8\u05d0\u05d9\u05dd \u05e9\u05e8\u05d5\u05e6\u05d9\u05dd \u05dc\u05d4\u05d2\u05d9\u05e2 \u05dc\u05e7\u05e6\u05d4 \u05d4\u05d9\u05db\u05d5\u05dc\u05ea &middot; Yoqneam Ilit<br>Generated: '+today+'</div>'+
+  var logoUrl=window.location.origin+"/ElitePhysioLogo.png";
+
+  // Collect all exercises across plans
+  var allExercises=[];
+  var planSections="";
+  if((p.workoutPlans||[]).length>0){
+    (p.workoutPlans||[]).forEach(function(plan){
+      var planName=plan.name;
+      if(plan.type==="repeating"){
+        (plan.days||[]).forEach(function(day){
+          if((day.exercises||[]).length>0){
+            planSections+='<div class="plan-section">'+
+              '<div class="plan-header">'+planName+' — '+day.name+'</div>'+
+              day.exercises.map(function(e,i){ return exRow(e,i); }).join("")+
+            '</div>';
+          }
+        });
+      } else {
+        (plan.phases||[]).forEach(function(ph){
+          (ph.days||[]).forEach(function(day){
+            if((day.exercises||[]).length>0){
+              planSections+='<div class="plan-section">'+
+                '<div class="plan-header">'+planName+' › '+(ph.name||"")+(ph.weeks?' ('+ph.weeks+' wk)':'')+' › '+day.name+'</div>'+
+                day.exercises.map(function(e,i){ return exRow(e,i); }).join("")+
+              '</div>';
+            }
+          });
+        });
+      }
+    });
+  } else if((p.exercises||[]).length>0){
+    planSections='<div class="plan-section">'+
+      '<div class="plan-header">Exercise Plan</div>'+
+      (p.exercises||[]).map(function(e,i){ return exRow(e,i); }).join("")+
+    '</div>';
+  }
+
+  function exRow(e,i){
+    var isHe=e.displayLng==="he"||(!e.displayLng&&!e.name&&e.nameHe);
+    var eName=isHe&&e.nameHe?e.nameHe:(e.name||e.nameHe);
+    var eDesc=isHe&&e.descHe?e.descHe:(e.desc||e.descHe);
+    var eTips=isHe&&e.tipsHe?e.tipsHe:(e.tips||e.tipsHe);
+    var dir=isHe?"direction:rtl;text-align:right":"";
+    return '<div class="ex" style="'+dir+'">'+
+      '<div style="display:flex;justify-content:space-between;align-items:baseline">'+
+      '<span class="ex-name">'+(i+1)+'. '+eName+'</span>'+
+      '<span class="ex-sets">'+e.sets+' × '+e.reps+'</span>'+
+      '</div>'+
+      (eDesc?'<div class="ex-desc">'+eDesc+'</div>':"")+
+      (eTips?'<div class="ex-tips">'+eTips+'</div>':"")+
+      '</div>';
+  }
+
+  var h='<!DOCTYPE html><html><head><meta charset="utf-8">'+
+    '<title>ElitePhysio — '+p.name+'</title>'+
+    '<style>'+
+    '@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap");'+
+    '*{box-sizing:border-box;margin:0;padding:0}'+
+    'body{font-family:"Inter",Arial,sans-serif;background:#fff;color:#1a2535;font-size:13px;line-height:1.5}'+
+    '.page{max-width:780px;margin:0 auto;padding:40px 48px}'+
+    // Header
+    '.hdr{display:flex;justify-content:space-between;align-items:center;padding-bottom:20px;margin-bottom:28px;border-bottom:2px solid #1a3a6e}'+
+    '.logo-wrap{display:flex;align-items:center;gap:14px}'+
+    '.logo-wrap img{width:56px;height:56px;object-fit:contain}'+
+    '.clinic-name{font-size:20px;font-weight:700;color:#1a3a6e;letter-spacing:-0.3px}'+
+    '.clinic-sub{font-size:10px;color:#4a6a8a;text-transform:uppercase;letter-spacing:1.5px;margin-top:1px}'+
+    '.doc-meta{text-align:right}'+
+    '.doc-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#2B6CC4;margin-bottom:3px}'+
+    '.doc-date{font-size:11px;color:#4a6a8a}'+
+    // Patient card
+    '.patient-card{background:#f5f8ff;border-radius:10px;padding:18px 22px;margin-bottom:26px;border-left:4px solid #2B6CC4;display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}'+
+    '.info-item label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:#4a6a8a;display:block;margin-bottom:3px}'+
+    '.info-item span{font-size:13px;font-weight:600;color:#1a2535}'+
+    '.patient-name{grid-column:1/-1;border-bottom:1px solid #d0dae8;padding-bottom:12px;margin-bottom:4px}'+
+    '.patient-name span{font-size:20px;font-weight:700;color:#1a3a6e}'+
+    (p.notes?'.notes{background:#fff8e8;border-radius:8px;padding:12px 16px;margin-bottom:22px;font-size:12px;border-left:3px solid #e67e22;color:#1a2535}':'')+ 
+    // Plan sections
+    '.plan-section{margin-bottom:26px}'+
+    '.plan-header{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#2B6CC4;background:#eef4ff;border-radius:6px;padding:6px 12px;margin-bottom:10px}'+
+    // Exercise rows
+    '.ex{padding:10px 14px;margin-bottom:6px;border-radius:7px;border:1px solid #e0e8f5;background:#fff;display:block}'+
+    '.ex:nth-child(even){background:#fafcff}'+
+    '.ex-name{font-size:13px;font-weight:600;color:#1a3a6e}'+
+    '.ex-sets{font-size:12px;font-weight:700;color:#2B6CC4;white-space:nowrap;margin-left:8px}'+
+    '.ex-desc{font-size:11px;color:#4a6a8a;margin-top:3px}'+
+    '.ex-tips{font-size:11px;color:#00875a;margin-top:2px;font-style:italic}'+
+    // Notes/follow-ups
+    '.fu{padding:9px 14px;margin-bottom:7px;border-radius:7px;border:1px solid #e0e8f5;background:#fafcff}'+
+    '.fu-date{font-size:10px;color:#4a6a8a;font-weight:600;margin-bottom:3px}'+
+    '.fu-note{font-size:12px;color:#1a2535}'+
+    // Footer
+    '.foot{margin-top:36px;padding-top:14px;border-top:1px solid #e0e8f5;display:flex;justify-content:space-between;align-items:center}'+
+    '.foot-left{font-size:10px;color:#4a6a8a;line-height:1.7}'+
+    '.foot-right{font-size:10px;color:#4a6a8a;text-align:right;line-height:1.7}'+
+    '.confidential{display:inline-block;background:#fff0f0;color:#c0392b;border-radius:4px;padding:1px 6px;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;border:1px solid #ffd0d0;margin-top:4px}'+
+    '@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}.page{padding:28px 36px}}'+
+    '</style></head><body>'+
+    '<div class="page">'+
+    // Header with logo
+    '<div class="hdr">'+
+    '<div class="logo-wrap">'+
+    '<img src="'+logoUrl+'" alt="ElitePhysio Logo" onerror="this.style.display=\'none\'">'+
+    '<div><div class="clinic-name">ElitePhysio</div>'+
+    '<div class="clinic-sub">Sports Physiotherapy Institute · Yoqneam</div></div></div>'+
+    '<div class="doc-meta">'+
+    '<div class="doc-title">Exercise Prescription</div>'+
+    '<div class="doc-date">Date: '+today+'</div>'+
+    '<div class="doc-date">Ref: EP-'+id+'</div>'+
+    '</div></div>'+
+    // Patient card
+    '<div class="patient-card">'+
+    '<div class="patient-name info-item"><label>Patient</label><span>'+(p.name||p.nameHe)+'</span></div>'+
+    '<div class="info-item"><label>Sport / Activity</label><span>'+(p.sport||"—")+'</span></div>'+
+    '<div class="info-item"><label>Age</label><span>'+(p.age||"—")+'</span></div>'+
+    '<div class="info-item"><label>Status</label><span>'+(p.status||"Active")+'</span></div>'+
+    '<div class="info-item"><label>Condition</label><span>'+(p.injury||"—")+'</span></div>'+
+    '<div class="info-item"><label>Sessions</label><span>'+(p.sessions||0)+'</span></div>'+
+    '</div>'+
+    (p.notes?'<div class="notes"><strong>Clinical Notes:</strong> '+p.notes+'</div>':"")+
+    // Exercise plans
+    planSections+
+    // Follow-ups
+    ((p.followUps||[]).length?
+    '<div style="margin-bottom:26px"><div class="plan-header">Progress Notes</div>'+
+    (p.followUps||[]).map(function(f){
+      return '<div class="fu"><div class="fu-date">'+f.date+'</div><div class="fu-note">'+f.note+'</div></div>';
+    }).join("")+'</div>':"")+
+    // Footer
+    '<div class="foot">'+
+    '<div class="foot-left"><strong>ElitePhysio</strong> — Sports Physiotherapy Institute<br>'+
+    'מכון פיזיותרפיה לספורטאים · יקנעם עילית<br>'+
+    '<span class="confidential">Confidential Medical Document</span></div>'+
+    '<div class="foot-right">Generated: '+today+'<br>'+
+    'This document is intended for the named patient only.<br>'+
+    'ElitePhysio © '+new Date().getFullYear()+'</div>'+
+    '</div>'+
+    '</div>'+
     '<scr'+'ipt>window.onload=function(){window.print();}<\/scr'+'ipt></body></html>';
+
   var b=new Blob([h],{type:"text/html"}); var u=URL.createObjectURL(b);
   var a=document.createElement("a"); a.href=u; a.target="_blank"; document.body.appendChild(a); a.click();
   setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(u); },1000);
