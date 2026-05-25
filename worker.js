@@ -1,11 +1,9 @@
 // ═══════════════════════════════════════
 // ElitePhysio Secure Worker
-// All secrets live here - never in browser
+// Secrets stored in Cloudflare env vars
 // ═══════════════════════════════════════
 
 const SB_URL = "https://akovtufhkfnjrzqvzdyv.supabase.co";
-const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFrb3Z0dWZoa2ZuanJ6cXZ6ZHl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MzQwODYsImV4cCI6MjA5NDMxMDA4Nn0.2J-NgkPEas1_SMYHHuovfrdTggUfJlyitRu5K-pbMSM";
-const ADMIN_PASSWORD = "elitephysio39"; // v2
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -20,7 +18,7 @@ function json(data, status=200){
   });
 }
 
-async function sbFetch(path, method="GET", body=null){
+async function sbFetch(SB_KEY, path, method="GET", body=null){
   const opts = {
     method,
     headers: {
@@ -38,15 +36,17 @@ async function sbFetch(path, method="GET", body=null){
 
 export default {
   async fetch(request, env) {
+    // Secrets come from Cloudflare environment - never in code
+    const SB_KEY = env.SUPABASE_KEY;
+    const ADMIN_PASSWORD = env.ADMIN_PASSWORD;
+
     const url = new URL(request.url);
     const path = url.pathname;
 
-    // Handle CORS preflight
     if(request.method === "OPTIONS"){
       return new Response(null, { status: 204, headers: CORS });
     }
 
-    // ── API Routes (secure, secrets never leave this worker) ──
     if(path.startsWith("/api/")){
       let body = {};
       if(request.method !== "GET"){
@@ -61,16 +61,26 @@ export default {
         return json({ ok: false, error: "Wrong password" }, 401);
       }
 
-      // Patient login - name + pin checked server-side
+      // Patient login by ID (for session restore on refresh)
+      if(path === "/api/patient-login-by-id"){
+        const { id } = body;
+        if(!id) return json({ ok:false }, 400);
+        const rows = await sbFetch(SB_KEY, "patients?select=*&id=eq."+id);
+        if(Array.isArray(rows) && rows.length>0) return json({ ok:true, patient:rows[0] });
+        return json({ ok:false }, 404);
+      }
+
+      // Patient login - only returns matching patient
       if(path === "/api/patient-login"){
         const { name, pin } = body;
-        const rows = await sbFetch("patients?select=*");
+        const rows = await sbFetch(SB_KEY, "patients?select=*");
         if(!Array.isArray(rows)) return json({ ok:false, error:"DB error" }, 500);
         const norm = s => (s||"").trim().toLowerCase().replace(/\s+/g," ");
         const entered = norm(name);
         let match = rows.find(p =>
-          [norm(p.name), norm(p.name_he)].some(n => n && (n === entered || n.includes(entered) || entered.includes(n)))
-          && p.pin === pin
+          [norm(p.name), norm(p.name_he)].some(n =>
+            n && (n === entered || n.includes(entered) || entered.includes(n))
+          ) && p.pin === pin
         );
         if(match) return json({ ok: true, patient: match });
         return json({ ok: false, error: "Not found" }, 401);
@@ -80,15 +90,15 @@ export default {
       if(path === "/api/patients" && request.method === "GET"){
         const token = (request.headers.get("Authorization")||"").replace("Bearer ","");
         if(token !== ADMIN_PASSWORD) return json({ error:"Unauthorized" }, 401);
-        const rows = await sbFetch("patients?select=*&order=id.asc");
+        const rows = await sbFetch(SB_KEY, "patients?select=*&order=id.asc");
         return json(rows);
       }
 
-      // Save/update patient (admin only)
+      // Save patient (admin only)
       if(path === "/api/patients" && request.method === "POST"){
         const token = (request.headers.get("Authorization")||"").replace("Bearer ","");
         if(token !== ADMIN_PASSWORD) return json({ error:"Unauthorized" }, 401);
-        await sbFetch("patients", "POST", body);
+        await sbFetch(SB_KEY, "patients", "POST", body);
         return json({ ok: true });
       }
 
@@ -97,20 +107,18 @@ export default {
         const token = (request.headers.get("Authorization")||"").replace("Bearer ","");
         if(token !== ADMIN_PASSWORD) return json({ error:"Unauthorized" }, 401);
         const id = path.split("/")[3];
-        await sbFetch("patients?id=eq."+id, "DELETE");
+        await sbFetch(SB_KEY, "patients?id=eq."+id, "DELETE");
         return json({ ok: true });
       }
 
       return json({ error: "Not found" }, 404);
     }
 
-    // ── Serve all static files with no-cache for JS/CSS ──
+    // Serve static files
     const response = await env.ASSETS.fetch(request);
-    const url2 = new URL(request.url);
-    if(url2.pathname.endsWith('.js') || url2.pathname.endsWith('.css')){
+    if(url.pathname.endsWith('.js') || url.pathname.endsWith('.css')){
       const newResp = new Response(response.body, response);
-      newResp.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
-      newResp.headers.set('Pragma', 'no-cache');
+      newResp.headers.set('Cache-Control', 'no-store');
       return newResp;
     }
     return response;
