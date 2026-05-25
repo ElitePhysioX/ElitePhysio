@@ -1580,13 +1580,22 @@ if(_sess && _sess.auth){
     ADMIN_TOKEN = _sess.token || "";
     SB_KEY = _sess.sbKey || "";
     ss2("a"); setL(lng); gv("d");
-    // Refresh data from Supabase in background
     if(SB_KEY) sbLoad(function(){ rd(); });
   } else {
-    // Patient session - find their data
-    var _sp = pts.find(function(p){ return p.id === auth; });
-    if(_sp){ cur = _sp; ptab = _sess.ptab||"ex"; ss2("p"); setL(lng); rpv(); }
-    else { ss2("l"); setL(lng); }
+    // Patient session - fetch fresh data from Supabase via worker
+    ss2("p"); setL(lng);
+    var _cachedP = pts.find(function(p){ return p.id === auth; });
+    if(_cachedP){ cur=_cachedP; rpv(); }
+    // Always fetch fresh from server to get latest exercises
+    apiCall("patient-login-by-id","POST",{id:auth},function(err,d){
+      if(!err && d && d.ok && d.patient){
+        var p=fromRow(d.patient);
+        pts=[p]; lsave(); cur=p; rpv();
+      } else if(!_cachedP){
+        // No cache and no server data - back to login
+        dout();
+      }
+    });
   }
 } else {
   ss2("l");
