@@ -1,6 +1,5 @@
 // ═══════════════════════════════════════
 // ElitePhysio Secure Worker
-// Secrets stored in Cloudflare env vars
 // ═══════════════════════════════════════
 
 const SB_URL = "https://akovtufhkfnjrzqvzdyv.supabase.co";
@@ -36,9 +35,9 @@ async function sbFetch(SB_KEY, path, method="GET", body=null){
 
 export default {
   async fetch(request, env) {
-    // Secrets come from Cloudflare environment - never in code
-    const SB_KEY = env.SUPABASE_KEY;
-    const ADMIN_PASSWORD = env.ADMIN_PASSWORD;
+    // Use Cloudflare env secrets, fall back to hardcoded if not set
+    const SB_KEY = (env&&env.SUPABASE_KEY) || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFrb3Z0dWZoa2ZuanJ6cXZ6ZHl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MzQwODYsImV4cCI6MjA5NDMxMDA4Nn0.2J-NgkPEas1_SMYHHuovfrdTggUfJlyitRu5K-pbMSM";
+    const ADMIN_PASSWORD = (env&&env.ADMIN_PASSWORD) || "elitephysio39";
 
     const url = new URL(request.url);
     const path = url.pathname;
@@ -61,7 +60,7 @@ export default {
         return json({ ok: false, error: "Wrong password" }, 401);
       }
 
-      // Patient login by ID (for session restore on refresh)
+      // Patient login by ID (session restore)
       if(path === "/api/patient-login-by-id"){
         const { id } = body;
         if(!id) return json({ ok:false }, 400);
@@ -70,7 +69,7 @@ export default {
         return json({ ok:false }, 404);
       }
 
-      // Patient login - only returns matching patient
+      // Patient login
       if(path === "/api/patient-login"){
         const { name, pin } = body;
         const rows = await sbFetch(SB_KEY, "patients?select=*");
