@@ -39,7 +39,8 @@ function toRow(p){
     age:p.age||"", phone:p.phone||"", injury:p.injury||"", pin:p.pin||"0000",
     status:p.status||"Active", notes:p.notes||"", sessions:p.sessions||0,
     start_date:p.startDate||"", exercises:p.exercises||[],
-    follow_ups:p.followUps||[], eval:p.eval||""
+    follow_ups:p.followUps||[], eval:p.eval||"",
+    workout_history:p.workoutHistory||[]
   };
 }
 function fromRow(r){
@@ -48,7 +49,8 @@ function fromRow(r){
     age:r.age||"", phone:r.phone||"", injury:r.injury||"", pin:r.pin||"0000",
     status:r.status||"Active", notes:r.notes||"", sessions:r.sessions||0,
     startDate:r.start_date||"", exercises:r.exercises||[],
-    followUps:r.follow_ups||[], files:[], eval:r.eval||""
+    followUps:r.follow_ups||[], files:[], eval:r.eval||"",
+    workoutHistory:r.workout_history||[]
   };
 }
 
@@ -444,6 +446,7 @@ function rpv(){
 var workoutMode = false;
 var exChecked = {};
 var activeTimer = null;
+var workoutStartTime = null;
 
 function renderPatientView(p){
   g("psh").innerHTML=
@@ -456,7 +459,7 @@ function renderPatientView(p){
     (p.notes?'<div style="background:rgba(0,168,107,0.07);border-radius:8px;padding:11px 15px;border-left:3px solid #00a86b">'+
     '<div style="font-size:11px;color:#00a86b;font-weight:700;text-transform:uppercase;margin-bottom:3px">'+L().no+'</div>'+
     '<div style="font-size:14px;color:#1a2535">'+p.notes+'</div></div>':"");
-  g("pstb").innerHTML=[["ex",L().mp,(p.exercises||[]).length],["fu",L().mn,(p.followUps||[]).length]].map(function(t){
+  g("pstb").innerHTML=[["ex",L().mp,(p.exercises||[]).length],["fu",L().mn,(p.followUps||[]).length],["hi",isHe?"היסטוריה":"History",(p.workoutHistory||[]).length]].map(function(t){
     return '<button class="nb'+(ptab===t[0]?" on":"")+'" onclick="spt(\''+t[0]+'\')">'+t[1]+
       ' <span style="background:rgba(255,255,255,0.25);border-radius:9px;padding:1px 7px;font-size:11px">'+t[2]+'</span></button>';
   }).join("");
@@ -568,11 +571,30 @@ function renderPatientView(p){
     return '<div class="xcard"><div style="font-size:12px;color:#2B6CC4;font-weight:600;margin-bottom:4px">'+f.date+'</div>'+
       '<div style="font-size:14px;color:#1a2535;line-height:1.7">'+f.note+'</div></div>';
   }).join(""):'<div style="color:#4a6a8a;font-size:14px;padding:14px 0">'+L().nf+'</div>';
+
+  // History tab
+  var hist = p.workoutHistory||[];
+  g("pshi").innerHTML=hist.length?hist.map(function(h,i){
+    var exRows = (h.exercises||[]).map(function(e){
+      var n = isHe&&e.nameHe?e.nameHe:(e.name||e.nameHe||"");
+      return '<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid #f5f5f5">'+
+        '<span style="color:#1a2535">'+n+'</span>'+
+        '<span style="color:#2B6CC4;font-weight:600">'+e.sets+' × '+e.reps+'</span></div>';
+    }).join("");
+    return '<div class="xcard" style="margin-bottom:10px">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'+
+      '<div style="font-size:14px;font-weight:700;color:#1a3a6e">'+h.date+'</div>'+
+      '<div style="font-size:13px;color:#e67e22;font-weight:600">⏱ '+h.time+'</div></div>'+
+      exRows+
+      (h.note?'<div style="font-size:12px;color:#4a6a8a;margin-top:8px;font-style:italic">💬 '+h.note+'</div>':'')+
+      '</div>';
+  }).join(""):'<div style="color:#4a6a8a;font-size:14px;padding:14px 0;text-align:center">'+(isHe?"אין היסטוריה עדיין — סיים את האימון הראשון שלך!":"No history yet — complete your first workout!")+'</div>';
+
   spt(ptab);
 }
 
 function startWorkout(){
-  workoutMode=true; exChecked={};
+  workoutMode=true; exChecked={}; workoutStartTime=Date.now();
   renderPatientView(cur);
 }
 
@@ -584,10 +606,110 @@ function endWorkout(){
 
 function toggleCheck(i){
   exChecked[i] = !exChecked[i];
-  // Update just that card's checkbox visually
-  renderPatientView(cur);
+  var total = (cur.exercises||[]).length;
+  var done = (cur.exercises||[]).filter(function(_,idx){ return exChecked[idx]; }).length;
+  if(done === total && total > 0){
+    renderPatientView(cur);
+    setTimeout(function(){ showWorkoutComplete(); }, 400);
+  } else {
+    renderPatientView(cur);
+  }
 }
 
+function showWorkoutComplete(){
+  var isHe = lng==="he";
+  var elapsed = workoutStartTime ? Math.round((Date.now()-workoutStartTime)/1000) : 0;
+  var mins = Math.floor(elapsed/60), secs = elapsed%60;
+  var timeStr = mins+"m "+secs+"s";
+  var p = cur;
+  var exList = p.exercises||[];
+  var totalSets = exList.reduce(function(a,e){ return a+(parseInt(e.sets)||0); },0);
+  var today = new Date().toLocaleDateString(isHe?"he-IL":"en-GB",{day:"2-digit",month:"short",year:"numeric"});
+
+  // Build summary rows
+  var rows = exList.map(function(e,i){
+    var eName = isHe&&e.nameHe?e.nameHe:(e.name||e.nameHe);
+    var doneSets = exChecked["sets_"+i]||parseInt(e.sets)||0;
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f0f0f0;font-size:13px">'+
+      '<span style="color:#1a2535;font-weight:600">'+eName+'</span>'+
+      '<span style="color:#2B6CC4;font-weight:700">'+doneSets+' × '+e.reps+'</span>'+
+      '</div>';
+  }).join("");
+
+  var c = g("MC");
+  c.innerHTML =
+    '<div style="text-align:center;padding:10px 0 16px">'+
+    '<div style="font-size:52px;margin-bottom:8px">🎉</div>'+
+    '<div style="font-size:22px;font-weight:800;color:#1a3a6e;margin-bottom:6px">'+
+    (isHe?"כל הכבוד! סיימת את האימון!":"Great job! Workout complete!")+'</div>'+
+    '<div style="font-size:14px;color:#4a6a8a;margin-bottom:16px">'+
+    (isHe?"המשך לעבוד קשה — הגוף שלך מודה לך!":"Keep it up — your body thanks you!")+'</div>'+
+    '</div>'+
+
+    // Stats row
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">'+
+    '<div style="background:#f0f5ff;border-radius:10px;padding:12px;text-align:center">'+
+    '<div style="font-size:22px;font-weight:800;color:#2B6CC4">'+exList.length+'</div>'+
+    '<div style="font-size:11px;color:#4a6a8a;text-transform:uppercase;font-weight:600">'+(isHe?"תרגילים":"Exercises")+'</div></div>'+
+    '<div style="background:#fff0f5;border-radius:10px;padding:12px;text-align:center">'+
+    '<div style="font-size:22px;font-weight:800;color:#e67e22">'+totalSets+'</div>'+
+    '<div style="font-size:11px;color:#4a6a8a;text-transform:uppercase;font-weight:600">'+(isHe?"סטים":"Sets")+'</div></div>'+
+    '<div style="background:#f0fff5;border-radius:10px;padding:12px;text-align:center">'+
+    '<div style="font-size:18px;font-weight:800;color:#00a86b">'+timeStr+'</div>'+
+    '<div style="font-size:11px;color:#4a6a8a;text-transform:uppercase;font-weight:600">'+(isHe?"זמן":"Time")+'</div></div>'+
+    '</div>'+
+
+    // Exercise summary
+    '<div style="background:#f8fbff;border-radius:10px;padding:12px;margin-bottom:16px">'+
+    '<div style="font-size:12px;font-weight:700;color:#1a3a6e;text-transform:uppercase;margin-bottom:8px">'+(isHe?"סיכום תרגילים":"Exercise Summary")+'</div>'+
+    rows+'</div>'+
+
+    // Motivational note input
+    '<div style="margin-bottom:14px">'+
+    '<label style="font-size:12px;font-weight:700;color:#4a6a8a;text-transform:uppercase;display:block;margin-bottom:5px">'+(isHe?"הערה אישית (אופציונלי)":"Personal note (optional)")+'</label>'+
+    '<textarea id="workout_note" class="inp" dir="'+(isHe?"rtl":"ltr")+'" style="height:52px" placeholder="'+(isHe?"איך הרגשת? כאבים? שיפורים?":"How did it feel? Any pain? Improvements?")+'"></textarea>'+
+    '</div>'+
+
+    '<div style="display:flex;gap:8px">'+
+    '<button class="btn btnd" onclick="cm();endWorkout()" style="flex:1">'+(isHe?"סגור":"Close")+'</button>'+
+    '<button class="btn" onclick="saveWorkoutHistory()" style="flex:2;background:linear-gradient(135deg,#00a86b,#00c47d)">💾 '+(isHe?"שמור את האימון":"Save Workout")+'</button>'+
+    '</div>';
+  g("MB").classList.add("on");
+}
+
+function saveWorkoutHistory(){
+  var isHe = lng==="he";
+  var elapsed = workoutStartTime ? Math.round((Date.now()-workoutStartTime)/1000) : 0;
+  var mins = Math.floor(elapsed/60), secs = elapsed%60;
+  var p = cur;
+  var note = g("workout_note")?g("workout_note").value.trim():"";
+  var today = new Date().toISOString().split("T")[0];
+  var entry = {
+    date: today,
+    time: mins+"m "+secs+"s",
+    exercises: (p.exercises||[]).map(function(e,i){
+      return { name:e.name, nameHe:e.nameHe, sets:exChecked["sets_"+i]||e.sets, reps:e.reps };
+    }),
+    note: note
+  };
+  if(!p.workoutHistory) p.workoutHistory=[];
+  p.workoutHistory.unshift(entry); // newest first
+  // Keep last 50 sessions
+  if(p.workoutHistory.length>50) p.workoutHistory=p.workoutHistory.slice(0,50);
+  pts=pts.map(function(x){ return x.id===p.id?p:x; });
+  sv();
+  cm(); endWorkout();
+  // Show quick confirmation
+  setTimeout(function(){
+    var c=g("MC");
+    c.innerHTML='<div style="text-align:center;padding:20px">'+
+      '<div style="font-size:48px;margin-bottom:10px">✅</div>'+
+      '<div style="font-size:18px;font-weight:800;color:#00a86b;margin-bottom:8px">'+(isHe?"האימון נשמר!":"Workout saved!")+'</div>'+
+      '<div style="font-size:13px;color:#4a6a8a;margin-bottom:16px">'+(isHe?"תוכל לראות היסטוריה בלשונית ההיסטוריה":"You can view history in the History tab")+'</div>'+
+      '<button class="btn" onclick="cm()" style="width:100%">OK</button></div>';
+    g("MB").classList.add("on");
+  },100);
+}
 function startTimer(idx, secs, exIdx){
   if(activeTimer){ clearInterval(activeTimer); activeTimer=null; }
   var s = parseInt(secs); if(!s||s<=0) s=30;
@@ -620,7 +742,7 @@ function startTimer(idx, secs, exIdx){
   tick(); activeTimer=setInterval(tick,1000);
 }
 
-function spt(t){ ptab=t; document.querySelectorAll("#pstb .nb").forEach(function(b,i){ b.classList.toggle("on",["ex","fu"][i]===t); }); g("psex").classList.toggle("hid",t!=="ex"); g("psfu").classList.toggle("hid",t!=="fu"); }
+function spt(t){ ptab=t; document.querySelectorAll("#pstb .nb").forEach(function(b,i){ b.classList.toggle("on",["ex","fu","hi"][i]===t); }); g("psex").classList.toggle("hid",t!=="ex"); g("psfu").classList.toggle("hid",t!=="fu"); g("pshi").classList.toggle("hid",t!=="hi"); }
 
 // ── Modals ──
 function om(m, editId){
