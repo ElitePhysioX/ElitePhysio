@@ -11,6 +11,15 @@ var pts = [], lng = "en", auth = null, cur = null, ctab = "ex", ptab = "ex", stm
 var deletedPatients = []; // recycle bin for patients
 var deletedExercises = []; // recycle bin for exercises
 
+function loadRecycleBin(){
+  try{ deletedPatients = JSON.parse(localStorage.getItem("ep_del_pts")||"[]"); }catch(e){ deletedPatients=[]; }
+  try{ deletedExercises = JSON.parse(localStorage.getItem("ep_del_ex")||"[]"); }catch(e){ deletedExercises=[]; }
+}
+function saveRecycleBin(){
+  try{ localStorage.setItem("ep_del_pts", JSON.stringify(deletedPatients.slice(0,20))); }catch(e){}
+  try{ localStorage.setItem("ep_del_ex", JSON.stringify(deletedExercises.slice(0,50))); }catch(e){}
+}
+
 // ── Helpers ──
 function L(){ return T[lng]; }
 function g(id){ return document.getElementById(id); }
@@ -111,14 +120,15 @@ function sv(){
 
 function dp(id){
   var p = pts.find(function(x){ return x.id===id; });
-  var name = p ? pn(p) : "this patient";
-  if(!confirm("Delete patient \""+name+"\"?\n\nYou can restore them from the Recycle Bin.")) return;
+  if(!p) return;
+  var name = pn(p);
+  if(!confirm("Delete patient \""+name+"\"?\n\nThey will be moved to the Recycle Bin and can be restored.")) return;
   deletedPatients.unshift({patient: JSON.parse(JSON.stringify(p)), deletedAt: new Date().toISOString()});
-  if(deletedPatients.length>20) deletedPatients=deletedPatients.slice(0,20);
-  pts=pts.filter(function(x){ return x.id!==id; });
-  lsave(); 
+  saveRecycleBin();
+  pts = pts.filter(function(x){ return x.id!==id; });
+  lsave();
   apiCall("patients/"+id,"DELETE");
-  cm(); rpl();
+  cm(); rpl(); gv("p");
 }
 
 
@@ -342,7 +352,17 @@ function rs(){
 }
 
 // ── Open Patient ──
-function op(id){ cur=pts.find(function(p){ return p.id===id; }); ctab="ex"; gv("pat"); rpd(); }
+function op(id){
+  cur=pts.find(function(p){ return p.id===id; }); ctab="ex"; gv("pat"); rpd();
+  // Fetch fresh data from Supabase in background to get latest workout history
+  apiCall("patient-login-by-id","POST",{id:id},function(err,d){
+    if(!err && d && d.ok && d.patient){
+      var fresh=fromRow(d.patient);
+      pts=pts.map(function(p){ return p.id===id?fresh:p; });
+      cur=fresh; lsave(); rpd();
+    }
+  });
+}
 
 // ── Patient Detail (Admin) ──
 function rpd(){
@@ -1434,7 +1454,7 @@ function omRecycleBin(){
     '<div style="max-height:420px;overflow-y:auto">'+pHtml+eHtml+'</div>'+
     '<div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center">'+
     '<span style="font-size:11px;color:#4a6a8a">Items auto-clear after session</span>'+
-    '<button class="btn btnd" style="font-size:12px" onclick="deletedPatients=[];deletedExercises=[];cm();rd()">Clear All</button></div>';
+    '<button class="btn btnd" style="font-size:12px" onclick="deletedPatients=[];deletedExercises=[];saveRecycleBin();cm();rd()">Clear All</button></div>';
   g("MB").classList.add("on");
 }
 
@@ -1444,6 +1464,7 @@ function restorePatient(i){
   pts.push(item.patient);
   lsave(); apiCall("patients","POST",toRow(item.patient));
   deletedPatients.splice(i,1);
+  saveRecycleBin();
   rpl(); omRecycleBin();
 }
 
@@ -1458,6 +1479,7 @@ function restoreExercise(i){
   if(cur&&cur.id===p.id) cur=p;
   lsave(); sv();
   deletedExercises.splice(i,1);
+  saveRecycleBin();
   if(cur&&cur.id===p.id) rex();
   omRecycleBin();
 }
@@ -1531,7 +1553,6 @@ function sp2(){
   else{ pts.push(Object.assign({},d,{id:Date.now(),sessions:0,startDate:new Date().toISOString().split("T")[0],exercises:[],followUps:[],files:[],eval:""})); }
   sv(); cm(); rpl(); if(mmode==="ep") rpd();
 }
-function dp(id){ pts=pts.filter(function(p){ return p.id!==id; }); sv(); gv("p"); }
 function setExLng(l){
   g("fdlng").value=l;
   g("lng-en").style.border=l==="en"?"2px solid #2B6CC4":"2px solid #ddd";
@@ -1574,7 +1595,7 @@ function de(eid){
   var eName = (lng==="he"&&e.nameHe)?e.nameHe:(e.name||e.nameHe||"exercise");
   if(!confirm("Delete exercise \""+eName+"\"?\n\nYou can restore it from the Recycle Bin.")) return;
   deletedExercises.unshift({exercise: JSON.parse(JSON.stringify(e)), patientId: cur.id, patientName: pn(cur), deletedAt: new Date().toISOString()});
-  if(deletedExercises.length>50) deletedExercises=deletedExercises.slice(0,50);
+  saveRecycleBin();
   cur.exercises=(cur.exercises||[]).filter(function(x){ return Number(x.id)!==Number(eid); });
   pts=pts.map(function(p){ return p.id===cur.id?cur:p; }); sv(); rex();
 }
@@ -1711,6 +1732,7 @@ function dprint(id){
 
 // ── Init ──
 pts = lload() || DM;
+loadRecycleBin();
 // Restore session on refresh
 var _sess = null;
 try{ _sess = JSON.parse(sessionStorage.getItem("ep_session")); }catch(e){}
