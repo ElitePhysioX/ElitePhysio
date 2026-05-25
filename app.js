@@ -727,13 +727,13 @@ function saveWorkoutHistory(){
     note: note
   };
   if(!p.workoutHistory) p.workoutHistory=[];
-  p.workoutHistory.unshift(entry); // newest first
-  // Keep last 50 sessions
+  p.workoutHistory.unshift(entry);
   if(p.workoutHistory.length>50) p.workoutHistory=p.workoutHistory.slice(0,50);
   pts=pts.map(function(x){ return x.id===p.id?p:x; });
-  sv();
+  lsave();
+  // Save workout history via dedicated patient route (works without admin token)
+  apiCall("patient-save-history","POST",{id:p.id, workoutHistory:p.workoutHistory},function(){});
   cm(); endWorkout();
-  // Show quick confirmation
   setTimeout(function(){
     var c=g("MC");
     c.innerHTML='<div style="text-align:center;padding:20px">'+
