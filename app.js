@@ -7,7 +7,7 @@
 var APW = ""; // password verified server-side
 var SK  = "ep12";
 var AI_KEY = "";
-var pts = [], lng = "en", auth = null, cur = null, ctab = "ex", ptab = "ex", stmr = null, mmode = "";
+var pts = [], lng = "he", auth = null, cur = null, ctab = "ex", ptab = "ex", stmr = null, mmode = "";
 var deletedPatients = []; // recycle bin for patients
 var deletedExercises = []; // recycle bin for exercises
 
@@ -333,16 +333,9 @@ function rpl(){
   list.sort(function(a,b){ return pn(a).localeCompare(pn(b), lng==="he"?"he":"en"); });
   var binCount = deletedPatients.length+deletedExercises.length;
   g("ptit").textContent=L().pats+" ("+pts.length+")";
-  // Add recycle bin button next to new patient button
-  var npBtn=document.querySelector("#VP .row button");
-  if(npBtn && !document.getElementById("rbtn_pl")){
-    var rb=document.createElement("button");
-    rb.id="rbtn_pl"; rb.className="btn";
-    rb.style="font-size:12px;background:#fff3f3;color:#e74c3c;border:1px solid rgba(231,76,60,0.3);margin-right:8px";
-    rb.innerHTML='🗑 '+(lng==="he"?"סל מחזור":"Recycle Bin")+(binCount>0?' ('+binCount+')':'');
-    rb.onclick=function(){ omRecycleBin(); };
-    npBtn.parentNode.insertBefore(rb, npBtn);
-  }
+  // Update recycle bin button count
+  var rbtn=g("rbtn_pts"); if(rbtn) rbtn.innerHTML='🗑 '+(lng==="he"?"סל מחזור":"Recycle Bin")+(binCount>0?' ('+binCount+')':'');
+  var npBtn=g("pnb"); if(npBtn) npBtn.textContent='+ '+(lng==="he"?"מטופל חדש":"New Patient");
   g("pls").innerHTML=list.length?list.map(function(p){
     var dn=pn(p);
     var avHtml = p.avatarId ? '<div style="width:38px;height:50px;flex-shrink:0">'+legoSVG(AVATARS.find(function(a){return a.id===p.avatarId;})||AVATARS[0],38)+'</div>' : av(dn);
@@ -947,13 +940,41 @@ function rcl(){
 // ── Patient View (patient login) ──
 function rpv(){
   var p=pts.find(function(x){ return x.id===auth; }); if(!p){ dout(); return; } cur=p;
-  // Show welcome screen on first login
+  // Show welcome screen only on first login ever
   if(!p.firstLoginDone){
     renderPatientView(p);
     setTimeout(function(){ showFirstTimeWelcome(p); },300);
   } else {
     renderPatientView(p);
   }
+}
+
+function saveWelcome(){
+  var isHe=lng==="he";
+  var nhe=g("wn_he")?g("wn_he").value.trim():"";
+  var nen=g("wn_en")?g("wn_en").value.trim():"";
+  if(!nhe&&!nen){alert(isHe?"הכנס שם":"Enter your name");return;}
+  cur.name=nen||nhe; cur.nameHe=nhe||nen;
+  cur.age=g("w_age")?g("w_age").value:"";
+  var wSportSel=g("w_sport_sel"); var wSportOther=g("w_sport_other");
+  cur.sport = (wSportSel&&wSportSel.value&&wSportSel.value!=="__other__") ? wSportSel.value : (wSportOther?wSportOther.value.trim():"");
+  cur.injury=g("w_injury")?g("w_injury").value.trim():"";
+  cur.notes=g("w_goal")?g("w_goal").value.trim():"";
+  cur.firstLoginDone=true;
+  pts=pts.map(function(p){return p.id===cur.id?cur:p;});
+  // Persist in session so avatar survives refresh
+  try{
+    var sess=JSON.parse(sessionStorage.getItem("ep_session")||"{}");
+    sess.avatarId=cur.avatarId; sess.firstLoginDone=true;
+    sessionStorage.setItem("ep_session",JSON.stringify(sess));
+  }catch(e){}
+  lsave();
+  apiCall("patient-save-profile","POST",{
+    id:cur.id, name:cur.name, nameHe:cur.nameHe,
+    age:cur.age, sport:cur.sport, injury:cur.injury,
+    notes:cur.notes, avatarId:cur.avatarId, firstLoginDone:true
+  },function(){});
+  cm(); rpv();
 }
 
 var workoutMode = false;
@@ -1102,6 +1123,10 @@ function selectAvatar(id){
   cm();
 }
 
+function toggleWelcomeSport(v){
+  var other=g("w_sport_other"); if(other) other.style.display=v==="__other__"?"block":"none";
+}
+
 function showFirstTimeWelcome(p){
   var isHe=lng==="he";
   if(!cur.avatarId) cur.avatarId=Math.floor(Math.random()*30)+1;
@@ -1120,7 +1145,13 @@ function showFirstTimeWelcome(p){
     '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"שם מלא בעברית":"שם מלא בעברית")+'</label><input class="inp" id="wn_he" dir="rtl" placeholder="שם בעברית" value="'+(p.nameHe||'')+'"></div>'+
     '<div style="grid-column:1/-1"><label class="lbl">Full Name in English</label><input class="inp" id="wn_en" placeholder="English name" value="'+(p.name||'')+'"></div>'+
     '<div><label class="lbl">'+(isHe?"גיל":"Age")+'</label><input class="inp" id="w_age" type="number" value="'+(p.age||'')+'"></div>'+
-    '<div><label class="lbl">'+(isHe?"ספורט":"Sport")+'</label><input class="inp" id="w_sport" value="'+(p.sport||'')+'"></div>'+
+    '<div><label class="lbl">'+(isHe?"ספורט":"Sport")+'</label>'+
+    '<select class="inp" id="w_sport_sel" onchange="toggleWelcomeSport(this.value)">'+
+    '<option value="">-- '+(isHe?"בחר ספורט":"Select sport")+' --</option>'+
+    getAllSports().map(function(s,i){ var allHe=getAllSportsHe(); var label=isHe&&allHe[i]?allHe[i]:s; return '<option value="'+s+'"'+(p.sport===s?" selected":"")+'>'+label+'</option>'; }).join("")+
+    '<option value="__other__">'+(isHe?"אחר (הכנס ידנית)":"Other (type manually)")+'</option>'+
+    '</select>'+
+    '<input class="inp" id="w_sport_other" placeholder="'+(isHe?"כתוב ספורט...":"Type sport...")+'" value="'+(getAllSports().indexOf(p.sport)<0?p.sport:'')+'" style="margin-top:5px;display:'+(getAllSports().indexOf(p.sport)<0&&p.sport?'block':'none')+'"></div>'+
     '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"פציעות/מצב":"Injuries/Condition")+'</label><input class="inp" id="w_injury" value="'+(p.injury||'')+'"></div>'+
     '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"המטרה שלי":"My Goal")+'</label><input class="inp" id="w_goal" value="'+(p.notes||'')+'"></div>'+
     '</div>'+
@@ -1195,7 +1226,12 @@ function showPatientProfile(){
     '<div><label class="lbl">'+(isHe?"גיל":"Age")+'</label>'+
     '<input class="inp" id="pp_age" type="number" value="'+(p.age||'')+'"></div>'+
     '<div><label class="lbl">'+(isHe?"ספורט":"Sport")+'</label>'+
-    '<input class="inp" id="pp_sport" value="'+(p.sport||'')+'"></div>'+
+    '<select class="inp" id="pp_sport_sel" onchange="var o=document.getElementById(\'pp_sport_other\');o.style.display=this.value===\'__other__\'?\'block\':\'none\'">'+
+    '<option value="">-- '+(isHe?"בחר":"Select")+' --</option>'+
+    getAllSports().map(function(s,i){ var allHe=getAllSportsHe(); var label=isHe&&allHe[i]?allHe[i]:s; return '<option value="'+s+'"'+(p.sport===s?" selected":"")+'>'+label+'</option>'; }).join("")+
+    '<option value="__other__">'+(isHe?"אחר (כתוב)":"Other (type)")+'</option>'+
+    '</select>'+
+    '<input class="inp" id="pp_sport" placeholder="'+(isHe?"כתוב ספורט":"Type sport")+'" value="'+(getAllSports().indexOf(p.sport)<0&&p.sport?p.sport:'')+'" style="margin-top:5px;display:'+(getAllSports().indexOf(p.sport)<0&&p.sport?'block':'none')+'" id="pp_sport_other"></div>'+
     '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"פציעה/מצב":"Injury/Condition")+'</label>'+
     '<input class="inp" id="pp_injury" value="'+(p.injury||'')+'"></div>'+
     '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"המטרה שלי":"My Goal")+'</label>'+
@@ -1223,7 +1259,8 @@ function savePatientProfile(){
   var newPin=g("pp_pin")?g("pp_pin").value.trim():"";
   cur.name=nen||nhe; cur.nameHe=nhe||nen;
   cur.age=g("pp_age")?g("pp_age").value:"";
-  cur.sport=g("pp_sport")?g("pp_sport").value.trim():"";
+  var sportSel=g("pp_sport_sel"); var sportOther=g("pp_sport_other")||g("pp_sport");
+  cur.sport = (sportSel&&sportSel.value&&sportSel.value!=="__other__") ? sportSel.value : (sportOther?sportOther.value.trim():"");
   cur.injury=g("pp_injury")?g("pp_injury").value.trim():"";
   cur.notes=g("pp_goal")?g("pp_goal").value.trim():"";
   pts=pts.map(function(p){return p.id===cur.id?cur:p;});
@@ -1327,12 +1364,15 @@ function renderPatientView(p){
   g("psh").innerHTML=
     '<div style="display:flex;align-items:center;gap:15px;margin-bottom:14px">'+legoAv(p,52)+
     '<div><div style="font-size:21px;font-weight:800;color:#1a3a6e">'+pn(p)+'</div>'+
-    '<div style="margin-top:5px">'+bdg(p.sport)+'</div></div></div>'+
+    '<div style="margin-top:5px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">'+
+    bdg(spName(p.sport))+
+    (p.age?'<span style="background:#f0f5ff;color:#2B6CC4;border-radius:5px;padding:2px 8px;font-size:12px;font-weight:600;border:1px solid rgba(43,108,196,0.2)">'+(lng==="he"?"גיל":"Age")+' '+p.age+'</span>':"")+
+    '</div></div></div>'+
     (p.injury?'<div style="background:rgba(43,108,196,0.08);border-radius:8px;padding:11px 15px;border-left:3px solid #2B6CC4;margin-bottom:8px">'+
     '<div style="font-size:11px;color:#2B6CC4;font-weight:700;text-transform:uppercase;margin-bottom:3px">'+L().ij+'</div>'+
     '<div style="font-size:14px;color:#1a2535">'+p.injury+'</div></div>':"")+
     (p.notes?'<div style="background:rgba(0,168,107,0.07);border-radius:8px;padding:11px 15px;border-left:3px solid #00a86b">'+
-    '<div style="font-size:11px;color:#00a86b;font-weight:700;text-transform:uppercase;margin-bottom:3px">'+L().no+'</div>'+
+    '<div style="font-size:11px;color:#00a86b;font-weight:700;text-transform:uppercase;margin-bottom:3px">'+(lng==="he"?"המטרה שלי":"My Goal")+'</div>'+
     '<div style="font-size:14px;color:#1a2535">'+p.notes+'</div></div>':"");
   var isHe = lng==="he";
   var plans = p.workoutPlans||[];
@@ -1638,7 +1678,7 @@ function om(m, editId){
       '<div style="grid-column:1/-1"><label class="lbl">'+Lx.ij+'</label><input class="inp" id="fij" value="'+(p.injury||"")+'"></div>'+
       '<div><label class="lbl">'+Lx.pi+'</label><input class="inp" id="fpi" maxlength="4" value="'+(p.pin||"")+'" placeholder="1234"></div>'+
       '<div><label class="lbl">'+Lx.st+'</label><select class="inp" id="fst">'+ST.map(function(s){ return '<option'+(p.status===s?" selected":"")+'>'+s+'</option>'; }).join("")+'</select></div>'+
-      '<div style="grid-column:1/-1"><label class="lbl">'+Lx.sp+'</label><select class="inp" id="fsp"><option value="">'+Lx.ss+'</option>'+getAllSports().map(function(s,i){ var all=getAllSports(),allHe=getAllSportsHe(); var label=lng==="he"&&allHe[i]?allHe[i]+" / "+s:s; return '<option value="'+s+'"'+(p.sport===s?" selected":"")+'>'+label+'</option>'; }).join("")+'</select>'+
+      '<div style="grid-column:1/-1"><label class="lbl">'+Lx.sp+'</label><select class="inp" id="fsp"><option value="">'+Lx.ss+'</option>'+getAllSports().map(function(s,i){ var allHe=getAllSportsHe(); var label=lng==="he"&&allHe[i]?allHe[i]:s; return '<option value="'+s+'"'+(p.sport===s?" selected":"")+'>'+label+'</option>'; }).join("")+'</select>'+
       '<div style="margin-top:5px"><span style="font-size:11px;color:#4a6a8a">Not listed? </span><button type="button" onclick="addCustomSport()" style="font-size:11px;color:#2B6CC4;background:none;border:none;cursor:pointer;text-decoration:underline">+ Add sport</button></div></div>'+
       '<div style="grid-column:1/-1"><label class="lbl">'+Lx.no+'</label><textarea class="inp" id="fno" style="height:68px">'+(p.notes||"")+'</textarea></div></div>'+
       '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btnd" onclick="cm()">'+Lx.ca+'</button><button class="btn" onclick="sp2()">'+Lx.sa+'</button></div>';
@@ -2989,12 +3029,13 @@ function dprint(id){
 // ── Init ──
 pts = lload() || DM;
 loadRecycleBin();
+setL("he");
 // Restore session on refresh
 var _sess = null;
 try{ _sess = JSON.parse(sessionStorage.getItem("ep_session")); }catch(e){}
 if(_sess && _sess.auth){
   auth = _sess.auth;
-  lng = _sess.lng || "en";
+  lng = _sess.lng || "he";
   if(auth === "admin"){
     ADMIN_TOKEN = _sess.token || "";
     SB_KEY = _sess.sbKey || "";
@@ -3009,6 +3050,8 @@ if(_sess && _sess.auth){
     apiCall("patient-login-by-id","POST",{id:auth},function(err,d){
       if(!err && d && d.ok && d.patient){
         var p=fromRow(d.patient);
+        // Restore avatarId from session if not yet saved to server
+        if(!p.avatarId && _sess.avatarId) p.avatarId=_sess.avatarId;
         pts=[p]; lsave(); cur=p; rpv();
       } else if(!_cachedP){
         // No cache and no server data - back to login
@@ -3018,5 +3061,5 @@ if(_sess && _sess.auth){
   }
 } else {
   ss2("l");
-  setL("en");
+  setL("he");
 }
