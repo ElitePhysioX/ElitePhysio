@@ -226,6 +226,7 @@ function alog(){
       SB_KEY = d.sbKey||"";
       auth="admin"; g("apw").value="";
       sessionStorage.setItem("ep_session", JSON.stringify({auth:"admin", token:pw, sbKey:SB_KEY, lng:lng}));
+      syncCustomLib();
       ss2("a");
       sbLoad(function(){
         var local=lload();
@@ -802,11 +803,12 @@ function rex(){
       var lngBadge=isHeE?'<span style="font-size:10px;background:#e8f0ff;color:#2B6CC4;border-radius:4px;padding:1px 5px;margin-left:4px">🇮🇱</span>':
         '<span style="font-size:10px;background:#f0f5e8;color:#2a7a3a;border-radius:4px;padding:1px 5px;margin-left:4px">🇺🇸</span>';
       var setsReps='<span style="font-weight:600;color:#2B6CC4">'+e.sets+'</span> &times; <span style="font-weight:600;color:#2B6CC4">'+e.reps+'</span>';
-      return '<div class="xcard" style="direction:'+(isHeE?"rtl":"ltr")+'">'+
+      return '<div class="xcard" data-ex-idx="'+i+'" id="excard_'+i+'" style="direction:'+(isHeE?"rtl":"ltr")+';transition:all 0.2s">'+
         '<div style="display:flex;justify-content:space-between;align-items:flex-start">'+
         '<div style="flex:1">'+
         '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">'+bdg("#"+(i+1))+
-        '<span style="font-weight:700;font-size:15px;color:#1a3a6e">'+eName+'</span>'+lngBadge+'</div>'+
+        '<span style="font-weight:700;font-size:15px;color:#1a3a6e">'+eName+'</span>'+lngBadge+
+        '<span style="font-size:11px;color:#c8d8ee;margin-left:4px;cursor:grab" title="Hold to drag">⠿</span></div>'+
         '<div style="font-size:13px;color:#4a6a8a;margin-bottom:4px">'+setsReps+' reps</div>'+
         (eDesc?'<div style="font-size:13px;color:#1a2535;margin-bottom:3px">'+eDesc+'</div>':"")+
         (eTips?'<div style="font-size:13px;color:#00a86b;margin-bottom:6px">&#128161; '+eTips+'</div>':"")+
@@ -816,9 +818,16 @@ function rex(){
         '<button class="btn" style="padding:4px 9px;font-size:12px;background:#f0f5ff" onclick="om(\'ae\','+e.id+')">✏️</button>'+
         '</div></div></div>';
     }).join("");
+  // Init drag listeners after render
+  setTimeout(function(){
+    exercises.forEach(function(_,i){
+      var el=document.getElementById("excard_"+i);
+      if(el && window.initDrag) initDrag(el,i,editDay.planId,editDay.phaseIdx,editDay.dayId);
+    });
+  },100);
 }
 
-// Delete exercise from current plan day
+// ── Delete exercise from current plan day ──
 function dePlan(eid){
   var ed=cur._editingDay; if(!ed) return;
   var plan=(cur.workoutPlans||[]).find(function(p){ return p.id===ed.planId; });
@@ -1127,7 +1136,7 @@ function saveWelcome(){
 
 function legoAv(p,size){
   var av=AVATARS.find(function(a){return a.id===(p.avatarId||0);})||null;
-  if(!av) return av2(pn(p),size||40);
+  if(!av) return av(pn(p),size||40);
   return '<div onclick="showAvatarPicker(function(id){cur.avatarId=id;lsave();rpv();})" style="cursor:pointer">'+legoSVG(av,size||40)+'</div>';
 }
 
@@ -1762,8 +1771,21 @@ function selEx(idx){
 // ── Library Management ──
 var CUSTOM_LIB_KEY = "ep_custom_lib";
 function loadCustomLib(){ try{ return JSON.parse(localStorage.getItem(CUSTOM_LIB_KEY)||"[]"); }catch(e){ return []; } }
-function saveCustomLib(arr){ localStorage.setItem(CUSTOM_LIB_KEY, JSON.stringify(arr)); }
+function saveCustomLib(arr){
+  try{ localStorage.setItem(CUSTOM_LIB_KEY, JSON.stringify(arr)); }catch(e){}
+  // Also save to Supabase via a dedicated key in patient 0 / admin storage
+  apiCall("save-custom-lib","POST",{lib:arr},function(){});
+}
 function getFullLib(){ return EX_LIB.concat(loadCustomLib()); }
+
+// Load custom lib from Supabase on admin login (syncs across devices)
+function syncCustomLib(){
+  apiCall("load-custom-lib","GET",null,function(err,d){
+    if(!err && d && d.lib && Array.isArray(d.lib) && d.lib.length>0){
+      try{ localStorage.setItem(CUSTOM_LIB_KEY, JSON.stringify(d.lib)); }catch(e){}
+    }
+  });
+}
 
 function omLib(){
   var custom = loadCustomLib();
@@ -2354,8 +2376,77 @@ function saveNewTemplate(){
 
 function editTemplate(i){
   var custom=loadTemplates(); var t=custom[i]; if(!t) return;
-  // Simple: just delete and recreate
-  if(confirm("Edit this template — you'll rebuild it. Continue?")){ deleteTemplate(i); omNewTemplate(); }
+  var isHe=lng==="he";
+  var c=g("MC");
+  c.innerHTML=
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'+
+    '<span style="font-size:16px;font-weight:800;color:#1a3a6e">✏️ '+(isHe?"ערוך תבנית":"Edit Template")+'</span>'+
+    '<button onclick="omTemplates()" style="background:rgba(0,0,0,0.08);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:16px">←</button></div>'+
+    '<div class="g2" style="gap:10px;margin-bottom:12px">'+
+    '<div style="grid-column:1/-1"><label class="lbl">Name (EN)</label><input class="inp" id="tp_name" value="'+(t.name||'')+'"></div>'+
+    '<div style="grid-column:1/-1"><label class="lbl">שם (עברית)</label><input class="inp" id="tp_namehe" dir="rtl" value="'+(t.nameHe||'')+'"></div>'+
+    '<div style="grid-column:1/-1"><label class="lbl">Category</label><input class="inp" id="tp_cat" value="'+(t.category||'General')+'"></div>'+
+    '</div>'+
+    '<div style="font-size:12px;font-weight:700;color:#1a3a6e;margin-bottom:8px">Exercises</div>'+
+    '<div id="tp_ex_list">'+
+    (t.exercises||[]).map(function(e,ei){
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:#f0f5ff;border-radius:7px;margin-bottom:5px;font-size:12px">'+
+        '<div><div style="font-weight:600">'+(e.nameHe&&lng==="he"?e.nameHe:e.name)+'</div>'+
+        '<div style="color:#4a6a8a">'+e.sets+' × '+e.reps+'</div></div>'+
+        '<button onclick="removeTpExEdit('+ei+','+i+')" style="background:none;border:none;cursor:pointer;color:#e74c3c;font-size:14px">✕</button>'+
+        '</div>';
+    }).join("")+
+    '</div>'+
+    '<div style="margin:10px 0 8px"><input class="inp" id="tp_exsearch2" placeholder="Add exercise..." oninput="filterTpEx2(this.value,'+i+')">'+
+    '<div id="tp_exlist2" style="max-height:120px;overflow-y:auto;border:1px solid rgba(43,108,196,0.2);border-radius:8px;margin-top:4px;background:#fff"></div></div>'+
+    '<div style="display:flex;gap:8px;justify-content:flex-end">'+
+    '<button class="btn btnd" onclick="omTemplates()">'+(isHe?"ביטול":"Cancel")+'</button>'+
+    '<button class="btn" onclick="saveEditTemplate('+i+')">'+(isHe?"שמור":"Save")+'</button></div>';
+  g("MB").classList.add("on");
+  g("tp_ex_list").dataset.exercises=JSON.stringify(t.exercises||[]);
+}
+
+function filterTpEx2(q,tIdx){
+  var list=q?EX_LIB.filter(function(e){
+    return (e.name||"").toLowerCase().includes(q.toLowerCase())||(e.nameHe||"").includes(q);
+  }).slice(0,6):[];
+  var box=g("tp_exlist2"); if(!box) return;
+  box.innerHTML=list.map(function(e){
+    return '<div onclick="addTpExEdit(\''+e.name.replace(/'/g,"")+'\',\''+e.nameHe.replace(/'/g,"")+'\','+tIdx+')" '+
+      'style="padding:7px 10px;cursor:pointer;border-bottom:1px solid #f0f0f0;font-size:12px" '+
+      'onmouseover="this.style.background=\'#f0f5fb\'" onmouseout="this.style.background=\'\'">'+
+      '<span style="font-weight:600">'+e.name+'</span> / <span style="color:#4a6a8a">'+e.nameHe+'</span></div>';
+  }).join("");
+}
+
+function addTpExEdit(eName,eNameHe,tIdx){
+  var list=g("tp_ex_list"); if(!list) return;
+  var arr=[]; try{arr=JSON.parse(list.dataset.exercises);}catch(x){}
+  arr.push({name:eName,nameHe:eNameHe,sets:"3",reps:"10",tips:"",tipsHe:"",desc:"",descHe:"",displayLng:"en"});
+  list.dataset.exercises=JSON.stringify(arr);
+  var newRow=document.createElement("div");
+  newRow.style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:#f0f5ff;border-radius:7px;margin-bottom:5px;font-size:12px";
+  newRow.innerHTML='<div><div style="font-weight:600">'+eName+'</div><div style="color:#4a6a8a">3 × 10</div></div>'+
+    '<button onclick="removeTpExEdit('+(arr.length-1)+','+tIdx+')" style="background:none;border:none;cursor:pointer;color:#e74c3c;font-size:14px">✕</button>';
+  list.appendChild(newRow);
+  g("tp_exlist2").innerHTML=""; g("tp_exsearch2").value="";
+}
+
+function removeTpExEdit(ei,tIdx){
+  var list=g("tp_ex_list"); if(!list) return;
+  var arr=[]; try{arr=JSON.parse(list.dataset.exercises);}catch(x){}
+  arr.splice(ei,1); list.dataset.exercises=JSON.stringify(arr);
+  editTemplate(tIdx);
+}
+
+function saveEditTemplate(i){
+  var n=g("tp_name")?g("tp_name").value.trim():"";
+  var nhe=g("tp_namehe")?g("tp_namehe").value.trim():"";
+  var cat=g("tp_cat")?g("tp_cat").value.trim():"General";
+  var list=g("tp_ex_list"); var arr=[]; if(list) try{arr=JSON.parse(list.dataset.exercises);}catch(x){}
+  var custom=loadTemplates();
+  custom[i]=Object.assign(custom[i],{name:n||custom[i].name,nameHe:nhe||custom[i].nameHe,category:cat,exercises:arr});
+  saveTemplates(custom); omTemplates();
 }
 
 function deleteTemplate(i){
