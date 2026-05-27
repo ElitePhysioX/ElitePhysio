@@ -60,6 +60,23 @@ export default {
         return json({ ok: false, error: "Wrong password" }, 401);
       }
 
+      // Patient saves own profile (name, avatar, goals etc)
+      if(path === "/api/patient-save-profile"){
+        const { id, name, nameHe, age, sport, injury, notes, avatarId, firstLoginDone } = body;
+        if(!id) return json({ ok:false }, 400);
+        const update = {};
+        if(name!==undefined) update.name=name;
+        if(nameHe!==undefined) update.name_he=nameHe;
+        if(age!==undefined) update.age=age;
+        if(sport!==undefined) update.sport=sport;
+        if(injury!==undefined) update.injury=injury;
+        if(notes!==undefined) update.notes=notes;
+        if(avatarId!==undefined) update.avatar_id=avatarId;
+        if(firstLoginDone!==undefined) update.first_login_done=firstLoginDone;
+        await sbFetch(SB_KEY, "patients?id=eq."+id, "PATCH", update);
+        return json({ ok: true });
+      }
+
       // Patient saves own workout history (no admin token needed, just their ID)
       if(path === "/api/patient-save-history"){
         const { id, workoutHistory } = body;
