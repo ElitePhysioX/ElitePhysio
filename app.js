@@ -52,7 +52,9 @@ function toRow(p){
     start_date:p.startDate||"", exercises:p.exercises||[],
     follow_ups:p.followUps||[], eval:p.eval||"",
     workout_history:p.workoutHistory||[],
-    workout_plans:p.workoutPlans||[]
+    workout_plans:p.workoutPlans||[],
+    avatar_id:p.avatarId||0,
+    first_login_done:p.firstLoginDone||false
   };
 }
 function fromRow(r){
@@ -63,7 +65,9 @@ function fromRow(r){
     startDate:r.start_date||"", exercises:r.exercises||[],
     followUps:r.follow_ups||[], files:[], eval:r.eval||"",
     workoutHistory:r.workout_history||[],
-    workoutPlans:r.workout_plans||[]
+    workoutPlans:r.workout_plans||[],
+    avatarId:r.avatar_id||0,
+    firstLoginDone:r.first_login_done||false
   };
   // Migrate old flat exercises into a default plan if no plans exist
   if(p.workoutPlans.length===0 && p.exercises && p.exercises.length>0){
@@ -299,9 +303,16 @@ function rd(){
 // ── Patient List ──
 // ── Bilingual sports list ──
 var SP_HE = ["ריצה","קרוספיט","שחייה","רכיבה על אופניים","כדורגל","כדורסל","טניס","כדורעף","אומנויות לחימה","התעמלות","הרמת משקולות","יוגה","פילאטיס","גולף","איגרוף","חתירה","הוקי","בייסבול","סקי","אחר"];
-function spName(s){ 
-  if(lng==="he"){ var i=SP.indexOf(s); return (i>=0&&SP_HE[i])?SP_HE[i]:s; }
-  if(lng==="en"){ var i=SP_HE.indexOf(s); return (i>=0&&SP[i])?SP[i]:s; }
+
+function getCustomSports(){ try{ return JSON.parse(localStorage.getItem("ep_sports")||"[]"); }catch(e){ return []; } }
+function saveCustomSports(arr){ try{ localStorage.setItem("ep_sports",JSON.stringify(arr)); }catch(e){} }
+function getAllSports(){ return SP.concat(getCustomSports().map(function(s){return s.en;})); }
+function getAllSportsHe(){ return SP_HE.concat(getCustomSports().map(function(s){return s.he||s.en;})); }
+
+function spName(s){
+  var all=getAllSports(), allHe=getAllSportsHe();
+  if(lng==="he"){ var i=all.indexOf(s); return (i>=0&&allHe[i])?allHe[i]:s; }
+  if(lng==="en"){ var i=allHe.indexOf(s); return (i>=0&&all[i])?all[i]:s; }
   return s;
 }
 function pn(p){ return (lng==="he"&&p.nameHe)?p.nameHe:(p.name||p.nameHe||""); }
@@ -425,9 +436,11 @@ function rplans(){
   g("pet").innerHTML =
     '<div class="row" style="margin-bottom:14px">'+
     '<span class="st">'+(isHe?"תוכניות אימון":"Workout Programs")+'</span>'+
-    '<button class="btn" style="font-size:12px" onclick="omNewPlan()">+ '+(isHe?"תוכנית חדשה":"New Program")+'</button></div>'+
+    '<div style="display:flex;gap:6px">'+
+    '<button class="btn" style="font-size:12px;background:#fff8e8;color:#e67e22;border:1px solid rgba(230,126,34,0.3)" onclick="omTemplates()">📋 '+(isHe?"תבניות":"Templates")+'</button>'+
+    '<button class="btn" style="font-size:12px" onclick="omNewPlan()">+ '+(isHe?"תוכנית חדשה":"New Program")+'</button></div></div>'+
     (plans.length===0?
-      '<div style="color:#4a6a8a;padding:20px;text-align:center;font-size:14px">'+(isHe?"אין תוכניות עדיין":"No programs yet — create one!")+'</div>' :
+      '<div style="color:#4a6a8a;padding:20px;text-align:center;font-size:14px;background:#f8fbff;border-radius:10px;border:2px dashed #c8d8ee">'+(isHe?"צור תוכנית אימון ראשונה":"Create your first workout program!")+'</div>' :
       plans.map(function(plan){
         var typeBadge = plan.type==="periodized"?
           '<span style="background:#f0f5ff;color:#2B6CC4;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700">📅 '+(isHe?"מחזורי":"Periodized")+'</span>':
@@ -737,9 +750,8 @@ function rex(){
   var day=days?days.find(function(d){ return d.id===editDay.dayId; }):null;
 
   if(!plan||!day){
-    // No plan selected - show plans overview or flat exercises
-    if((cur.workoutPlans||[]).length>0) rplans();
-    else rexFlat();
+    // Always show plans overview (which has + New Program button)
+    rplans();
     return;
   }
 
@@ -779,7 +791,11 @@ function rex(){
     '<button class="btn" style="font-size:12px" onclick="om(\'ae\')">'+L().ae+'</button></div></div>'+
     (exercises.length===0?'<div style="color:#4a6a8a;font-size:14px;padding:14px 0">'+L().nx+'</div>':"")+
     exercises.map(function(e,i){
-      var isHeE=e.displayLng==="he"||(lng==="he"&&!e.displayLng)||(!e.name&&e.nameHe);
+      // Always follow page language if translation exists, fall back to displayLng
+      var isHeE;
+      if(lng==="he" && e.nameHe) isHeE=true;
+      else if(lng==="en" && e.name) isHeE=false;
+      else isHeE=e.displayLng==="he"||(!e.name&&e.nameHe);
       var eName=isHeE&&e.nameHe?e.nameHe:(e.name||e.nameHe);
       var eDesc=isHeE&&e.descHe?e.descHe:(e.desc||e.descHe);
       var eTips=isHeE&&e.tipsHe?e.tipsHe:(e.tips||e.tipsHe);
@@ -903,7 +919,13 @@ function rcl(){
 // ── Patient View (patient login) ──
 function rpv(){
   var p=pts.find(function(x){ return x.id===auth; }); if(!p){ dout(); return; } cur=p;
-  renderPatientView(p);
+  // Show welcome screen on first login
+  if(!p.firstLoginDone){
+    renderPatientView(p);
+    setTimeout(function(){ showFirstTimeWelcome(p); },300);
+  } else {
+    renderPatientView(p);
+  }
 }
 
 var workoutMode = false;
@@ -911,7 +933,205 @@ var exChecked = {};
 var activeTimer = null;
 var workoutStartTime = null;
 
-// Patient-side plan/day selection state
+// ── Lego Avatar System ──
+var AVATARS = [
+  {id:1,label:"Young Man",skin:"#f4a47c",hair:"short",hairC:"#3d2200",shirt:"#2B6CC4",pants:"#1a3a6e",hat:"",extra:""},
+  {id:2,label:"Young Woman",skin:"#f4a47c",hair:"long",hairC:"#8b4513",shirt:"#e84393",pants:"#6b21a8",hat:"",extra:""},
+  {id:3,label:"Boy",skin:"#f4a47c",hair:"short",hairC:"#1a1a1a",shirt:"#f97316",pants:"#1d4ed8",hat:"cap",extra:""},
+  {id:4,label:"Girl",skin:"#f4a47c",hair:"pigtail",hairC:"#c084fc",shirt:"#ec4899",pants:"#7c3aed",hat:"",extra:"bow"},
+  {id:5,label:"Older Man",skin:"#e8956d",hair:"short",hairC:"#aaaaaa",shirt:"#64748b",pants:"#374151",hat:"",extra:""},
+  {id:6,label:"Older Woman",skin:"#e8956d",hair:"bun",hairC:"#9ca3af",shirt:"#7c3aed",pants:"#4b5563",hat:"",extra:""},
+  {id:7,label:"Bodybuilder",skin:"#c87941",hair:"short",hairC:"#1a1a1a",shirt:"#dc2626",pants:"#111827",hat:"",extra:"muscle"},
+  {id:8,label:"Weightlifter",skin:"#f4a47c",hair:"short",hairC:"#4a3000",shirt:"#16a34a",pants:"#064e3b",hat:"",extra:"muscle"},
+  {id:9,label:"Runner",skin:"#d4956a",hair:"ponytail",hairC:"#1a1a1a",shirt:"#f59e0b",pants:"#7c3aed",hat:"",extra:""},
+  {id:10,label:"Cyclist",skin:"#f4a47c",hair:"short",hairC:"#5a3e00",shirt:"#0ea5e9",pants:"#1e40af",hat:"helmet",extra:""},
+  {id:11,label:"Swimmer",skin:"#e0a070",hair:"short",hairC:"#2563eb",shirt:"#0284c7",pants:"#0c4a6e",hat:"goggle",extra:""},
+  {id:12,label:"Soccer Player",skin:"#d4956a",hair:"short",hairC:"#1a1a1a",shirt:"#16a34a",pants:"#f9fafb",hat:"",extra:""},
+  {id:13,label:"Tattooed Guy",skin:"#f4a47c",hair:"mohawk",hairC:"#1a1a1a",shirt:"#111827",pants:"#1f2937",hat:"",extra:"tattoo"},
+  {id:14,label:"Pierced Girl",skin:"#f4a47c",hair:"long",hairC:"#7c3aed",shirt:"#6d28d9",pants:"#1f2937",hat:"",extra:"pierce"},
+  {id:15,label:"Bearded Man",skin:"#c87941",hair:"short",hairC:"#3d2200",shirt:"#92400e",pants:"#78350f",hat:"",extra:"beard"},
+  {id:16,label:"Curly Hair",skin:"#8b5e3c",hair:"curly",hairC:"#1a1a1a",shirt:"#2563eb",pants:"#1d4ed8",hat:"",extra:""},
+  {id:17,label:"Baseball Cap",skin:"#f4a47c",hair:"short",hairC:"#4a3000",shirt:"#f97316",pants:"#374151",hat:"baseball",extra:""},
+  {id:18,label:"Beanie",skin:"#e8956d",hair:"short",hairC:"#5a3e00",shirt:"#7c3aed",pants:"#4b5563",hat:"beanie",extra:""},
+  {id:19,label:"Ninja",skin:"#f4a47c",hair:"none",hairC:"#1a1a1a",shirt:"#111827",pants:"#111827",hat:"ninja",extra:""},
+  {id:20,label:"Doctor",skin:"#f4a47c",hair:"short",hairC:"#374151",shirt:"#f8fafc",pants:"#cbd5e1",hat:"",extra:"stethoscope"},
+  {id:21,label:"Chef",skin:"#e8956d",hair:"short",hairC:"#6b7280",shirt:"#f8fafc",pants:"#374151",hat:"chef",extra:""},
+  {id:22,label:"Artist",skin:"#f4a47c",hair:"messy",hairC:"#7c3aed",shirt:"#fbbf24",pants:"#1f2937",hat:"beret",extra:""},
+  {id:23,label:"Surfer",skin:"#c8965a",hair:"long",hairC:"#d4a017",shirt:"#06b6d4",pants:"#0e7490",hat:"",extra:""},
+  {id:24,label:"Gamer",skin:"#f4a47c",hair:"short",hairC:"#1a1a1a",shirt:"#6d28d9",pants:"#1f2937",hat:"headset",extra:""},
+  {id:25,label:"Yoga Lady",skin:"#e8956d",hair:"bun",hairC:"#b45309",shirt:"#10b981",pants:"#065f46",hat:"",extra:""},
+  {id:26,label:"Skater",skin:"#f4a47c",hair:"shaggy",hairC:"#78350f",shirt:"#f43f5e",pants:"#374151",hat:"backwards",extra:""},
+  {id:27,label:"Martial Artist",skin:"#d4956a",hair:"none",hairC:"#1a1a1a",shirt:"#f8fafc",pants:"#f8fafc",hat:"",extra:"belt"},
+  {id:28,label:"Hipster",skin:"#f4a47c",hair:"pompadour",hairC:"#92400e",shirt:"#064e3b",pants:"#374151",hat:"",extra:"glasses"},
+  {id:29,label:"Grandpa",skin:"#e0b090",hair:"bald",hairC:"#d1d5db",shirt:"#94a3b8",pants:"#64748b",hat:"",extra:"glasses"},
+  {id:30,label:"Grandma",skin:"#e0b090",hair:"curly",hairC:"#e5e7eb",shirt:"#f0abfc",pants:"#7c3aed",hat:"",extra:""}
+];
+
+function legoSVG(av,size){
+  size=size||60;
+  var s=av.skin,h=av.hairC,sh=av.shirt,p=av.pants;
+  var svg='<svg viewBox="0 0 60 80" width="'+size+'" height="'+(size*4/3)+'" xmlns="http://www.w3.org/2000/svg">';
+  svg+='<rect x="15" y="32" width="30" height="28" rx="3" fill="'+sh+'"/>';
+  svg+='<rect x="15" y="58" width="13" height="18" rx="3" fill="'+p+'"/>';
+  svg+='<rect x="32" y="58" width="13" height="18" rx="3" fill="'+p+'"/>';
+  svg+='<rect x="7" y="33" width="10" height="22" rx="4" fill="'+sh+'"/>';
+  svg+='<rect x="43" y="33" width="10" height="22" rx="4" fill="'+sh+'"/>';
+  svg+='<rect x="7" y="52" width="10" height="10" rx="4" fill="'+s+'"/>';
+  svg+='<rect x="43" y="52" width="10" height="10" rx="4" fill="'+s+'"/>';
+  svg+='<rect x="24" y="27" width="12" height="8" rx="2" fill="'+s+'"/>';
+  svg+='<rect x="16" y="7" width="28" height="24" rx="6" fill="'+s+'"/>';
+  svg+='<circle cx="26" cy="18" r="2.5" fill="#1a1a1a"/>';
+  svg+='<circle cx="34" cy="18" r="2.5" fill="#1a1a1a"/>';
+  svg+='<circle cx="27" cy="17" r="1" fill="#fff" opacity="0.7"/>';
+  svg+='<circle cx="35" cy="17" r="1" fill="#fff" opacity="0.7"/>';
+  svg+='<path d="M25 23 Q30 27 35 23" stroke="#8b4513" stroke-width="1.5" fill="none" stroke-linecap="round"/>';
+  if(av.hair==="short"||av.hair==="pompadour"){
+    svg+='<rect x="16" y="7" width="28" height="10" rx="5" fill="'+h+'"/>';
+    if(av.hair==="pompadour") svg+='<ellipse cx="30" cy="6" rx="8" ry="5" fill="'+h+'"/>';
+  } else if(av.hair==="long"||av.hair==="shaggy"){
+    svg+='<rect x="16" y="7" width="28" height="10" rx="5" fill="'+h+'"/>';
+    svg+='<rect x="13" y="12" width="7" height="16" rx="3" fill="'+h+'"/>';
+    svg+='<rect x="40" y="12" width="7" height="16" rx="3" fill="'+h+'"/>';
+  } else if(av.hair==="curly"){
+    svg+='<circle cx="19" cy="12" r="6" fill="'+h+'"/><circle cx="26" cy="9" r="6" fill="'+h+'"/>';
+    svg+='<circle cx="34" cy="9" r="6" fill="'+h+'"/><circle cx="41" cy="12" r="6" fill="'+h+'"/>';
+  } else if(av.hair==="bun"){
+    svg+='<rect x="16" y="7" width="28" height="9" rx="5" fill="'+h+'"/>';
+    svg+='<circle cx="30" cy="6" r="6" fill="'+h+'"/>';
+  } else if(av.hair==="pigtail"){
+    svg+='<rect x="16" y="7" width="28" height="9" rx="5" fill="'+h+'"/>';
+    svg+='<rect x="9" y="10" width="7" height="14" rx="3" fill="'+h+'"/>';
+    svg+='<rect x="44" y="10" width="7" height="14" rx="3" fill="'+h+'"/>';
+  } else if(av.hair==="ponytail"){
+    svg+='<rect x="16" y="7" width="28" height="9" rx="5" fill="'+h+'"/>';
+    svg+='<rect x="42" y="10" width="7" height="20" rx="3" fill="'+h+'"/>';
+  } else if(av.hair==="mohawk"){
+    svg+='<rect x="27" y="1" width="6" height="12" rx="3" fill="'+h+'"/>';
+  } else if(av.hair==="messy"){
+    svg+='<rect x="16" y="7" width="28" height="10" rx="5" fill="'+h+'"/>';
+    svg+='<rect x="13" y="8" width="9" height="7" rx="2" fill="'+h+'" transform="rotate(-15 17 11)"/>';
+  }
+  if(av.hat==="cap"||av.hat==="baseball"){
+    svg+='<rect x="15" y="8" width="30" height="8" rx="3" fill="#dc2626"/>';
+    svg+='<rect x="9" y="13" width="14" height="4" rx="2" fill="#dc2626"/>';
+  } else if(av.hat==="beanie"){
+    svg+='<rect x="16" y="5" width="28" height="12" rx="6" fill="#7c3aed"/>';
+    svg+='<rect x="24" y="3" width="12" height="6" rx="3" fill="#a78bfa"/>';
+  } else if(av.hat==="helmet"){
+    svg+='<rect x="14" y="5" width="32" height="14" rx="7" fill="#0ea5e9"/>';
+    svg+='<rect x="10" y="15" width="40" height="4" rx="2" fill="#0284c7"/>';
+  } else if(av.hat==="backwards"){
+    svg+='<rect x="15" y="8" width="30" height="8" rx="3" fill="#f43f5e"/>';
+    svg+='<rect x="37" y="13" width="14" height="4" rx="2" fill="#f43f5e"/>';
+  } else if(av.hat==="chef"){
+    svg+='<rect x="20" y="1" width="20" height="12" rx="3" fill="#f8fafc"/>';
+    svg+='<rect x="18" y="10" width="24" height="5" rx="1" fill="#e2e8f0"/>';
+  } else if(av.hat==="beret"){
+    svg+='<ellipse cx="30" cy="9" rx="14" ry="6" fill="#fbbf24"/>';
+    svg+='<circle cx="38" cy="8" r="3" fill="#f59e0b"/>';
+  } else if(av.hat==="headset"){
+    svg+='<rect x="13" y="12" width="5" height="9" rx="2" fill="#1a1a1a"/>';
+    svg+='<rect x="42" y="12" width="5" height="9" rx="2" fill="#1a1a1a"/>';
+    svg+='<path d="M16 14 Q30 4 44 14" stroke="#1a1a1a" stroke-width="3" fill="none"/>';
+  } else if(av.hat==="ninja"){
+    svg+='<rect x="14" y="10" width="32" height="16" rx="2" fill="#111827" opacity="0.9"/>';
+  } else if(av.hat==="goggle"){
+    svg+='<rect x="19" y="16" width="10" height="7" rx="3" fill="#0284c7" opacity="0.8"/>';
+    svg+='<rect x="31" y="16" width="10" height="7" rx="3" fill="#0284c7" opacity="0.8"/>';
+    svg+='<rect x="28" y="18" width="4" height="3" fill="#0369a1"/>';
+  }
+  if(av.extra==="beard") svg+='<path d="M20 22 Q30 30 40 22" stroke="'+h+'" stroke-width="4" fill="none" stroke-linecap="round"/>';
+  else if(av.extra==="glasses"){ svg+='<rect x="20" y="16" width="9" height="6" rx="2" fill="none" stroke="#374151" stroke-width="1.5"/>'; svg+='<rect x="31" y="16" width="9" height="6" rx="2" fill="none" stroke="#374151" stroke-width="1.5"/>'; svg+='<line x1="29" y1="19" x2="31" y2="19" stroke="#374151" stroke-width="1.5"/>'; }
+  else if(av.extra==="pierce"){ svg+='<circle cx="20" cy="22" r="1.5" fill="#f0abfc"/>'; }
+  else if(av.extra==="tattoo") svg+='<path d="M8 42 Q10 38 12 42 Q14 46 12 48" stroke="#6b7280" stroke-width="1.5" fill="none"/>';
+  else if(av.extra==="muscle") svg+='<rect x="19" y="36" width="22" height="12" rx="2" fill="'+sh+'" opacity="0.5"/>';
+  else if(av.extra==="stethoscope") svg+='<path d="M20 32 Q18 40 22 44 Q26 46 28 42" stroke="#94a3b8" stroke-width="2" fill="none"/><circle cx="28" cy="43" r="3" fill="#94a3b8"/>';
+  else if(av.extra==="belt"){ svg+='<rect x="15" y="54" width="30" height="5" rx="2" fill="#1a1a1a"/>'; svg+='<rect x="27" y="53" width="6" height="7" rx="1" fill="#f59e0b"/>'; }
+  else if(av.extra==="bow") svg+='<ellipse cx="30" cy="6" rx="4" ry="3" fill="'+h+'"/>';
+  svg+='</svg>';
+  return svg;
+}
+
+function showAvatarPicker(onSelect){
+  var c=g("MC"); var isHe=lng==="he";
+  c.innerHTML=
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'+
+    '<span style="font-size:17px;font-weight:800;color:#1a3a6e">🧱 '+(isHe?"בחר אווטאר":"Pick Your Avatar")+'</span>'+
+    '<button onclick="cm()" style="background:rgba(0,0,0,0.08);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:16px">✕</button></div>'+
+    '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;max-height:460px;overflow-y:auto;padding:2px">'+
+    AVATARS.map(function(av){
+      var sel=cur&&cur.avatarId===av.id;
+      return '<div onclick="selectAvatar('+av.id+')" style="text-align:center;padding:6px 2px;border-radius:10px;cursor:pointer;border:2px solid '+(sel?'#2B6CC4':'transparent')+';background:'+(sel?'#e8f2ff':'#f8fbff')+'" onmouseover="this.style.background=\'#e8f2ff\'" onmouseout="this.style.background=\''+(sel?'#e8f2ff':'#f8fbff')+'\'">'+
+        legoSVG(av,42)+'<div style="font-size:8px;color:#4a6a8a;margin-top:2px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+av.label+'</div></div>';
+    }).join("")+'</div>';
+  g("MB").classList.add("on");
+  window._avatarOnSelect=onSelect;
+}
+
+function selectAvatar(id){
+  if(cur) cur.avatarId=id;
+  if(window._avatarOnSelect) window._avatarOnSelect(id);
+  cm();
+}
+
+function showFirstTimeWelcome(p){
+  var isHe=lng==="he";
+  if(!cur.avatarId) cur.avatarId=Math.floor(Math.random()*30)+1;
+  var c=g("MC");
+  c.innerHTML=
+    '<div style="text-align:center;margin-bottom:18px">'+
+    '<div style="font-size:38px;margin-bottom:8px">👋</div>'+
+    '<div style="font-size:20px;font-weight:800;color:#1a3a6e;margin-bottom:4px">'+(isHe?"ברוך הבא!":"Welcome!")+'</div>'+
+    '<div style="font-size:13px;color:#4a6a8a">'+(isHe?"נגדיר את הפרופיל שלך":"Let\'s set up your profile")+'</div></div>'+
+    '<div style="text-align:center;margin-bottom:16px">'+
+    '<div style="font-size:11px;font-weight:700;color:#1a3a6e;text-transform:uppercase;margin-bottom:8px">'+(isHe?"האווטאר שלך":"Your Avatar")+'</div>'+
+    '<div id="av_preview" onclick="showAvatarPicker(function(id){renderAvatarPreview();})" style="display:inline-block;cursor:pointer;padding:8px;border-radius:12px;border:2px solid #2B6CC4;background:#e8f2ff">'+
+    legoSVG(AVATARS.find(function(a){return a.id===cur.avatarId;})||AVATARS[0],64)+
+    '<div style="font-size:11px;color:#2B6CC4;font-weight:600;margin-top:4px">'+(isHe?"לחץ לשינוי":"Tap to change")+'</div></div></div>'+
+    '<div class="g2" style="gap:10px;margin-bottom:14px">'+
+    '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"שם מלא בעברית":"שם מלא בעברית")+'</label><input class="inp" id="wn_he" dir="rtl" placeholder="שם בעברית" value="'+(p.nameHe||'')+'"></div>'+
+    '<div style="grid-column:1/-1"><label class="lbl">Full Name in English</label><input class="inp" id="wn_en" placeholder="English name" value="'+(p.name||'')+'"></div>'+
+    '<div><label class="lbl">'+(isHe?"גיל":"Age")+'</label><input class="inp" id="w_age" type="number" value="'+(p.age||'')+'"></div>'+
+    '<div><label class="lbl">'+(isHe?"ספורט":"Sport")+'</label><input class="inp" id="w_sport" value="'+(p.sport||'')+'"></div>'+
+    '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"פציעות/מצב":"Injuries/Condition")+'</label><input class="inp" id="w_injury" value="'+(p.injury||'')+'"></div>'+
+    '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"המטרה שלי":"My Goal")+'</label><input class="inp" id="w_goal" value="'+(p.notes||'')+'"></div>'+
+    '</div>'+
+    '<button class="btn" style="width:100%;padding:12px;font-size:15px;font-weight:700" onclick="saveWelcome()">'+
+    (isHe?"כניסה לתוכנית שלי ➜":"Enter My Program ➜")+'</button>';
+  g("MB").classList.add("on");
+}
+
+function renderAvatarPreview(){
+  var prev=g("av_preview"); if(!prev||!cur) return;
+  var av=AVATARS.find(function(a){return a.id===cur.avatarId;})||AVATARS[0];
+  var isHe=lng==="he";
+  prev.innerHTML=legoSVG(av,64)+'<div style="font-size:11px;color:#2B6CC4;font-weight:600;margin-top:4px">'+(isHe?"לחץ לשינוי":"Tap to change")+'</div>';
+}
+
+function saveWelcome(){
+  var isHe=lng==="he";
+  var nhe=g("wn_he")?g("wn_he").value.trim():"";
+  var nen=g("wn_en")?g("wn_en").value.trim():"";
+  if(!nhe&&!nen){alert(isHe?"הכנס שם":"Enter your name");return;}
+  cur.name=nen||nhe; cur.nameHe=nhe||nen;
+  cur.age=g("w_age")?g("w_age").value:"";
+  cur.sport=g("w_sport")?g("w_sport").value.trim():"";
+  cur.injury=g("w_injury")?g("w_injury").value.trim():"";
+  cur.notes=g("w_goal")?g("w_goal").value.trim():"";
+  cur.firstLoginDone=true;
+  pts=pts.map(function(p){return p.id===cur.id?cur:p;});
+  lsave();
+  apiCall("patient-save-profile","POST",{id:cur.id,name:cur.name,nameHe:cur.nameHe,age:cur.age,sport:cur.sport,injury:cur.injury,notes:cur.notes,avatarId:cur.avatarId,firstLoginDone:true},function(){});
+  cm(); rpv();
+}
+
+function legoAv(p,size){
+  var av=AVATARS.find(function(a){return a.id===(p.avatarId||0);})||null;
+  if(!av) return av2(pn(p),size||40);
+  return '<div onclick="showAvatarPicker(function(id){cur.avatarId=id;lsave();rpv();})" style="cursor:pointer">'+legoSVG(av,size||40)+'</div>';
+}
+
+// ── Patient-side plan/day selection state ──
 var patientCurPlanId = null;
 var patientCurDayId = null;
 var patientCurPhaseIdx = 0;
@@ -999,7 +1219,7 @@ function renderWorkoutExercises(exercises, plan, day, isHe){
 
 function renderPatientView(p){
   g("psh").innerHTML=
-    '<div style="display:flex;align-items:center;gap:15px;margin-bottom:14px">'+av(pn(p),52)+
+    '<div style="display:flex;align-items:center;gap:15px;margin-bottom:14px">'+legoAv(p,52)+
     '<div><div style="font-size:21px;font-weight:800;color:#1a3a6e">'+pn(p)+'</div>'+
     '<div style="margin-top:5px">'+bdg(p.sport)+'</div></div></div>'+
     (p.injury?'<div style="background:rgba(43,108,196,0.08);border-radius:8px;padding:11px 15px;border-left:3px solid #2B6CC4;margin-bottom:8px">'+
@@ -1312,11 +1532,25 @@ function om(m, editId){
       '<div style="grid-column:1/-1"><label class="lbl">'+Lx.ij+'</label><input class="inp" id="fij" value="'+(p.injury||"")+'"></div>'+
       '<div><label class="lbl">'+Lx.pi+'</label><input class="inp" id="fpi" maxlength="4" value="'+(p.pin||"")+'" placeholder="1234"></div>'+
       '<div><label class="lbl">'+Lx.st+'</label><select class="inp" id="fst">'+ST.map(function(s){ return '<option'+(p.status===s?" selected":"")+'>'+s+'</option>'; }).join("")+'</select></div>'+
-      '<div style="grid-column:1/-1"><label class="lbl">'+Lx.sp+'</label><select class="inp" id="fsp"><option value="">'+Lx.ss+'</option>'+SP.map(function(s,i){ var label=lng==="he"&&SP_HE[i]?SP_HE[i]+" / "+s:s; return '<option value="'+s+'"'+(p.sport===s?" selected":"")+'>'+label+'</option>'; }).join("")+'</select></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">'+Lx.sp+'</label><select class="inp" id="fsp"><option value="">'+Lx.ss+'</option>'+getAllSports().map(function(s,i){ var all=getAllSports(),allHe=getAllSportsHe(); var label=lng==="he"&&allHe[i]?allHe[i]+" / "+s:s; return '<option value="'+s+'"'+(p.sport===s?" selected":"")+'>'+label+'</option>'; }).join("")+'</select>'+
+      '<div style="margin-top:5px"><span style="font-size:11px;color:#4a6a8a">Not listed? </span><button type="button" onclick="addCustomSport()" style="font-size:11px;color:#2B6CC4;background:none;border:none;cursor:pointer;text-decoration:underline">+ Add sport</button></div></div>'+
       '<div style="grid-column:1/-1"><label class="lbl">'+Lx.no+'</label><textarea class="inp" id="fno" style="height:68px">'+(p.notes||"")+'</textarea></div></div>'+
       '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btnd" onclick="cm()">'+Lx.ca+'</button><button class="btn" onclick="sp2()">'+Lx.sa+'</button></div>';
   } else if(m==="ae"){
-    var editEx = editId ? (cur.exercises||[]).find(function(e){return e.id===editId;}) : null;
+    // Find exercise in plan day first, then flat exercises
+    var editEx = null;
+    if(editId){
+      var ed=cur._editingDay;
+      if(ed){
+        var pl=(cur.workoutPlans||[]).find(function(x){return x.id===ed.planId;});
+        if(pl){
+          var dys=pl.type==="periodized"?((pl.phases||[])[ed.phaseIdx]||{}).days||[]:pl.days||[];
+          var dy=dys.find(function(d){return d.id===ed.dayId;});
+          if(dy) editEx=(dy.exercises||[]).find(function(e){return Number(e.id)===Number(editId);});
+        }
+      }
+      if(!editEx) editEx=(cur.exercises||[]).find(function(e){return Number(e.id)===Number(editId);});
+    }
     c.innerHTML='<div style="font-size:17px;font-weight:800;margin-bottom:14px;color:#1a3a6e">'+(editEx?"✏️ Edit Exercise / ערוך תרגיל":Lx.ae)+'</div>'+
       '<div style="margin-bottom:10px;position:relative">'+
       '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'+
@@ -1332,8 +1566,8 @@ function om(m, editId){
       '<div><label class="lbl">'+Lx.se+'</label><input class="inp" id="fse" value="'+(editEx?editEx.sets:'')+'"></div>'+
       '<div><label class="lbl">'+Lx.rp+' (or 0 for timer)</label><input class="inp" id="frp" value="'+(editEx?editEx.reps:'')+'"></div>'+
       '<div style="grid-column:1/-1"><label class="lbl">⏱ Timer per set (seconds, 0 = use reps)</label><input class="inp" id="ftimer" type="number" min="0" placeholder="e.g. 30" value="'+(editEx&&editEx.timerSecs?editEx.timerSecs:'0')+'"></div>'+
-      '<div style="grid-column:1/-1"><label class="lbl">Description (EN)</label><textarea class="inp" id="fde" style="height:44px">'+(editEx?editEx.desc:'')+'</textarea></div>'+
-      '<div style="grid-column:1/-1"><label class="lbl">תיאור (עברית)</label><textarea class="inp" id="fdehe" dir="rtl" style="height:44px">'+(editEx&&editEx.descHe?editEx.descHe:'')+'</textarea></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">⚖️ Weight / Load (EN)</label><input class="inp" id="fde" placeholder="e.g. 20kg, bodyweight, resistance band" value="'+(editEx?editEx.desc:'')+'"></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">⚖️ משקל / עומס (עברית)</label><input class="inp" id="fdehe" dir="rtl" placeholder="לדוג׳ 20 ק״ג, משקל גוף" value="'+(editEx&&editEx.descHe?editEx.descHe:'')+'"></div>'+
       '<div style="grid-column:1/-1"><label class="lbl">Tips (EN)</label><textarea class="inp" id="fti" style="height:44px">'+(editEx?editEx.tips:'')+'</textarea></div>'+
       '<div style="grid-column:1/-1"><label class="lbl">טיפים (עברית)</label><textarea class="inp" id="ftihe" dir="rtl" style="height:44px">'+(editEx&&editEx.tipsHe?editEx.tipsHe:'')+'</textarea></div>'+
       '<div style="grid-column:1/-1"><label class="lbl">Show patient in / הצג למטופל ב</label>'+
@@ -1939,6 +2173,196 @@ function getExerciseAnimation(name, isFemale, skin, hair, shirt, pants){
     '</g></svg>';
 }
 
+// ── Pre-built Exercise Templates ──
+var TEMPLATE_KEY = "ep_templates";
+function loadTemplates(){
+  try{ return JSON.parse(localStorage.getItem(TEMPLATE_KEY)||"[]"); }catch(e){ return []; }
+}
+function saveTemplates(t){ try{ localStorage.setItem(TEMPLATE_KEY, JSON.stringify(t)); }catch(e){} }
+
+// Default starter templates
+var DEFAULT_TEMPLATES = [
+  { id:1, name:"Rotator Cuff Rehab", nameHe:"שיקום שרוול המסובבים", category:"Shoulder",
+    exercises:[
+      {name:"Theraband External Rotation",nameHe:"סיבוב חיצוני עם תרבנד",sets:"3",reps:"15",tips:"Keep elbow fixed",tipsHe:"שמור מרפק קבוע",desc:"",descHe:"",displayLng:"en"},
+      {name:"Wall Angels",nameHe:"מלאכי קיר",sets:"3",reps:"10",tips:"Back flat on wall",tipsHe:"גב שטוח על הקיר",desc:"",descHe:"",displayLng:"en"},
+      {name:"Scapular Retraction",nameHe:"נסיגת שכמית",sets:"3",reps:"15",tips:"Hold 5 seconds",tipsHe:"החזק 5 שניות",desc:"",descHe:"",displayLng:"en"},
+      {name:"Prone Y-T-W",nameHe:"Y-T-W בשכיבה",sets:"3",reps:"10",tips:"Squeeze shoulder blades",tipsHe:"כווץ שכמיות",desc:"",descHe:"",displayLng:"en"}
+    ]},
+  { id:2, name:"Knee ACL Rehab Phase 1", nameHe:"שיקום ACL ברך שלב 1", category:"Knee",
+    exercises:[
+      {name:"Quad Set",nameHe:"כיווץ ארבע ראשי",sets:"3",reps:"15",tips:"Hold 5 sec",tipsHe:"החזק 5 שניות",desc:"",descHe:"",displayLng:"en"},
+      {name:"Heel Slides",nameHe:"החלקות עקב",sets:"3",reps:"15",tips:"Slow and controlled",tipsHe:"לאט ובשליטה",desc:"",descHe:"",displayLng:"en"},
+      {name:"Straight Leg Raise",nameHe:"הרמת רגל ישרה",sets:"3",reps:"15",tips:"Tighten quad first",tipsHe:"כווץ ארבע-ראשי קודם",desc:"",descHe:"",displayLng:"en"},
+      {name:"Ankle Pumps",nameHe:"משאבות קרסול",sets:"3",reps:"20",tips:"Improve circulation",tipsHe:"שיפור זרימה",desc:"",descHe:"",displayLng:"en"}
+    ]},
+  { id:3, name:"Lower Back Pain", nameHe:"כאבי גב תחתון", category:"Back",
+    exercises:[
+      {name:"Cat Cow",nameHe:"חתול-פרה",sets:"3",reps:"10",tips:"Breathe with movement",tipsHe:"נשום עם התנועה",desc:"",descHe:"",displayLng:"en"},
+      {name:"Bird Dog",nameHe:"ציפור-כלב",sets:"3",reps:"10",tips:"Keep back flat",tipsHe:"שמור גב שטוח",desc:"",descHe:"",displayLng:"en"},
+      {name:"Glute Bridge",nameHe:"גשר ישבן",sets:"3",reps:"15",tips:"Hold 2 sec at top",tipsHe:"החזק 2 שניות בראש",desc:"",descHe:"",displayLng:"en"},
+      {name:"Child's Pose",nameHe:"תנוחת הילד",sets:"3",reps:"1",tips:"Hold 30 seconds",tipsHe:"החזק 30 שניות",desc:"",descHe:"",displayLng:"en"}
+    ]},
+  { id:4, name:"Ankle Sprain Rehab", nameHe:"שיקום נקע קרסול", category:"Ankle",
+    exercises:[
+      {name:"Ankle Pumps",nameHe:"משאבות קרסול",sets:"3",reps:"20",tips:"Gentle range",tipsHe:"טווח עדין",desc:"",descHe:"",displayLng:"en"},
+      {name:"Ankle Circles",nameHe:"עיגולי קרסול",sets:"3",reps:"10",tips:"Both directions",tipsHe:"שני כיוונים",desc:"",descHe:"",displayLng:"en"},
+      {name:"Calf Raises",nameHe:"הרמות עקבים",sets:"3",reps:"15",tips:"Pain-free range only",tipsHe:"טווח ללא כאב",desc:"",descHe:"",displayLng:"en"},
+      {name:"Single Leg Balance",nameHe:"איזון רגל אחת",sets:"3",reps:"1",tips:"30 seconds each",tipsHe:"30 שניות כל צד",desc:"",descHe:"",displayLng:"en"}
+    ]}
+];
+
+function omTemplates(){
+  var custom=loadTemplates();
+  var all=DEFAULT_TEMPLATES.concat(custom);
+  var isHe=lng==="he";
+  var cats=[...new Set(all.map(function(t){return t.category||"General"}))];
+  var c=g("MC");
+  c.innerHTML=
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'+
+    '<span style="font-size:17px;font-weight:800;color:#1a3a6e">📋 '+(isHe?"תוכניות מוכנות":"Exercise Templates")+'</span>'+
+    '<button onclick="cm()" style="background:rgba(0,0,0,0.08);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:16px">✕</button></div>'+
+    '<button class="btn" style="width:100%;margin-bottom:12px;font-size:13px" onclick="omNewTemplate()">+ '+(isHe?"תבנית חדשה":"New Template")+'</button>'+
+    '<div style="max-height:480px;overflow-y:auto">'+
+    cats.map(function(cat){
+      var catItems=all.filter(function(t){return (t.category||"General")===cat;});
+      return '<div style="font-size:10px;font-weight:700;color:#4a6a8a;text-transform:uppercase;letter-spacing:1px;margin:10px 0 6px">'+cat+'</div>'+
+        catItems.map(function(t,i){
+          var tName=isHe&&t.nameHe?t.nameHe:t.name;
+          var isCustom=custom.indexOf(t)>=0;
+          var custIdx=custom.indexOf(t);
+          return '<div style="background:#f8fbff;border:1px solid #e0eaf5;border-radius:10px;padding:11px 14px;margin-bottom:8px">'+
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'+
+            '<span style="font-weight:700;font-size:14px;color:#1a3a6e">'+tName+'</span>'+
+            '<div style="display:flex;gap:5px">'+
+            '<button onclick="applyTemplate('+JSON.stringify(t).replace(/"/g,"&quot;")+',\''+tName+'\')" class="btn" style="font-size:11px;padding:4px 10px;background:#e8f8f0;color:#00a86b;border:1px solid rgba(0,168,107,0.3)">+ '+(isHe?"הוסף למטופל":"Apply")+'</button>'+
+            (isCustom?'<button onclick="editTemplate('+custIdx+')" class="btn" style="font-size:11px;padding:4px 8px;background:#f0f5ff">✏️</button>'+
+            '<button onclick="deleteTemplate('+custIdx+')" class="btn btnd" style="font-size:11px;padding:4px 8px">✕</button>':'')+'</div></div>'+
+            '<div style="font-size:11px;color:#4a6a8a">'+(t.exercises||[]).length+' exercises: '+
+            (t.exercises||[]).slice(0,3).map(function(e){return isHe&&e.nameHe?e.nameHe:e.name;}).join(", ")+
+            ((t.exercises||[]).length>3?"...":"")+
+            '</div></div>';
+        }).join("");
+    }).join("")+
+    '</div>';
+  g("MB").classList.add("on");
+}
+
+function applyTemplate(t, tName){
+  if(typeof t==="string") try{t=JSON.parse(t);}catch(e){return;}
+  var isHe=lng==="he";
+  if(!confirm((isHe?"הוסף תבנית":"Apply template")+" \""+tName+"\" "+(isHe?"למטופל?":"to this patient?"))) return;
+  // Add as a new workout plan day
+  var ed=cur._editingDay;
+  if(ed){
+    var pl=(cur.workoutPlans||[]).find(function(x){return x.id===ed.planId;});
+    if(pl){
+      var dys=pl.type==="periodized"?((pl.phases||[])[ed.phaseIdx]||{}).days||[]:pl.days||[];
+      var dy=dys.find(function(d){return d.id===ed.dayId;});
+      if(dy){
+        var toAdd=(t.exercises||[]).map(function(e){return Object.assign({},e,{id:Date.now()+Math.random()*1000|0});});
+        dy.exercises=(dy.exercises||[]).concat(toAdd);
+        pts=pts.map(function(p){return p.id===cur.id?cur:p;}); sv(); cm(); rex(); return;
+      }
+    }
+  }
+  // Create a new plan from template
+  var newPlan={id:Date.now(), name:tName, nameHe:t.nameHe||tName, type:"repeating",
+    days:[{id:Date.now()+1, name:"Day A", nameHe:"יום א",
+      exercises:(t.exercises||[]).map(function(e){return Object.assign({},e,{id:Date.now()+Math.random()*1000|0});})}]};
+  if(!cur.workoutPlans) cur.workoutPlans=[];
+  cur.workoutPlans.push(newPlan);
+  pts=pts.map(function(p){return p.id===cur.id?cur:p;}); sv(); cm(); rplans();
+}
+
+function omNewTemplate(){
+  var isHe=lng==="he";
+  var c=g("MC");
+  c.innerHTML=
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'+
+    '<span style="font-size:16px;font-weight:800;color:#1a3a6e">+ '+(isHe?"תבנית חדשה":"New Template")+'</span>'+
+    '<button onclick="omTemplates()" style="background:rgba(0,0,0,0.08);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:16px">←</button></div>'+
+    '<div class="g2" style="gap:10px;margin-bottom:12px">'+
+    '<div style="grid-column:1/-1"><label class="lbl">Template Name (EN)</label><input class="inp" id="tp_name" placeholder="e.g. Hip Flexor Rehab"></div>'+
+    '<div style="grid-column:1/-1"><label class="lbl">שם (עברית)</label><input class="inp" id="tp_namehe" dir="rtl"></div>'+
+    '<div style="grid-column:1/-1"><label class="lbl">Category</label><input class="inp" id="tp_cat" placeholder="e.g. Hip, Shoulder, Back, Knee"></div>'+
+    '</div>'+
+    '<div style="font-size:12px;font-weight:700;color:#1a3a6e;margin-bottom:8px">Exercises (search & add)</div>'+
+    '<div style="margin-bottom:8px">'+
+    '<input class="inp" id="tp_exsearch" placeholder="Search exercises..." oninput="filterTpEx(this.value)">'+
+    '<div id="tp_exlist" style="max-height:140px;overflow-y:auto;border:1px solid rgba(43,108,196,0.2);border-radius:8px;margin-top:4px;background:#fff"></div></div>'+
+    '<div id="tp_selected" style="margin-bottom:12px"></div>'+
+    '<div style="display:flex;gap:8px;justify-content:flex-end">'+
+    '<button class="btn btnd" onclick="omTemplates()">'+(isHe?"ביטול":"Cancel")+'</button>'+
+    '<button class="btn" onclick="saveNewTemplate()">'+(isHe?"שמור תבנית":"Save Template")+'</button></div>';
+  g("tp_selected").dataset.exercises="[]";
+  g("MB").classList.add("on");
+}
+
+function filterTpEx(q){
+  var list=q?EX_LIB.filter(function(e){
+    return (e.name||"").toLowerCase().includes(q.toLowerCase())||(e.nameHe||"").includes(q);
+  }).slice(0,8):EX_LIB.slice(0,8);
+  var box=g("tp_exlist"); if(!box) return;
+  box.innerHTML=list.map(function(e){
+    return '<div onclick="addTpEx('+JSON.stringify(e).replace(/"/g,"&quot;")+',\''+e.name+'\')" '+
+      'style="padding:7px 10px;cursor:pointer;border-bottom:1px solid #f0f0f0;font-size:12px" '+
+      'onmouseover="this.style.background=\'#f0f5fb\'" onmouseout="this.style.background=\'\'">'+
+      '<span style="font-weight:600">'+e.name+'</span> / <span style="color:#4a6a8a">'+e.nameHe+'</span></div>';
+  }).join("");
+}
+
+function addTpEx(e, eName){
+  if(typeof e==="string") try{e=JSON.parse(e);}catch(x){return;}
+  var sel=g("tp_selected"); if(!sel) return;
+  var arr=[]; try{arr=JSON.parse(sel.dataset.exercises);}catch(x){}
+  arr.push({name:e.name,nameHe:e.nameHe,sets:"3",reps:"10",tips:e.tips||"",tipsHe:e.tipsHe||"",desc:"",descHe:"",displayLng:"en"});
+  sel.dataset.exercises=JSON.stringify(arr);
+  sel.innerHTML='<div style="font-size:11px;font-weight:700;color:#1a3a6e;margin-bottom:5px">Selected ('+arr.length+'):</div>'+
+    arr.map(function(ex,i){
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 8px;background:#f0f5ff;border-radius:6px;margin-bottom:3px;font-size:12px">'+
+        '<span>'+ex.name+'</span>'+
+        '<button onclick="removeTpEx('+i+')" style="background:none;border:none;cursor:pointer;color:#e74c3c;font-size:13px">✕</button></div>';
+    }).join("");
+}
+
+function removeTpEx(i){
+  var sel=g("tp_selected"); if(!sel) return;
+  var arr=[]; try{arr=JSON.parse(sel.dataset.exercises);}catch(x){}
+  arr.splice(i,1); sel.dataset.exercises=JSON.stringify(arr);
+  addTpEx=addTpEx; // refresh display by re-calling add with dummy
+  var sel2=g("tp_selected");
+  sel2.innerHTML=arr.length?'<div style="font-size:11px;font-weight:700;color:#1a3a6e;margin-bottom:5px">Selected ('+arr.length+'):</div>'+
+    arr.map(function(ex,j){
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 8px;background:#f0f5ff;border-radius:6px;margin-bottom:3px;font-size:12px">'+
+        '<span>'+ex.name+'</span>'+
+        '<button onclick="removeTpEx('+j+')" style="background:none;border:none;cursor:pointer;color:#e74c3c;font-size:13px">✕</button></div>';
+    }).join(""):"";
+}
+
+function saveNewTemplate(){
+  var n=g("tp_name")?g("tp_name").value.trim():"";
+  var nhe=g("tp_namehe")?g("tp_namehe").value.trim():"";
+  var cat=g("tp_cat")?g("tp_cat").value.trim():"General";
+  if(!n&&!nhe){alert("Enter a template name.");return;}
+  var sel=g("tp_selected"); var arr=[]; if(sel) try{arr=JSON.parse(sel.dataset.exercises);}catch(x){}
+  if(!arr.length){alert("Add at least one exercise.");return;}
+  var custom=loadTemplates();
+  custom.push({id:Date.now(),name:n||nhe,nameHe:nhe||n,category:cat,exercises:arr});
+  saveTemplates(custom); omTemplates();
+}
+
+function editTemplate(i){
+  var custom=loadTemplates(); var t=custom[i]; if(!t) return;
+  // Simple: just delete and recreate
+  if(confirm("Edit this template — you'll rebuild it. Continue?")){ deleteTemplate(i); omNewTemplate(); }
+}
+
+function deleteTemplate(i){
+  if(!confirm("Delete this template?")) return;
+  var custom=loadTemplates(); custom.splice(i,1); saveTemplates(custom); omTemplates();
+}
+
 // ── Recycle Bin ──
 function omRecycleBin(){
   var c=g("MC");
@@ -2057,6 +2481,21 @@ function deleteHistoryEntry(patientId, idx){
   p.workoutHistory.splice(idx,1);
   pts=pts.map(function(x){ return x.id===patientId?p:x; });
   sv(); omWorkoutHistory(patientId);
+}
+
+function addCustomSport(){
+  var en=prompt("Sport name in English:");
+  if(!en||!en.trim()) return;
+  var he=prompt("Sport name in Hebrew (optional):")||en;
+  var custom=getCustomSports();
+  custom.push({en:en.trim(),he:he.trim()});
+  saveCustomSports(custom);
+  // Refresh dropdown
+  var sel=g("fsp"); if(!sel) return;
+  var newOpt=document.createElement("option");
+  newOpt.value=en.trim(); newOpt.textContent=lng==="he"?he+" / "+en:en;
+  newOpt.selected=true;
+  sel.appendChild(newOpt);
 }
 
 // ── Save patient / exercise / follow-up ──
