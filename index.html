@@ -178,7 +178,100 @@
 <input type="file" id="fi" multiple accept="image/*,.pdf,.doc,.docx" style="display:none" onchange="hf(event)">
 
 <!-- Scripts — order matters: data first, then app logic -->
-<script src="data.js?v=4"></script>
-<script src="app.js?v=4"></script>
+<script src="data.js?v=5"></script>
+<script src="app.js?v=5"></script>
+<script>
+// ── Mobile scroll aura on login screen ──
+(function(){
+  var logoOuter = document.getElementById('logo-outer');
+  var glowActive = false;
+  function triggerGlow(){
+    if(!logoOuter) return;
+    logoOuter.style.filter = 'drop-shadow(0 0 22px rgba(200,235,255,1)) drop-shadow(0 0 45px rgba(150,210,255,0.85)) drop-shadow(0 0 70px rgba(100,180,255,0.6))';
+    var img = logoOuter.querySelector('.logo-img');
+    if(img) img.style.filter = 'brightness(1.5) drop-shadow(0 0 18px rgba(255,255,255,0.95))';
+    clearTimeout(glowActive);
+    glowActive = setTimeout(function(){
+      logoOuter.style.filter = '';
+      if(img) img.style.filter = '';
+    }, 1200);
+  }
+  // Trigger on touch scroll anywhere on login screen
+  var lastY = 0;
+  document.addEventListener('touchmove', function(e){
+    var ls = document.getElementById('LS');
+    if(ls && !ls.classList.contains('hid')){
+      var y = e.touches[0].clientY;
+      if(Math.abs(y - lastY) > 5){ triggerGlow(); lastY = y; }
+    }
+  }, {passive:true});
+  // Also trigger on touch start on logo
+  document.addEventListener('touchstart', function(e){
+    if(e.target.closest && e.target.closest('#logo-outer')) triggerGlow();
+  }, {passive:true});
+})();
+
+// ── Long-press drag to reorder exercises ──
+var dragSrc = null, dragTimer = null;
+function initDrag(el, idx, planId, phaseIdx, dayId){
+  el.addEventListener('touchstart', function(e){
+    var touch = e;
+    dragTimer = setTimeout(function(){
+      el.style.opacity='0.5'; el.style.transform='scale(1.02)';
+      dragSrc = {idx:idx, planId:planId, phaseIdx:phaseIdx, dayId:dayId};
+      if(navigator.vibrate) navigator.vibrate(50);
+    }, 700);
+  }, {passive:true});
+  el.addEventListener('touchend', function(){ clearTimeout(dragTimer); });
+  el.addEventListener('touchmove', function(e){
+    if(!dragSrc) return;
+    e.preventDefault();
+    var t = e.touches[0];
+    var els = document.elementsFromPoint(t.clientX, t.clientY);
+    var target = els.find(function(x){ return x.dataset && x.dataset.exIdx && x !== el; });
+    if(target){
+      var targetIdx = parseInt(target.dataset.exIdx);
+      if(!isNaN(targetIdx) && targetIdx !== dragSrc.idx){
+        reorderExercise(dragSrc, targetIdx);
+        dragSrc.idx = targetIdx;
+      }
+    }
+  }, {passive:false});
+  el.addEventListener('touchend', function(){
+    el.style.opacity=''; el.style.transform='';
+    dragSrc = null; clearTimeout(dragTimer);
+  });
+  // Desktop mouse long press
+  el.addEventListener('mousedown', function(){
+    dragTimer = setTimeout(function(){
+      el.style.cursor='grabbing'; el.style.opacity='0.7';
+      dragSrc = {idx:idx, planId:planId, phaseIdx:phaseIdx, dayId:dayId};
+    }, 700);
+  });
+  el.addEventListener('mouseup', function(){
+    clearTimeout(dragTimer);
+    el.style.cursor=''; el.style.opacity='';
+    dragSrc = null;
+  });
+  el.setAttribute('data-ex-idx', idx);
+}
+
+function reorderExercise(src, targetIdx){
+  var p = cur; if(!p) return;
+  var exArr = null;
+  if(src.planId){
+    var plan=(p.workoutPlans||[]).find(function(x){return x.id===src.planId;});
+    if(plan){
+      var days=plan.type==="periodized"?((plan.phases||[])[src.phaseIdx]||{}).days||[]:plan.days||[];
+      var day=days.find(function(d){return d.id===src.dayId;});
+      if(day) exArr=day.exercises;
+    }
+  } else { exArr=p.exercises; }
+  if(!exArr) return;
+  var moved = exArr.splice(src.idx,1)[0];
+  exArr.splice(targetIdx,0,moved);
+  pts=pts.map(function(x){return x.id===p.id?p:x;}); sv(); rex();
+}
+</script>
 </body>
 </html>
