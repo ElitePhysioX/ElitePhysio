@@ -78,12 +78,12 @@ export default {
         return json({ ok: true });
       }
 
-      // Save custom exercise library (admin only)
+      // Save custom exercise library (admin only) - stored as JSON in a dedicated system row
       if(path === "/api/save-custom-lib"){
         const token = (request.headers.get("Authorization")||"").replace("Bearer ","");
         if(token !== ADMIN_PASSWORD) return json({ error:"Unauthorized" }, 401);
-        // Store in a special system patient row with id=0
-        await sbFetch(SB_KEY, "patients", "POST", {id:0, name:"__system__", pin:"", exercises:[], follow_ups:[], workout_plans:body.lib||[]});
+        // Use PATCH on the system row (id=0) - only update workout_plans, don't create a visible patient
+        await sbFetch(SB_KEY, "patients?id=eq.0", "PATCH", {workout_plans: body.lib||[]});
         return json({ ok: true });
       }
 
@@ -114,11 +114,11 @@ export default {
       // Patient login
       if(path === "/api/patient-login"){
         const { name, pin } = body;
-        const rows = await sbFetch(SB_KEY, "patients?select=*");
+        const rows = await sbFetch(SB_KEY, "patients?select=*&id=neq.0");
         if(!Array.isArray(rows)) return json({ ok:false, error:"DB error" }, 500);
         const norm = s => (s||"").trim().toLowerCase().replace(/\s+/g," ");
         const entered = norm(name);
-        let match = rows.find(p =>
+        let match = rows.filter(p => p.name !== "__system__").find(p =>
           [norm(p.name), norm(p.name_he)].some(n =>
             n && (n === entered || n.includes(entered) || entered.includes(n))
           ) && p.pin === pin
