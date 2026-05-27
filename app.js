@@ -1154,9 +1154,20 @@ function saveWelcome(){
 }
 
 function legoAv(p,size){
+  size=size||52;
   var avObj=AVATARS.find(function(a){return a.id===(p.avatarId||0);})||null;
-  var inner = avObj ? legoSVG(avObj,size||40) : av(pn(p),size||40);
-  return '<div onclick="showPatientProfile()" style="cursor:pointer;position:relative" title="My Profile">'+inner+
+  var initials=(pn(p)||"?").split(" ").map(function(x){return x[0]||"";}).join("").slice(0,2).toUpperCase();
+  if(avObj){
+    // Avatar with initials overlay at bottom
+    return '<div onclick="showPatientProfile()" style="cursor:pointer;position:relative;width:'+size+'px;display:inline-block" title="My Profile">'+
+      legoSVG(avObj,size)+
+      '<div style="position:absolute;bottom:2px;left:0;right:0;text-align:center;font-size:'+(size>44?11:9)+'px;font-weight:800;color:#fff;opacity:0.55;letter-spacing:0.5px;text-shadow:0 1px 3px rgba(0,0,0,0.8);pointer-events:none">'+initials+'</div>'+
+      '<div style="position:absolute;bottom:-2px;right:-2px;background:#2B6CC4;border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;border:2px solid #fff">✏️</div>'+
+      '</div>';
+  }
+  // No avatar — show initials circle with edit badge
+  return '<div onclick="showPatientProfile()" style="cursor:pointer;position:relative;display:inline-block" title="My Profile">'+
+    av(pn(p),size)+
     '<div style="position:absolute;bottom:-2px;right:-2px;background:#2B6CC4;border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;border:2px solid #fff">✏️</div>'+
     '</div>';
 }
