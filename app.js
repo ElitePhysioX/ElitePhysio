@@ -1154,8 +1154,8 @@ function saveWelcome(){
 }
 
 function legoAv(p,size){
-  var av=AVATARS.find(function(a){return a.id===(p.avatarId||0);})||null;
-  var inner = av ? legoSVG(av,size||40) : av(pn(p),size||40);
+  var avObj=AVATARS.find(function(a){return a.id===(p.avatarId||0);})||null;
+  var inner = avObj ? legoSVG(avObj,size||40) : av(pn(p),size||40);
   return '<div onclick="showPatientProfile()" style="cursor:pointer;position:relative" title="My Profile">'+inner+
     '<div style="position:absolute;bottom:-2px;right:-2px;background:#2B6CC4;border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;border:2px solid #fff">✏️</div>'+
     '</div>';
@@ -1189,8 +1189,6 @@ function showPatientProfile(){
     '<input class="inp" id="pp_injury" value="'+(p.injury||'')+'"></div>'+
     '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"המטרה שלי":"My Goal")+'</label>'+
     '<input class="inp" id="pp_goal" value="'+(p.notes||'')+'"></div>'+
-    '<div style="grid-column:1/-1"><label class="lbl">PIN Code</label>'+
-    '<input class="inp" id="pp_pin" type="password" value="'+(p.pin||'')+'" placeholder="Change PIN (leave blank to keep)"></div>'+
     '</div>'+
     '<div style="display:flex;gap:8px">'+
     '<button class="btn btnd" onclick="cm()" style="flex:1">'+(isHe?"ביטול":"Cancel")+'</button>'+
@@ -1217,15 +1215,13 @@ function savePatientProfile(){
   cur.sport=g("pp_sport")?g("pp_sport").value.trim():"";
   cur.injury=g("pp_injury")?g("pp_injury").value.trim():"";
   cur.notes=g("pp_goal")?g("pp_goal").value.trim():"";
-  if(newPin) cur.pin=newPin;
   pts=pts.map(function(p){return p.id===cur.id?cur:p;});
   lsave();
   apiCall("patient-save-profile","POST",{
     id:cur.id, name:cur.name, nameHe:cur.nameHe,
     age:cur.age, sport:cur.sport, injury:cur.injury,
     notes:cur.notes, avatarId:cur.avatarId,
-    firstLoginDone:true,
-    pin:newPin||cur.pin
+    firstLoginDone:true
   },function(){});
   cm(); rpv();
 }
