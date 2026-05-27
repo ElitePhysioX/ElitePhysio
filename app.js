@@ -1020,64 +1020,48 @@ var AVATARS = [
 function legoSVG(av,size){
   size=size||60;
   var s=av.skin, h=av.hairC, sh=av.shirt, p=av.pants;
-  var svg='<svg viewBox="0 0 80 100" width="'+size+'" height="'+(size*100/80)+'" xmlns="http://www.w3.org/2000/svg">';
+  var r=38; // circle radius
+  var cx=40, cy=40; // center
+  var svg='<svg viewBox="0 0 80 80" width="'+size+'" height="'+size+'" xmlns="http://www.w3.org/2000/svg">';
 
-  // Shadow under feet
-  svg+='<ellipse cx="40" cy="97" rx="18" ry="3" fill="rgba(0,0,0,0.10)"/>';
+  // Background circle
+  svg+='<circle cx="40" cy="40" r="38" fill="'+sh+'"/>';
 
-  // Legs with rounded bottom
-  svg+='<rect x="22" y="65" width="14" height="30" rx="7" fill="'+p+'"/>';
-  svg+='<rect x="44" y="65" width="14" height="30" rx="7" fill="'+p+'"/>';
-  // Shoe highlights
-  svg+='<ellipse cx="29" cy="93" rx="7" ry="4" fill="'+shadeColor(p,-20)+'"/>';
-  svg+='<ellipse cx="51" cy="93" rx="7" ry="4" fill="'+shadeColor(p,-20)+'"/>';
-
-  // Body - torso with slight taper
-  svg+='<path d="M18,42 Q16,75 22,75 L58,75 Q64,75 62,42 Z" fill="'+sh+'"/>';
-  // Torso highlight
-  svg+='<path d="M30,44 Q28,58 30,68 Q35,70 40,70 Q45,70 50,68 Q52,58 50,44 Z" fill="rgba(255,255,255,0.08)"/>';
-
-  // Arms
-  svg+='<path d="M18,42 Q10,45 9,62 Q8,68 13,68 Q17,68 18,62 Q19,52 22,48 Z" fill="'+sh+'"/>';
-  svg+='<path d="M62,42 Q70,45 71,62 Q72,68 67,68 Q63,68 62,62 Q61,52 58,48 Z" fill="'+sh+'"/>';
-  // Hands
-  svg+='<circle cx="11" cy="70" r="5" fill="'+s+'"/>';
-  svg+='<circle cx="69" cy="70" r="5" fill="'+s+'"/>';
-
-  // Collar
-  svg+='<path d="M32,42 Q40,50 48,42" stroke="rgba(255,255,255,0.3)" stroke-width="2" fill="none"/>';
+  // Body / torso (bottom half of circle)
+  svg+='<path d="M8,60 Q10,78 40,78 Q70,78 72,60 Q60,52 40,52 Q20,52 8,60 Z" fill="'+sh+'"/>';
 
   // Neck
-  svg+='<rect x="33" y="33" width="14" height="12" rx="4" fill="'+s+'"/>';
+  svg+='<rect x="33" y="44" width="14" height="12" rx="4" fill="'+s+'"/>';
 
-  // Head - smooth rounded
-  svg+='<ellipse cx="40" cy="22" rx="18" ry="19" fill="'+s+'"/>';
-  // Head shading
-  svg+='<ellipse cx="36" cy="18" rx="10" ry="9" fill="rgba(255,255,255,0.10)"/>';
+  // Head
+  svg+='<circle cx="40" cy="32" r="20" fill="'+s+'"/>';
 
   // Ears
-  svg+='<ellipse cx="22" cy="22" rx="3.5" ry="4.5" fill="'+s+'"/>';
-  svg+='<ellipse cx="58" cy="22" rx="3.5" ry="4.5" fill="'+s+'"/>';
-  svg+='<ellipse cx="22" cy="22" rx="2" ry="3" fill="'+shadeColor(s,-15)+'"/>';
-  svg+='<ellipse cx="58" cy="22" rx="2" ry="3" fill="'+shadeColor(s,-15)+'"/>';
+  svg+='<circle cx="20" cy="32" r="4" fill="'+s+'"/>';
+  svg+='<circle cx="60" cy="32" r="4" fill="'+s+'"/>';
 
-  // Eyes - more expressive
-  svg+='<ellipse cx="33" cy="22" rx="4" ry="4.5" fill="#fff"/>';
-  svg+='<ellipse cx="47" cy="22" rx="4" ry="4.5" fill="#fff"/>';
-  svg+='<circle cx="34" cy="23" r="2.8" fill="#2a1a0e"/>';
-  svg+='<circle cx="48" cy="23" r="2.8" fill="#2a1a0e"/>';
-  svg+='<circle cx="35" cy="22" r="1" fill="#fff"/>';
-  svg+='<circle cx="49" cy="22" r="1" fill="#fff"/>';
-  // Eyelashes/brow
-  svg+='<path d="M30,17.5 Q33,16 36,17.5" stroke="#4a3000" stroke-width="1.5" fill="none" stroke-linecap="round"/>';
-  svg+='<path d="M44,17.5 Q47,16 50,17.5" stroke="#4a3000" stroke-width="1.5" fill="none" stroke-linecap="round"/>';
+  // Eyes - large, expressive, flat style
+  svg+='<ellipse cx="33" cy="30" rx="4.5" ry="5" fill="#fff"/>';
+  svg+='<ellipse cx="47" cy="30" rx="4.5" ry="5" fill="#fff"/>';
+  svg+='<circle cx="34" cy="31" r="3" fill="#1a1a2e"/>';
+  svg+='<circle cx="48" cy="31" r="3" fill="#1a1a2e"/>';
+  svg+='<circle cx="35" cy="29.5" r="1.2" fill="#fff"/>';
+  svg+='<circle cx="49" cy="29.5" r="1.2" fill="#fff"/>';
 
-  // Nose
-  svg+='<path d="M38,26 Q40,30 42,26" stroke="'+shadeColor(s,-25)+'" stroke-width="1.5" fill="none" stroke-linecap="round"/>';
+  // Eyebrows
+  svg+='<path d="M29,24 Q33,21.5 37,23.5" stroke="'+h+'" stroke-width="2.2" fill="none" stroke-linecap="round"/>';
+  svg+='<path d="M43,23.5 Q47,21.5 51,24" stroke="'+h+'" stroke-width="2.2" fill="none" stroke-linecap="round"/>';
 
-  // Mouth - smile
-  svg+='<path d="M34,32 Q40,38 46,32" stroke="'+shadeColor(s,-30)+'" stroke-width="2" fill="none" stroke-linecap="round"/>';
-  svg+='<path d="M35,32 Q40,36 45,32" stroke="#e07050" stroke-width="1.5" fill="none" stroke-linecap="round"/>';
+  // Nose - simple flat dot/line
+  svg+='<ellipse cx="40" cy="35" rx="2" ry="1.5" fill="rgba(0,0,0,0.10)"/>';
+
+  // Mouth - friendly smile
+  svg+='<path d="M34,40 Q40,45 46,40" stroke="#c0665a" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
+  svg+='<path d="M35,40.5 Q40,44 45,40.5" stroke="#e8857a" stroke-width="1.5" fill="none" stroke-linecap="round"/>';
+
+  // Cheek blush
+  svg+='<circle cx="26" cy="37" r="5" fill="#ffb3a0" opacity="0.35"/>';
+  svg+='<circle cx="54" cy="37" r="5" fill="#ffb3a0" opacity="0.35"/>';
 
   // Hair
   svg+=renderHair(av.hair, h, av.hat);
@@ -1085,8 +1069,11 @@ function legoSVG(av,size){
   // Hat
   svg+=renderHat(av.hat, h);
 
-  // Extras (beard, glasses etc)
+  // Extras
   svg+=renderExtra(av.extra, h, sh, s);
+
+  // Clip circle frame
+  svg+='<circle cx="40" cy="40" r="38" fill="none" stroke="rgba(0,0,0,0.08)" stroke-width="2"/>';
 
   svg+='</svg>';
   return svg;
@@ -1094,57 +1081,54 @@ function legoSVG(av,size){
 
 function shadeColor(hex, pct){
   try{
-    var n=parseInt(hex.slice(1),16);
-    var r=Math.min(255,Math.max(0,((n>>16)&255)+pct));
+    var n=parseInt(hex.replace('#',''),16);
+    var r2=Math.min(255,Math.max(0,((n>>16)&255)+pct));
     var g2=Math.min(255,Math.max(0,((n>>8)&255)+pct));
-    var b=Math.min(255,Math.max(0,(n&255)+pct));
-    return '#'+((1<<24)+(r<<16)+(g2<<8)+b).toString(16).slice(1);
+    var b2=Math.min(255,Math.max(0,(n&255)+pct));
+    return '#'+((1<<24)+(r2<<16)+(g2<<8)+b2).toString(16).slice(1);
   }catch(e){return hex;}
 }
 
 function renderHair(hair, h, hat){
-  if(hat==="ninja"||hat==="chef"||hat==="helmet") return "";
+  if(hat==="ninja"||hat==="chef") return "";
   if(hair==="bald"||hair==="none") return "";
   var svg="";
+  // All hair drawn on top of head circle (head center cx=40,cy=32,r=20)
   if(hair==="short"){
-    svg+='<ellipse cx="40" cy="9" rx="18" ry="10" fill="'+h+'"/>';
-    svg+='<rect x="22" y="9" width="36" height="10" fill="'+h+'"/>';
+    svg+='<path d="M20,32 Q20,10 40,10 Q60,10 60,32 Q55,20 40,19 Q25,20 20,32 Z" fill="'+h+'"/>';
   } else if(hair==="long"||hair==="shaggy"){
-    svg+='<ellipse cx="40" cy="9" rx="18" ry="10" fill="'+h+'"/>';
-    svg+='<rect x="22" y="9" width="36" height="10" fill="'+h+'"/>';
-    svg+='<path d="M22,14 Q18,28 20,40 Q22,44 25,42 Q23,30 24,14 Z" fill="'+h+'"/>';
-    svg+='<path d="M58,14 Q62,28 60,40 Q58,44 55,42 Q57,30 56,14 Z" fill="'+h+'"/>';
+    svg+='<path d="M20,32 Q20,10 40,10 Q60,10 60,32 Q55,20 40,19 Q25,20 20,32 Z" fill="'+h+'"/>';
+    svg+='<path d="M20,30 Q16,42 17,55 Q20,58 22,55 Q21,44 22,30 Z" fill="'+h+'"/>';
+    svg+='<path d="M60,30 Q64,42 63,55 Q60,58 58,55 Q59,44 58,30 Z" fill="'+h+'"/>';
   } else if(hair==="curly"){
-    svg+='<circle cx="25" cy="12" r="8" fill="'+h+'"/>';
-    svg+='<circle cx="33" cy="7" r="8" fill="'+h+'"/>';
-    svg+='<circle cx="40" cy="5" r="8" fill="'+h+'"/>';
-    svg+='<circle cx="47" cy="7" r="8" fill="'+h+'"/>';
-    svg+='<circle cx="55" cy="12" r="8" fill="'+h+'"/>';
+    svg+='<circle cx="22" cy="22" r="9" fill="'+h+'"/>';
+    svg+='<circle cx="32" cy="13" r="9" fill="'+h+'"/>';
+    svg+='<circle cx="40" cy="11" r="9" fill="'+h+'"/>';
+    svg+='<circle cx="48" cy="13" r="9" fill="'+h+'"/>';
+    svg+='<circle cx="58" cy="22" r="9" fill="'+h+'"/>';
+    svg+='<rect x="21" y="22" width="38" height="12" fill="'+h+'"/>';
   } else if(hair==="bun"){
-    svg+='<ellipse cx="40" cy="9" rx="18" ry="10" fill="'+h+'"/>';
-    svg+='<rect x="22" y="9" width="36" height="10" fill="'+h+'"/>';
-    svg+='<circle cx="40" cy="4" r="8" fill="'+h+'"/>';
+    svg+='<path d="M20,32 Q20,10 40,10 Q60,10 60,32 Q55,20 40,19 Q25,20 20,32 Z" fill="'+h+'"/>';
+    svg+='<circle cx="40" cy="8" r="8" fill="'+h+'"/>';
   } else if(hair==="pigtail"){
-    svg+='<ellipse cx="40" cy="9" rx="18" ry="10" fill="'+h+'"/>';
-    svg+='<rect x="22" y="9" width="36" height="10" fill="'+h+'"/>';
-    svg+='<path d="M22,14 Q14,18 15,30 Q16,36 20,35 Q18,28 22,22 Z" fill="'+h+'"/>';
-    svg+='<path d="M58,14 Q66,18 65,30 Q64,36 60,35 Q62,28 58,22 Z" fill="'+h+'"/>';
+    svg+='<path d="M20,32 Q20,10 40,10 Q60,10 60,32 Q55,20 40,19 Q25,20 20,32 Z" fill="'+h+'"/>';
+    svg+='<path d="M20,28 Q12,30 11,42 Q12,48 16,46 Q14,38 18,30 Z" fill="'+h+'"/>';
+    svg+='<path d="M60,28 Q68,30 69,42 Q68,48 64,46 Q66,38 62,30 Z" fill="'+h+'"/>';
+    svg+='<circle cx="13" cy="43" r="3" fill="'+shadeColor(h,-20)+'"/>';
+    svg+='<circle cx="67" cy="43" r="3" fill="'+shadeColor(h,-20)+'"/>';
   } else if(hair==="ponytail"){
-    svg+='<ellipse cx="40" cy="9" rx="18" ry="10" fill="'+h+'"/>';
-    svg+='<rect x="22" y="9" width="36" height="10" fill="'+h+'"/>';
-    svg+='<path d="M56,12 Q66,16 64,35 Q62,40 58,38 Q60,28 58,18 Z" fill="'+h+'"/>';
+    svg+='<path d="M20,32 Q20,10 40,10 Q60,10 60,32 Q55,20 40,19 Q25,20 20,32 Z" fill="'+h+'"/>';
+    svg+='<path d="M58,18 Q68,22 67,40 Q66,48 62,46 Q63,34 61,22 Z" fill="'+h+'"/>';
   } else if(hair==="mohawk"){
-    svg+='<rect x="35" y="1" width="10" height="16" rx="5" fill="'+h+'"/>';
+    svg+='<path d="M35,28 Q36,8 40,6 Q44,8 45,28 Z" fill="'+h+'"/>';
   } else if(hair==="pompadour"){
-    svg+='<ellipse cx="40" cy="9" rx="18" ry="10" fill="'+h+'"/>';
-    svg+='<rect x="22" y="9" width="36" height="10" fill="'+h+'"/>';
-    svg+='<path d="M26,10 Q30,2 40,1 Q50,0 54,8 Q48,6 40,6 Q32,6 26,10 Z" fill="'+h+'"/>';
+    svg+='<path d="M20,32 Q20,10 40,10 Q60,10 60,32 Q55,20 40,19 Q25,20 20,32 Z" fill="'+h+'"/>';
+    svg+='<path d="M24,18 Q28,8 40,7 Q52,6 57,16 Q50,12 40,12 Q30,12 24,18 Z" fill="'+shadeColor(h,15)+'"/>';
   } else if(hair==="messy"){
-    svg+='<ellipse cx="40" cy="9" rx="18" ry="10" fill="'+h+'"/>';
-    svg+='<rect x="22" y="9" width="36" height="10" fill="'+h+'"/>';
-    svg+='<path d="M24,11 Q22,6 26,4 Q28,8 27,12 Z" fill="'+h+'"/>';
-    svg+='<path d="M32,5 Q34,1 38,3 Q36,7 33,8 Z" fill="'+h+'"/>';
-    svg+='<path d="M48,5 Q52,2 54,6 Q51,9 48,8 Z" fill="'+h+'"/>';
+    svg+='<path d="M20,32 Q20,10 40,10 Q60,10 60,32 Q55,20 40,19 Q25,20 20,32 Z" fill="'+h+'"/>';
+    svg+='<path d="M22,18 Q20,12 25,11 Q24,16 23,20 Z" fill="'+h+'"/>';
+    svg+='<path d="M34,10 Q36,5 40,7 Q38,11 35,12 Z" fill="'+h+'"/>';
+    svg+='<path d="M46,10 Q50,5 54,8 Q51,13 47,12 Z" fill="'+h+'"/>';
   }
   return svg;
 }
@@ -1152,43 +1136,41 @@ function renderHair(hair, h, hat){
 function renderHat(hat, h){
   var svg="";
   if(hat==="cap"||hat==="baseball"){
-    svg+='<ellipse cx="40" cy="10" rx="19" ry="10" fill="#dc2626"/>';
-    svg+='<rect x="21" y="10" width="38" height="8" fill="#dc2626"/>';
-    svg+='<path d="M21,16 Q14,17 12,20 Q20,20 21,18 Z" fill="#b91c1c"/>';
-    svg+='<ellipse cx="40" cy="18" rx="19" ry="3" fill="#b91c1c" opacity="0.5"/>';
+    svg+='<path d="M20,30 Q20,10 40,10 Q60,10 60,30 Q55,18 40,18 Q25,18 20,30 Z" fill="#dc2626"/>';
+    svg+='<path d="M20,28 Q14,28 11,32 Q15,34 20,32 Z" fill="#b91c1c"/>';
+    svg+='<rect x="20" y="27" width="40" height="5" rx="2" fill="#b91c1c" opacity="0.5"/>';
   } else if(hat==="backwards"){
-    svg+='<ellipse cx="40" cy="10" rx="19" ry="10" fill="#f43f5e"/>';
-    svg+='<rect x="21" y="10" width="38" height="8" fill="#f43f5e"/>';
-    svg+='<path d="M59,16 Q66,17 68,20 Q60,20 59,18 Z" fill="#e11d48"/>';
+    svg+='<path d="M20,30 Q20,10 40,10 Q60,10 60,30 Q55,18 40,18 Q25,18 20,30 Z" fill="#f43f5e"/>';
+    svg+='<path d="M60,28 Q66,28 69,32 Q65,34 60,32 Z" fill="#e11d48"/>';
   } else if(hat==="beanie"){
-    svg+='<path d="M22,16 Q22,2 40,1 Q58,2 58,16 Z" fill="'+h+'"/>';
-    svg+='<rect x="20" y="14" width="40" height="7" rx="3" fill="'+shadeColor(h,-10)+'"/>';
-    svg+='<circle cx="40" cy="1" r="4" fill="'+shadeColor(h,10)+'"/>';
+    svg+='<path d="M20,34 Q20,10 40,10 Q60,10 60,34 Q55,18 40,17 Q25,18 20,34 Z" fill="'+h+'"/>';
+    svg+='<rect x="19" y="30" width="42" height="7" rx="3" fill="'+shadeColor(h,-15)+'"/>';
+    svg+='<circle cx="40" cy="10" r="5" fill="'+shadeColor(h,20)+'"/>';
   } else if(hat==="helmet"){
-    svg+='<path d="M22,20 Q20,3 40,2 Q60,3 58,20 Z" fill="#0ea5e9"/>';
-    svg+='<rect x="18" y="18" width="44" height="6" rx="3" fill="#0284c7"/>';
-    svg+='<rect x="28" y="4" width="24" height="4" rx="2" fill="rgba(255,255,255,0.3)"/>';
+    svg+='<path d="M18,34 Q18,8 40,8 Q62,8 62,34 Q56,16 40,15 Q24,16 18,34 Z" fill="#0ea5e9"/>';
+    svg+='<rect x="17" y="30" width="46" height="7" rx="3" fill="#0284c7"/>';
+    svg+='<rect x="30" y="12" width="20" height="5" rx="2.5" fill="rgba(255,255,255,0.4)"/>';
   } else if(hat==="chef"){
-    svg+='<rect x="27" y="14" width="26" height="5" rx="2" fill="#e2e8f0"/>';
-    svg+='<path d="M27,16 Q27,2 40,1 Q53,2 53,16 Z" fill="#f8fafc"/>';
-    svg+='<ellipse cx="40" cy="2" rx="10" ry="6" fill="#f8fafc"/>';
+    svg+='<rect x="26" y="28" width="28" height="7" rx="3" fill="#e2e8f0"/>';
+    svg+='<path d="M26,30 Q26,10 40,10 Q54,10 54,30 Z" fill="#f8fafc"/>';
+    svg+='<circle cx="40" cy="8" r="8" fill="#f8fafc"/>';
   } else if(hat==="beret"){
-    svg+='<ellipse cx="40" cy="9" rx="20" ry="9" fill="#fbbf24"/>';
-    svg+='<circle cx="52" cy="7" r="4" fill="#f59e0b"/>';
-    svg+='<rect x="35" y="17" width="10" height="4" rx="2" fill="#d97706"/>';
+    svg+='<ellipse cx="43" cy="18" rx="20" ry="12" fill="'+h+'"/>';
+    svg+='<circle cx="54" cy="13" r="4" fill="'+shadeColor(h,-15)+'"/>';
+    svg+='<rect x="33" y="28" width="14" height="5" rx="2.5" fill="'+shadeColor(h,-10)+'"/>';
   } else if(hat==="headset"){
-    svg+='<path d="M22,18 Q22,2 40,2 Q58,2 58,18" stroke="#1a1a1a" stroke-width="4" fill="none"/>';
-    svg+='<rect x="19" y="16" width="7" height="12" rx="3" fill="#374151"/>';
-    svg+='<rect x="54" y="16" width="7" height="12" rx="3" fill="#374151"/>';
+    svg+='<path d="M20,28 Q20,10 40,10 Q60,10 60,28" stroke="#1f2937" stroke-width="5" fill="none"/>';
+    svg+='<rect x="16" y="26" width="8" height="13" rx="4" fill="#374151"/>';
+    svg+='<rect x="56" y="26" width="8" height="13" rx="4" fill="#374151"/>';
   } else if(hat==="ninja"){
-    svg+='<rect x="20" y="4" width="40" height="36" rx="4" fill="#111827" opacity="0.92"/>';
-    svg+='<rect x="20" y="22" width="40" height="10" fill="#1f2937"/>';
+    svg+='<path d="M18,50 Q18,8 40,8 Q62,8 62,50 Q62,36 40,34 Q18,36 18,50 Z" fill="#111827" opacity="0.93"/>';
+    svg+='<rect x="18" y="34" width="44" height="9" fill="#1f2937"/>';
   } else if(hat==="goggle"){
-    svg+='<rect x="25" y="19" width="13" height="9" rx="4" fill="#0284c7" opacity="0.85"/>';
-    svg+='<rect x="42" y="19" width="13" height="9" rx="4" fill="#0284c7" opacity="0.85"/>';
-    svg+='<rect x="37" y="21" width="6" height="5" fill="#0369a1"/>';
-    svg+='<path d="M20,22 L25,22" stroke="#374151" stroke-width="2"/>';
-    svg+='<path d="M55,22 L60,22" stroke="#374151" stroke-width="2"/>';
+    svg+='<rect x="24" y="26" width="16" height="11" rx="5" fill="#0284c7" opacity="0.88"/>';
+    svg+='<rect x="40" y="26" width="16" height="11" rx="5" fill="#0284c7" opacity="0.88"/>';
+    svg+='<rect x="39" y="28" width="2" height="7" fill="#075985"/>';
+    svg+='<rect x="18" y="30" width="6" height="3" rx="1.5" fill="#374151"/>';
+    svg+='<rect x="56" y="30" width="6" height="3" rx="1.5" fill="#374151"/>';
   }
   return svg;
 }
@@ -1196,39 +1178,40 @@ function renderHat(hat, h){
 function renderExtra(extra, h, sh, s){
   var svg="";
   if(extra==="beard"){
-    svg+='<path d="M26,30 Q28,40 33,44 Q40,47 47,44 Q52,40 54,30 Q48,34 40,34 Q32,34 26,30 Z" fill="'+h+'" opacity="0.9"/>';
+    svg+='<path d="M24,38 Q26,50 33,54 Q40,57 47,54 Q54,50 56,38 Q48,44 40,44 Q32,44 24,38 Z" fill="'+h+'" opacity="0.92"/>';
   } else if(extra==="glasses"){
-    svg+='<rect x="26" y="20" width="12" height="8" rx="3" fill="none" stroke="#374151" stroke-width="2"/>';
-    svg+='<rect x="42" y="20" width="12" height="8" rx="3" fill="none" stroke="#374151" stroke-width="2"/>';
-    svg+='<line x1="38" y1="24" x2="42" y2="24" stroke="#374151" stroke-width="2"/>';
-    svg+='<line x1="22" y1="24" x2="26" y2="24" stroke="#374151" stroke-width="1.5"/>';
-    svg+='<line x1="54" y1="24" x2="58" y2="24" stroke="#374151" stroke-width="1.5"/>';
+    svg+='<rect x="24" y="26" width="14" height="10" rx="4" fill="rgba(255,255,255,0.15)" stroke="#374151" stroke-width="2.5"/>';
+    svg+='<rect x="42" y="26" width="14" height="10" rx="4" fill="rgba(255,255,255,0.15)" stroke="#374151" stroke-width="2.5"/>';
+    svg+='<line x1="38" y1="31" x2="42" y2="31" stroke="#374151" stroke-width="2"/>';
+    svg+='<line x1="18" y1="31" x2="24" y2="31" stroke="#374151" stroke-width="2"/>';
+    svg+='<line x1="56" y1="31" x2="62" y2="31" stroke="#374151" stroke-width="2"/>';
   } else if(extra==="pierce"){
-    svg+='<circle cx="22" cy="24" r="2" fill="#c084fc"/>';
-    svg+='<circle cx="58" cy="20" r="1.5" fill="#a78bfa"/>';
-    svg+='<rect x="37" y="34" width="6" height="3" rx="1.5" fill="#d1d5db"/>';
+    svg+='<circle cx="20" cy="33" r="2.5" fill="#c084fc"/>';
+    svg+='<circle cx="60" cy="29" r="2" fill="#a78bfa"/>';
+    svg+='<rect x="37" y="43" width="6" height="3" rx="1.5" fill="#9ca3af"/>';
   } else if(extra==="tattoo"){
-    svg+='<path d="M8,55 Q10,50 12,55 Q14,60 12,63" stroke="#6b7280" stroke-width="2" fill="none"/>';
-    svg+='<path d="M10,50 Q13,47 15,50" stroke="#6b7280" stroke-width="1.5" fill="none"/>';
+    svg+='<path d="M8,62 Q10,55 13,62 Q15,68 12,72" stroke="#6b7280" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
+    svg+='<path d="M9,56 Q13,51 16,56" stroke="#6b7280" stroke-width="2" fill="none" stroke-linecap="round"/>';
   } else if(extra==="muscle"){
-    svg+='<ellipse cx="32" cy="56" rx="6" ry="5" fill="rgba(255,255,255,0.12)"/>';
-    svg+='<ellipse cx="48" cy="56" rx="6" ry="5" fill="rgba(255,255,255,0.12)"/>';
-    svg+='<path d="M35,66 Q40,68 45,66" stroke="rgba(255,255,255,0.2)" stroke-width="2" fill="none"/>';
+    svg+='<path d="M28,58 Q30,53 36,55 Q38,60 36,64 Q30,65 28,58 Z" fill="rgba(255,255,255,0.15)"/>';
+    svg+='<path d="M52,58 Q50,53 44,55 Q42,60 44,64 Q50,65 52,58 Z" fill="rgba(255,255,255,0.15)"/>';
   } else if(extra==="stethoscope"){
-    svg+='<path d="M30,47 Q25,58 28,65 Q32,70 36,67" stroke="#94a3b8" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
-    svg+='<circle cx="36" cy="68" r="4" fill="#64748b"/>';
-    svg+='<circle cx="36" cy="68" r="2" fill="#94a3b8"/>';
+    svg+='<path d="M32,54 Q26,64 29,72 Q33,77 37,74" stroke="#94a3b8" stroke-width="3" fill="none" stroke-linecap="round"/>';
+    svg+='<circle cx="37" cy="75" r="5" fill="#64748b"/>';
+    svg+='<circle cx="37" cy="75" r="2.5" fill="#cbd5e1"/>';
   } else if(extra==="belt"){
-    svg+='<rect x="22" y="68" width="36" height="6" rx="3" fill="#1a1a1a"/>';
-    svg+='<rect x="36" y="67" width="8" height="8" rx="2" fill="#f59e0b"/>';
-    svg+='<rect x="38" y="69" width="4" height="4" rx="1" fill="#1a1a1a"/>';
+    svg+='<rect x="22" y="74" width="36" height="6" rx="3" fill="#1f2937"/>';
+    svg+='<rect x="36" y="73" width="8" height="8" rx="2" fill="#f59e0b"/>';
+    svg+='<circle cx="40" cy="77" r="2" fill="#1f2937"/>';
   } else if(extra==="bow"){
-    svg+='<path d="M32,8 Q36,4 40,8 Q36,12 32,8 Z" fill="'+h+'"/>';
-    svg+='<path d="M40,8 Q44,4 48,8 Q44,12 40,8 Z" fill="'+h+'"/>';
-    svg+='<circle cx="40" cy="8" r="3" fill="'+shadeColor(h,-10)+'"/>';
+    svg+='<path d="M30,12 Q35,7 40,12 Q35,17 30,12 Z" fill="'+h+'"/>';
+    svg+='<path d="M40,12 Q45,7 50,12 Q45,17 40,12 Z" fill="'+h+'"/>';
+    svg+='<circle cx="40" cy="12" r="3.5" fill="'+shadeColor(h,-15)+'"/>';
   }
   return svg;
 }
+
+
 
 function showAvatarPicker(onSelect){
   var c=g("MC"); var isHe=lng==="he";
@@ -1302,12 +1285,13 @@ function adminPatientAv(p,size){
   var avObj=AVATARS.find(function(a){return a.id===(p.avatarId||0);})||null;
   var initials=(pn(p)||"?").split(" ").map(function(x){return x[0]||"";}).join("").slice(0,2).toUpperCase();
   if(avObj){
-    var svgH=Math.round(size*100/80);
-    var yShirt=Math.round(svgH*0.60);
-    var fSize=Math.round(size*0.19);
-    var inner='<div style="position:relative;display:inline-block">'+legoSVG(avObj,size)+
-      '<div style="position:absolute;top:'+yShirt+'px;left:0;right:0;text-align:center;font-size:'+fSize+'px;font-weight:900;color:rgba(0,0,0,0.80);letter-spacing:1px;line-height:1;pointer-events:none">'+initials+'</div></div>';
-    return '<div onclick="adminChangeAvatar('+p.id+')" style="cursor:pointer;position:relative;width:'+size+'px;display:inline-block" title="Change avatar">'+inner+
+    var yShirt=Math.round(size*0.55);
+    var fSize=Math.round(size*0.18);
+    return '<div onclick="adminChangeAvatar('+p.id+')" style="cursor:pointer;position:relative;width:'+size+'px;display:inline-block" title="Change avatar">'+
+      '<div style="position:relative;display:inline-block;border-radius:50%;overflow:hidden;box-shadow:0 3px 10px rgba(0,0,0,0.15)">'+
+      legoSVG(avObj,size)+
+      '<div style="position:absolute;top:'+yShirt+'px;left:0;right:0;text-align:center;font-size:'+fSize+'px;font-weight:900;color:rgba(255,255,255,0.90);letter-spacing:1px;line-height:1;pointer-events:none;text-shadow:0 1px 3px rgba(0,0,0,0.4)">'+initials+'</div>'+
+      '</div>'+
       '<div style="position:absolute;bottom:-2px;right:-2px;background:#2B6CC4;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;border:2px solid #fff">✏️</div>'+
       '</div>';
   }
@@ -1332,13 +1316,12 @@ function legoAv(p,size){
   var avObj=AVATARS.find(function(a){return a.id===(p.avatarId||0);})||null;
   var initials=(pn(p)||"?").split(" ").map(function(x){return x[0]||"";}).join("").slice(0,2).toUpperCase();
   if(avObj){
-    var svgH=Math.round(size*100/80);
-    var yShirt=Math.round(svgH*0.60); // shirt chest position
-    var fSize=Math.round(size*0.19);
+    var yShirt=Math.round(size*0.55); // shirt area in square avatar
+    var fSize=Math.round(size*0.18);
     return '<div onclick="showPatientProfile()" style="cursor:pointer;position:relative;width:'+size+'px;display:inline-block" title="My Profile">'+
-      '<div style="position:relative;display:inline-block">'+
+      '<div style="position:relative;display:inline-block;border-radius:50%;overflow:hidden;box-shadow:0 3px 10px rgba(0,0,0,0.15)">'+
       legoSVG(avObj,size)+
-      '<div style="position:absolute;top:'+yShirt+'px;left:0;right:0;text-align:center;font-size:'+fSize+'px;font-weight:900;color:rgba(0,0,0,0.80);letter-spacing:1px;line-height:1;pointer-events:none">'+initials+'</div>'+
+      '<div style="position:absolute;top:'+yShirt+'px;left:0;right:0;text-align:center;font-size:'+fSize+'px;font-weight:900;color:rgba(255,255,255,0.90);letter-spacing:1px;line-height:1;pointer-events:none;text-shadow:0 1px 3px rgba(0,0,0,0.4)">'+initials+'</div>'+
       '</div>'+
       '<div style="position:absolute;bottom:-2px;right:-2px;background:#2B6CC4;border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;border:2px solid #fff">✏️</div>'+
       '</div>';
