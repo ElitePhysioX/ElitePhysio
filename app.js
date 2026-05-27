@@ -12,8 +12,16 @@ var deletedPatients = []; // recycle bin for patients
 var deletedExercises = []; // recycle bin for exercises
 
 function loadRecycleBin(){
-  try{ deletedPatients = JSON.parse(localStorage.getItem("ep_del_pts")||"[]"); }catch(e){ deletedPatients=[]; }
-  try{ deletedExercises = JSON.parse(localStorage.getItem("ep_del_ex")||"[]"); }catch(e){ deletedExercises=[]; }
+  try{
+    var raw=JSON.parse(localStorage.getItem("ep_del_pts")||"[]");
+    var sevenDays=7*24*60*60*1000;
+    deletedPatients=raw.filter(function(x){ return x.deletedAt && (Date.now()-new Date(x.deletedAt).getTime())<sevenDays; });
+  }catch(e){ deletedPatients=[]; }
+  try{
+    var rawEx=JSON.parse(localStorage.getItem("ep_del_ex")||"[]");
+    var sevenDays=7*24*60*60*1000;
+    deletedExercises=rawEx.filter(function(x){ return x.deletedAt && (Date.now()-new Date(x.deletedAt).getTime())<sevenDays; });
+  }catch(e){ deletedExercises=[]; }
 }
 function saveRecycleBin(){
   try{ localStorage.setItem("ep_del_pts", JSON.stringify(deletedPatients.slice(0,20))); }catch(e){}
@@ -322,13 +330,24 @@ function rpl(){
   var list=pts.filter(function(p){
     return (p.name||"").toLowerCase().includes(q)||(p.nameHe||"").toLowerCase().includes(q)||(p.sport||"").toLowerCase().includes(q)||(p.injury||"").toLowerCase().includes(q)||(spName(p.sport)||"").toLowerCase().includes(q);
   });
-  // Sort alphabetically by display name
   list.sort(function(a,b){ return pn(a).localeCompare(pn(b), lng==="he"?"he":"en"); });
+  var binCount = deletedPatients.length+deletedExercises.length;
   g("ptit").textContent=L().pats+" ("+pts.length+")";
+  // Add recycle bin button next to new patient button
+  var npBtn=document.querySelector("#VP .row button");
+  if(npBtn && !document.getElementById("rbtn_pl")){
+    var rb=document.createElement("button");
+    rb.id="rbtn_pl"; rb.className="btn";
+    rb.style="font-size:12px;background:#fff3f3;color:#e74c3c;border:1px solid rgba(231,76,60,0.3);margin-right:8px";
+    rb.innerHTML='🗑 '+(lng==="he"?"סל מחזור":"Recycle Bin")+(binCount>0?' ('+binCount+')':'');
+    rb.onclick=function(){ omRecycleBin(); };
+    npBtn.parentNode.insertBefore(rb, npBtn);
+  }
   g("pls").innerHTML=list.length?list.map(function(p){
     var dn=pn(p);
+    var avHtml = p.avatarId ? '<div style="width:38px;height:50px;flex-shrink:0">'+legoSVG(AVATARS.find(function(a){return a.id===p.avatarId;})||AVATARS[0],38)+'</div>' : av(dn);
     return '<div class="card" onclick="op('+p.id+')"><div style="display:flex;align-items:center;justify-content:space-between">'+
-      '<div style="display:flex;align-items:center;gap:13px">'+av(dn)+
+      '<div style="display:flex;align-items:center;gap:13px">'+avHtml+
       '<div><div class="pat-name">'+dn+'</div><div class="pat-sub">'+(p.injury||"—")+' &middot; '+(p.age||"—")+'</div></div></div>'+
       '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">'+bdg(spName(p.sport))+' '+sbdg(p.status)+'</div></div></div>';
   }).join(""):'<div style="color:#4a6a8a;text-align:center;padding:32px 0;font-size:14px">No patients found</div>';
@@ -1136,8 +1155,79 @@ function saveWelcome(){
 
 function legoAv(p,size){
   var av=AVATARS.find(function(a){return a.id===(p.avatarId||0);})||null;
-  if(!av) return av(pn(p),size||40);
-  return '<div onclick="showAvatarPicker(function(id){cur.avatarId=id;lsave();rpv();})" style="cursor:pointer">'+legoSVG(av,size||40)+'</div>';
+  var inner = av ? legoSVG(av,size||40) : av(pn(p),size||40);
+  return '<div onclick="showPatientProfile()" style="cursor:pointer;position:relative" title="My Profile">'+inner+
+    '<div style="position:absolute;bottom:-2px;right:-2px;background:#2B6CC4;border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;border:2px solid #fff">✏️</div>'+
+    '</div>';
+}
+
+function showPatientProfile(){
+  var p=cur; if(!p) return;
+  var isHe=lng==="he";
+  var av=AVATARS.find(function(a){return a.id===(p.avatarId||0);})||AVATARS[0];
+  var c=g("MC");
+  c.innerHTML=
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'+
+    '<span style="font-size:17px;font-weight:800;color:#1a3a6e">👤 '+(isHe?"הפרופיל שלי":"My Profile")+'</span>'+
+    '<button onclick="cm()" style="background:rgba(0,0,0,0.08);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:16px">✕</button></div>'+
+    // Avatar
+    '<div style="text-align:center;margin-bottom:16px">'+
+    '<div id="pp_av_prev" onclick="showAvatarPicker(function(id){renderPPAvatar();})" style="display:inline-block;cursor:pointer;padding:8px;border-radius:12px;border:2px solid #2B6CC4;background:#e8f2ff">'+
+    legoSVG(av,72)+
+    '<div style="font-size:11px;color:#2B6CC4;font-weight:600;margin-top:4px">'+(isHe?"שנה אווטאר":"Change Avatar")+'</div></div></div>'+
+    // Profile fields
+    '<div class="g2" style="gap:10px;margin-bottom:14px">'+
+    '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"שם בעברית":"שם בעברית")+'</label>'+
+    '<input class="inp" id="pp_nhe" dir="rtl" value="'+(p.nameHe||'')+'"></div>'+
+    '<div style="grid-column:1/-1"><label class="lbl">English Name</label>'+
+    '<input class="inp" id="pp_nen" value="'+(p.name||'')+'"></div>'+
+    '<div><label class="lbl">'+(isHe?"גיל":"Age")+'</label>'+
+    '<input class="inp" id="pp_age" type="number" value="'+(p.age||'')+'"></div>'+
+    '<div><label class="lbl">'+(isHe?"ספורט":"Sport")+'</label>'+
+    '<input class="inp" id="pp_sport" value="'+(p.sport||'')+'"></div>'+
+    '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"פציעה/מצב":"Injury/Condition")+'</label>'+
+    '<input class="inp" id="pp_injury" value="'+(p.injury||'')+'"></div>'+
+    '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"המטרה שלי":"My Goal")+'</label>'+
+    '<input class="inp" id="pp_goal" value="'+(p.notes||'')+'"></div>'+
+    '<div style="grid-column:1/-1"><label class="lbl">PIN Code</label>'+
+    '<input class="inp" id="pp_pin" type="password" value="'+(p.pin||'')+'" placeholder="Change PIN (leave blank to keep)"></div>'+
+    '</div>'+
+    '<div style="display:flex;gap:8px">'+
+    '<button class="btn btnd" onclick="cm()" style="flex:1">'+(isHe?"ביטול":"Cancel")+'</button>'+
+    '<button class="btn" onclick="savePatientProfile()" style="flex:2">💾 '+(isHe?"שמור פרופיל":"Save Profile")+'</button>'+
+    '</div>';
+  g("MB").classList.add("on");
+}
+
+function renderPPAvatar(){
+  var prev=g("pp_av_prev"); if(!prev||!cur) return;
+  var av=AVATARS.find(function(a){return a.id===cur.avatarId;})||AVATARS[0];
+  var isHe=lng==="he";
+  prev.innerHTML=legoSVG(av,72)+'<div style="font-size:11px;color:#2B6CC4;font-weight:600;margin-top:4px">'+(isHe?"שנה אווטאר":"Change Avatar")+'</div>';
+}
+
+function savePatientProfile(){
+  var isHe=lng==="he";
+  var nhe=g("pp_nhe")?g("pp_nhe").value.trim():"";
+  var nen=g("pp_nen")?g("pp_nen").value.trim():"";
+  if(!nhe&&!nen){alert(isHe?"הכנס שם":"Enter your name");return;}
+  var newPin=g("pp_pin")?g("pp_pin").value.trim():"";
+  cur.name=nen||nhe; cur.nameHe=nhe||nen;
+  cur.age=g("pp_age")?g("pp_age").value:"";
+  cur.sport=g("pp_sport")?g("pp_sport").value.trim():"";
+  cur.injury=g("pp_injury")?g("pp_injury").value.trim():"";
+  cur.notes=g("pp_goal")?g("pp_goal").value.trim():"";
+  if(newPin) cur.pin=newPin;
+  pts=pts.map(function(p){return p.id===cur.id?cur:p;});
+  lsave();
+  apiCall("patient-save-profile","POST",{
+    id:cur.id, name:cur.name, nameHe:cur.nameHe,
+    age:cur.age, sport:cur.sport, injury:cur.injury,
+    notes:cur.notes, avatarId:cur.avatarId,
+    firstLoginDone:true,
+    pin:newPin||cur.pin
+  },function(){});
+  cm(); rpv();
 }
 
 // ── Patient-side plan/day selection state ──
