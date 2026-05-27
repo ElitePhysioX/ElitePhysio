@@ -184,91 +184,105 @@
 // ── Mobile scroll aura on login screen ──
 (function(){
   var logoOuter = document.getElementById('logo-outer');
-  var glowActive = false;
+  var glowTimer = null;
   function triggerGlow(){
     if(!logoOuter) return;
-    logoOuter.style.filter = 'drop-shadow(0 0 22px rgba(200,235,255,1)) drop-shadow(0 0 45px rgba(150,210,255,0.85)) drop-shadow(0 0 70px rgba(100,180,255,0.6))';
-    var img = logoOuter.querySelector('.logo-img');
-    if(img) img.style.filter = 'brightness(1.5) drop-shadow(0 0 18px rgba(255,255,255,0.95))';
-    clearTimeout(glowActive);
-    glowActive = setTimeout(function(){
-      logoOuter.style.filter = '';
-      if(img) img.style.filter = '';
-    }, 1200);
+    logoOuter.style.filter='drop-shadow(0 0 22px rgba(200,235,255,1)) drop-shadow(0 0 45px rgba(150,210,255,0.85)) drop-shadow(0 0 70px rgba(100,180,255,0.6))';
+    var img=logoOuter.querySelector('.logo-img');
+    if(img) img.style.filter='brightness(1.5) drop-shadow(0 0 18px rgba(255,255,255,0.95))';
+    clearTimeout(glowTimer);
+    glowTimer=setTimeout(function(){
+      if(logoOuter) logoOuter.style.filter='';
+      if(img) img.style.filter='';
+    },1200);
   }
-  // Trigger on touch scroll anywhere on login screen
-  var lastY = 0;
-  document.addEventListener('touchmove', function(e){
-    var ls = document.getElementById('LS');
-    if(ls && !ls.classList.contains('hid')){
-      var y = e.touches[0].clientY;
-      if(Math.abs(y - lastY) > 5){ triggerGlow(); lastY = y; }
+  var lastScrollY=0;
+  document.addEventListener('touchmove',function(e){
+    var ls=document.getElementById('LS');
+    if(ls&&!ls.classList.contains('hid')){
+      var y=e.touches[0].clientY;
+      if(Math.abs(y-lastScrollY)>8){triggerGlow();lastScrollY=y;}
     }
-  }, {passive:true});
-  // Also trigger on touch start on logo
-  document.addEventListener('touchstart', function(e){
-    if(e.target.closest && e.target.closest('#logo-outer')) triggerGlow();
-  }, {passive:true});
+  },{passive:true});
+  document.addEventListener('touchstart',function(e){
+    if(e.target.closest&&e.target.closest('#logo-outer')) triggerGlow();
+  },{passive:true});
 })();
 
-// ── Long-press drag to reorder exercises ──
-var dragSrc = null, dragTimer = null;
-function initDrag(el, idx, planId, phaseIdx, dayId){
-  el.addEventListener('touchstart', function(e){
-    var touch = e;
-    dragTimer = setTimeout(function(){
-      el.style.opacity='0.5'; el.style.transform='scale(1.02)';
-      dragSrc = {idx:idx, planId:planId, phaseIdx:phaseIdx, dayId:dayId};
-      if(navigator.vibrate) navigator.vibrate(50);
-    }, 700);
-  }, {passive:true});
-  el.addEventListener('touchend', function(){ clearTimeout(dragTimer); });
-  el.addEventListener('touchmove', function(e){
-    if(!dragSrc) return;
-    e.preventDefault();
-    var t = e.touches[0];
-    var els = document.elementsFromPoint(t.clientX, t.clientY);
-    var target = els.find(function(x){ return x.dataset && x.dataset.exIdx && x !== el; });
-    if(target){
-      var targetIdx = parseInt(target.dataset.exIdx);
-      if(!isNaN(targetIdx) && targetIdx !== dragSrc.idx){
-        reorderExercise(dragSrc, targetIdx);
-        dragSrc.idx = targetIdx;
-      }
+// ── Drag-to-reorder exercises (long-press 700ms) ──
+var _drag={el:null,idx:null,planId:null,phaseIdx:null,dayId:null,timer:null,active:false};
+
+function initDrag(el,idx,planId,phaseIdx,dayId){
+  el.setAttribute('data-ex-idx',''+idx);
+  el.style.cursor='grab';
+
+  function onHold(){
+    _drag.active=true; _drag.idx=idx; _drag.planId=planId; _drag.phaseIdx=phaseIdx; _drag.dayId=dayId; _drag.el=el;
+    el.style.opacity='0.5'; el.style.transform='scale(1.04)'; el.style.boxShadow='0 10px 28px rgba(43,108,196,0.4)';
+    el.style.zIndex='100'; el.style.cursor='grabbing';
+    if(navigator.vibrate) navigator.vibrate(60);
+  }
+  function reset(){
+    clearTimeout(_drag.timer); _drag.timer=null;
+    if(_drag.el){ _drag.el.style.opacity=''; _drag.el.style.transform=''; _drag.el.style.boxShadow=''; _drag.el.style.zIndex=''; _drag.el.style.cursor='grab'; }
+    _drag.active=false; _drag.el=null; _drag.idx=null;
+  }
+  function getTargetIdx(x,y){
+    var all=document.querySelectorAll('[data-ex-idx]');
+    for(var i=0;i<all.length;i++){
+      if(all[i]===el) continue;
+      var r=all[i].getBoundingClientRect();
+      if(x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom) return parseInt(all[i].getAttribute('data-ex-idx'));
     }
-  }, {passive:false});
-  el.addEventListener('touchend', function(){
-    el.style.opacity=''; el.style.transform='';
-    dragSrc = null; clearTimeout(dragTimer);
+    return -1;
+  }
+  function doSwap(targetIdx){
+    if(targetIdx<0||targetIdx===_drag.idx) return;
+    reorderExercise({idx:_drag.idx,planId:_drag.planId,phaseIdx:_drag.phaseIdx,dayId:_drag.dayId},targetIdx);
+    // After reorder, rex() re-renders so drag state resets naturally
+  }
+
+  // Mouse
+  el.addEventListener('mousedown',function(e){
+    if(e.button!==0) return;
+    _drag.timer=setTimeout(onHold,700);
   });
-  // Desktop mouse long press
-  el.addEventListener('mousedown', function(){
-    dragTimer = setTimeout(function(){
-      el.style.cursor='grabbing'; el.style.opacity='0.7';
-      dragSrc = {idx:idx, planId:planId, phaseIdx:phaseIdx, dayId:dayId};
-    }, 700);
+  el.addEventListener('mousemove',function(e){
+    if(!_drag.active||_drag.idx===null||_drag.el!==el) return;
+    var t=getTargetIdx(e.clientX,e.clientY);
+    if(t>=0) doSwap(t);
   });
-  el.addEventListener('mouseup', function(){
-    clearTimeout(dragTimer);
-    el.style.cursor=''; el.style.opacity='';
-    dragSrc = null;
-  });
-  el.setAttribute('data-ex-idx', idx);
+  el.addEventListener('mouseup',function(){ reset(); });
+  el.addEventListener('mouseleave',function(){ if(!_drag.active) clearTimeout(_drag.timer); });
+
+  // Touch
+  el.addEventListener('touchstart',function(e){
+    _drag.timer=setTimeout(onHold,700);
+  },{passive:true});
+  el.addEventListener('touchmove',function(e){
+    clearTimeout(_drag.timer);
+    if(!_drag.active||_drag.idx===null||_drag.el!==el) return;
+    e.preventDefault();
+    var t=e.touches[0];
+    var targetIdx=getTargetIdx(t.clientX,t.clientY);
+    if(targetIdx>=0) doSwap(targetIdx);
+  },{passive:false});
+  el.addEventListener('touchend',function(){ reset(); },{passive:true});
 }
 
-function reorderExercise(src, targetIdx){
-  var p = cur; if(!p) return;
-  var exArr = null;
+function reorderExercise(src,targetIdx){
+  var p=cur; if(!p) return;
+  var exArr=null;
   if(src.planId){
     var plan=(p.workoutPlans||[]).find(function(x){return x.id===src.planId;});
     if(plan){
-      var days=plan.type==="periodized"?((plan.phases||[])[src.phaseIdx]||{}).days||[]:plan.days||[];
+      var days=plan.type==='periodized'?((plan.phases||[])[src.phaseIdx]||{}).days||[]:plan.days||[];
       var day=days.find(function(d){return d.id===src.dayId;});
       if(day) exArr=day.exercises;
     }
   } else { exArr=p.exercises; }
-  if(!exArr) return;
-  var moved = exArr.splice(src.idx,1)[0];
+  if(!exArr||targetIdx<0||targetIdx>=exArr.length) return;
+  var moved=exArr.splice(src.idx,1)[0];
   exArr.splice(targetIdx,0,moved);
   pts=pts.map(function(x){return x.id===p.id?p:x;}); sv(); rex();
 }
