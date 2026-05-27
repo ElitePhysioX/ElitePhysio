@@ -62,7 +62,7 @@ export default {
 
       // Patient saves own profile (name, avatar, goals etc)
       if(path === "/api/patient-save-profile"){
-        const { id, name, nameHe, age, sport, injury, notes, avatarId, firstLoginDone } = body;
+        const { id, name, nameHe, age, sport, injury, notes, avatarId, firstLoginDone, pin } = body;
         if(!id) return json({ ok:false }, 400);
         const update = {};
         if(name!==undefined) update.name=name;
@@ -73,6 +73,7 @@ export default {
         if(notes!==undefined) update.notes=notes;
         if(avatarId!==undefined) update.avatar_id=avatarId;
         if(firstLoginDone!==undefined) update.first_login_done=firstLoginDone;
+        if(pin) update.pin=pin;
         await sbFetch(SB_KEY, "patients?id=eq."+id, "PATCH", update);
         return json({ ok: true });
       }
