@@ -77,6 +77,22 @@ export default {
         return json({ ok: true });
       }
 
+      // Save custom exercise library (admin only)
+      if(path === "/api/save-custom-lib"){
+        const token = (request.headers.get("Authorization")||"").replace("Bearer ","");
+        if(token !== ADMIN_PASSWORD) return json({ error:"Unauthorized" }, 401);
+        // Store in a special system patient row with id=0
+        await sbFetch(SB_KEY, "patients", "POST", {id:0, name:"__system__", pin:"", exercises:[], follow_ups:[], workout_plans:body.lib||[]});
+        return json({ ok: true });
+      }
+
+      // Load custom exercise library
+      if(path === "/api/load-custom-lib"){
+        const rows = await sbFetch(SB_KEY, "patients?id=eq.0&select=workout_plans");
+        if(Array.isArray(rows) && rows[0]) return json({ lib: rows[0].workout_plans||[] });
+        return json({ lib: [] });
+      }
+
       // Patient saves own workout history (no admin token needed, just their ID)
       if(path === "/api/patient-save-history"){
         const { id, workoutHistory } = body;
