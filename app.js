@@ -419,7 +419,7 @@ function rpd(){
     '<button class="btn" style="font-size:12px" onclick="om(\'ep\')">'+L().ed+'</button>'+
     '<button class="btn btnd" style="font-size:12px" onclick="dp('+p.id+')">'+L().dl+'</button></div></div>'+
     (p.injury?'<div style="margin-top:13px;background:rgba(43,108,196,0.08);border-radius:8px;padding:11px 15px;border-left:3px solid #2B6CC4"><div style="font-size:11px;color:#2B6CC4;font-weight:700;text-transform:uppercase;margin-bottom:3px">'+L().ij+'</div><div style="font-size:14px;color:#1a2535">'+p.injury+'</div></div>':"")+
-    (p.notes?'<div style="margin-top:8px;background:rgba(0,168,107,0.07);border-radius:8px;padding:11px 15px;border-left:3px solid #00a86b"><div style="font-size:11px;color:#00a86b;font-weight:700;text-transform:uppercase;margin-bottom:3px">'+L().no+'</div><div style="font-size:14px;color:#1a2535">'+p.notes+'</div></div>':"");
+    (p.notes?'<div style="margin-top:8px;background:rgba(0,168,107,0.07);border-radius:8px;padding:11px 15px;border-left:3px solid #00a86b"><div style="font-size:11px;color:#00a86b;font-weight:700;text-transform:uppercase;margin-bottom:3px">'+(lng==="he"?"המטרה שלי":"My Goal")+'</div><div style="font-size:14px;color:#1a2535">'+p.notes+'</div></div>':"");
   g("ptbs").innerHTML=[["ex",L().ex,(p.exercises||[]).length],["fu",L().fu,(p.followUps||[]).length],["cl",L().cl,null]].map(function(t){
     return '<button class="nb'+(ctab===t[0]?" on":"")+'" onclick="sct(\''+t[0]+'\')">'+t[1]+(t[2]!==null?' <span style="background:rgba(255,255,255,0.25);border-radius:9px;padding:1px 7px;font-size:11px">'+t[2]+'</span>':"")+' </button>';
   }).join("");
@@ -1019,86 +1019,214 @@ var AVATARS = [
 
 function legoSVG(av,size){
   size=size||60;
-  var s=av.skin,h=av.hairC,sh=av.shirt,p=av.pants;
-  var svg='<svg viewBox="0 0 60 80" width="'+size+'" height="'+(size*4/3)+'" xmlns="http://www.w3.org/2000/svg">';
-  svg+='<rect x="15" y="32" width="30" height="28" rx="3" fill="'+sh+'"/>';
-  svg+='<rect x="15" y="58" width="13" height="18" rx="3" fill="'+p+'"/>';
-  svg+='<rect x="32" y="58" width="13" height="18" rx="3" fill="'+p+'"/>';
-  svg+='<rect x="7" y="33" width="10" height="22" rx="4" fill="'+sh+'"/>';
-  svg+='<rect x="43" y="33" width="10" height="22" rx="4" fill="'+sh+'"/>';
-  svg+='<rect x="7" y="52" width="10" height="10" rx="4" fill="'+s+'"/>';
-  svg+='<rect x="43" y="52" width="10" height="10" rx="4" fill="'+s+'"/>';
-  svg+='<rect x="24" y="27" width="12" height="8" rx="2" fill="'+s+'"/>';
-  svg+='<rect x="16" y="7" width="28" height="24" rx="6" fill="'+s+'"/>';
-  svg+='<circle cx="26" cy="18" r="2.5" fill="#1a1a1a"/>';
-  svg+='<circle cx="34" cy="18" r="2.5" fill="#1a1a1a"/>';
-  svg+='<circle cx="27" cy="17" r="1" fill="#fff" opacity="0.7"/>';
-  svg+='<circle cx="35" cy="17" r="1" fill="#fff" opacity="0.7"/>';
-  svg+='<path d="M25 23 Q30 27 35 23" stroke="#8b4513" stroke-width="1.5" fill="none" stroke-linecap="round"/>';
-  if(av.hair==="short"||av.hair==="pompadour"){
-    svg+='<rect x="16" y="7" width="28" height="10" rx="5" fill="'+h+'"/>';
-    if(av.hair==="pompadour") svg+='<ellipse cx="30" cy="6" rx="8" ry="5" fill="'+h+'"/>';
-  } else if(av.hair==="long"||av.hair==="shaggy"){
-    svg+='<rect x="16" y="7" width="28" height="10" rx="5" fill="'+h+'"/>';
-    svg+='<rect x="13" y="12" width="7" height="16" rx="3" fill="'+h+'"/>';
-    svg+='<rect x="40" y="12" width="7" height="16" rx="3" fill="'+h+'"/>';
-  } else if(av.hair==="curly"){
-    svg+='<circle cx="19" cy="12" r="6" fill="'+h+'"/><circle cx="26" cy="9" r="6" fill="'+h+'"/>';
-    svg+='<circle cx="34" cy="9" r="6" fill="'+h+'"/><circle cx="41" cy="12" r="6" fill="'+h+'"/>';
-  } else if(av.hair==="bun"){
-    svg+='<rect x="16" y="7" width="28" height="9" rx="5" fill="'+h+'"/>';
-    svg+='<circle cx="30" cy="6" r="6" fill="'+h+'"/>';
-  } else if(av.hair==="pigtail"){
-    svg+='<rect x="16" y="7" width="28" height="9" rx="5" fill="'+h+'"/>';
-    svg+='<rect x="9" y="10" width="7" height="14" rx="3" fill="'+h+'"/>';
-    svg+='<rect x="44" y="10" width="7" height="14" rx="3" fill="'+h+'"/>';
-  } else if(av.hair==="ponytail"){
-    svg+='<rect x="16" y="7" width="28" height="9" rx="5" fill="'+h+'"/>';
-    svg+='<rect x="42" y="10" width="7" height="20" rx="3" fill="'+h+'"/>';
-  } else if(av.hair==="mohawk"){
-    svg+='<rect x="27" y="1" width="6" height="12" rx="3" fill="'+h+'"/>';
-  } else if(av.hair==="messy"){
-    svg+='<rect x="16" y="7" width="28" height="10" rx="5" fill="'+h+'"/>';
-    svg+='<rect x="13" y="8" width="9" height="7" rx="2" fill="'+h+'" transform="rotate(-15 17 11)"/>';
-  }
-  if(av.hat==="cap"||av.hat==="baseball"){
-    svg+='<rect x="15" y="8" width="30" height="8" rx="3" fill="#dc2626"/>';
-    svg+='<rect x="9" y="13" width="14" height="4" rx="2" fill="#dc2626"/>';
-  } else if(av.hat==="beanie"){
-    svg+='<rect x="16" y="5" width="28" height="12" rx="6" fill="#7c3aed"/>';
-    svg+='<rect x="24" y="3" width="12" height="6" rx="3" fill="#a78bfa"/>';
-  } else if(av.hat==="helmet"){
-    svg+='<rect x="14" y="5" width="32" height="14" rx="7" fill="#0ea5e9"/>';
-    svg+='<rect x="10" y="15" width="40" height="4" rx="2" fill="#0284c7"/>';
-  } else if(av.hat==="backwards"){
-    svg+='<rect x="15" y="8" width="30" height="8" rx="3" fill="#f43f5e"/>';
-    svg+='<rect x="37" y="13" width="14" height="4" rx="2" fill="#f43f5e"/>';
-  } else if(av.hat==="chef"){
-    svg+='<rect x="20" y="1" width="20" height="12" rx="3" fill="#f8fafc"/>';
-    svg+='<rect x="18" y="10" width="24" height="5" rx="1" fill="#e2e8f0"/>';
-  } else if(av.hat==="beret"){
-    svg+='<ellipse cx="30" cy="9" rx="14" ry="6" fill="#fbbf24"/>';
-    svg+='<circle cx="38" cy="8" r="3" fill="#f59e0b"/>';
-  } else if(av.hat==="headset"){
-    svg+='<rect x="13" y="12" width="5" height="9" rx="2" fill="#1a1a1a"/>';
-    svg+='<rect x="42" y="12" width="5" height="9" rx="2" fill="#1a1a1a"/>';
-    svg+='<path d="M16 14 Q30 4 44 14" stroke="#1a1a1a" stroke-width="3" fill="none"/>';
-  } else if(av.hat==="ninja"){
-    svg+='<rect x="14" y="10" width="32" height="16" rx="2" fill="#111827" opacity="0.9"/>';
-  } else if(av.hat==="goggle"){
-    svg+='<rect x="19" y="16" width="10" height="7" rx="3" fill="#0284c7" opacity="0.8"/>';
-    svg+='<rect x="31" y="16" width="10" height="7" rx="3" fill="#0284c7" opacity="0.8"/>';
-    svg+='<rect x="28" y="18" width="4" height="3" fill="#0369a1"/>';
-  }
-  if(av.extra==="beard") svg+='<path d="M20 22 Q30 30 40 22" stroke="'+h+'" stroke-width="4" fill="none" stroke-linecap="round"/>';
-  else if(av.extra==="glasses"){ svg+='<rect x="20" y="16" width="9" height="6" rx="2" fill="none" stroke="#374151" stroke-width="1.5"/>'; svg+='<rect x="31" y="16" width="9" height="6" rx="2" fill="none" stroke="#374151" stroke-width="1.5"/>'; svg+='<line x1="29" y1="19" x2="31" y2="19" stroke="#374151" stroke-width="1.5"/>'; }
-  else if(av.extra==="pierce"){ svg+='<circle cx="20" cy="22" r="1.5" fill="#f0abfc"/>'; }
-  else if(av.extra==="tattoo") svg+='<path d="M8 42 Q10 38 12 42 Q14 46 12 48" stroke="#6b7280" stroke-width="1.5" fill="none"/>';
-  else if(av.extra==="muscle") svg+='<rect x="19" y="36" width="22" height="12" rx="2" fill="'+sh+'" opacity="0.5"/>';
-  else if(av.extra==="stethoscope") svg+='<path d="M20 32 Q18 40 22 44 Q26 46 28 42" stroke="#94a3b8" stroke-width="2" fill="none"/><circle cx="28" cy="43" r="3" fill="#94a3b8"/>';
-  else if(av.extra==="belt"){ svg+='<rect x="15" y="54" width="30" height="5" rx="2" fill="#1a1a1a"/>'; svg+='<rect x="27" y="53" width="6" height="7" rx="1" fill="#f59e0b"/>'; }
-  else if(av.extra==="bow") svg+='<ellipse cx="30" cy="6" rx="4" ry="3" fill="'+h+'"/>';
+  var s=av.skin, h=av.hairC, sh=av.shirt, p=av.pants;
+  var svg='<svg viewBox="0 0 80 100" width="'+size+'" height="'+(size*100/80)+'" xmlns="http://www.w3.org/2000/svg">';
+
+  // Shadow under feet
+  svg+='<ellipse cx="40" cy="97" rx="18" ry="3" fill="rgba(0,0,0,0.10)"/>';
+
+  // Legs with rounded bottom
+  svg+='<rect x="22" y="65" width="14" height="30" rx="7" fill="'+p+'"/>';
+  svg+='<rect x="44" y="65" width="14" height="30" rx="7" fill="'+p+'"/>';
+  // Shoe highlights
+  svg+='<ellipse cx="29" cy="93" rx="7" ry="4" fill="'+shadeColor(p,-20)+'"/>';
+  svg+='<ellipse cx="51" cy="93" rx="7" ry="4" fill="'+shadeColor(p,-20)+'"/>';
+
+  // Body - torso with slight taper
+  svg+='<path d="M18,42 Q16,75 22,75 L58,75 Q64,75 62,42 Z" fill="'+sh+'"/>';
+  // Torso highlight
+  svg+='<path d="M30,44 Q28,58 30,68 Q35,70 40,70 Q45,70 50,68 Q52,58 50,44 Z" fill="rgba(255,255,255,0.08)"/>';
+
+  // Arms
+  svg+='<path d="M18,42 Q10,45 9,62 Q8,68 13,68 Q17,68 18,62 Q19,52 22,48 Z" fill="'+sh+'"/>';
+  svg+='<path d="M62,42 Q70,45 71,62 Q72,68 67,68 Q63,68 62,62 Q61,52 58,48 Z" fill="'+sh+'"/>';
+  // Hands
+  svg+='<circle cx="11" cy="70" r="5" fill="'+s+'"/>';
+  svg+='<circle cx="69" cy="70" r="5" fill="'+s+'"/>';
+
+  // Collar
+  svg+='<path d="M32,42 Q40,50 48,42" stroke="rgba(255,255,255,0.3)" stroke-width="2" fill="none"/>';
+
+  // Neck
+  svg+='<rect x="33" y="33" width="14" height="12" rx="4" fill="'+s+'"/>';
+
+  // Head - smooth rounded
+  svg+='<ellipse cx="40" cy="22" rx="18" ry="19" fill="'+s+'"/>';
+  // Head shading
+  svg+='<ellipse cx="36" cy="18" rx="10" ry="9" fill="rgba(255,255,255,0.10)"/>';
+
+  // Ears
+  svg+='<ellipse cx="22" cy="22" rx="3.5" ry="4.5" fill="'+s+'"/>';
+  svg+='<ellipse cx="58" cy="22" rx="3.5" ry="4.5" fill="'+s+'"/>';
+  svg+='<ellipse cx="22" cy="22" rx="2" ry="3" fill="'+shadeColor(s,-15)+'"/>';
+  svg+='<ellipse cx="58" cy="22" rx="2" ry="3" fill="'+shadeColor(s,-15)+'"/>';
+
+  // Eyes - more expressive
+  svg+='<ellipse cx="33" cy="22" rx="4" ry="4.5" fill="#fff"/>';
+  svg+='<ellipse cx="47" cy="22" rx="4" ry="4.5" fill="#fff"/>';
+  svg+='<circle cx="34" cy="23" r="2.8" fill="#2a1a0e"/>';
+  svg+='<circle cx="48" cy="23" r="2.8" fill="#2a1a0e"/>';
+  svg+='<circle cx="35" cy="22" r="1" fill="#fff"/>';
+  svg+='<circle cx="49" cy="22" r="1" fill="#fff"/>';
+  // Eyelashes/brow
+  svg+='<path d="M30,17.5 Q33,16 36,17.5" stroke="#4a3000" stroke-width="1.5" fill="none" stroke-linecap="round"/>';
+  svg+='<path d="M44,17.5 Q47,16 50,17.5" stroke="#4a3000" stroke-width="1.5" fill="none" stroke-linecap="round"/>';
+
+  // Nose
+  svg+='<path d="M38,26 Q40,30 42,26" stroke="'+shadeColor(s,-25)+'" stroke-width="1.5" fill="none" stroke-linecap="round"/>';
+
+  // Mouth - smile
+  svg+='<path d="M34,32 Q40,38 46,32" stroke="'+shadeColor(s,-30)+'" stroke-width="2" fill="none" stroke-linecap="round"/>';
+  svg+='<path d="M35,32 Q40,36 45,32" stroke="#e07050" stroke-width="1.5" fill="none" stroke-linecap="round"/>';
+
+  // Hair
+  svg+=renderHair(av.hair, h, av.hat);
+
+  // Hat
+  svg+=renderHat(av.hat, h);
+
+  // Extras (beard, glasses etc)
+  svg+=renderExtra(av.extra, h, sh, s);
+
   svg+='</svg>';
+  return svg;
+}
+
+function shadeColor(hex, pct){
+  try{
+    var n=parseInt(hex.slice(1),16);
+    var r=Math.min(255,Math.max(0,((n>>16)&255)+pct));
+    var g2=Math.min(255,Math.max(0,((n>>8)&255)+pct));
+    var b=Math.min(255,Math.max(0,(n&255)+pct));
+    return '#'+((1<<24)+(r<<16)+(g2<<8)+b).toString(16).slice(1);
+  }catch(e){return hex;}
+}
+
+function renderHair(hair, h, hat){
+  if(hat==="ninja"||hat==="chef"||hat==="helmet") return "";
+  if(hair==="bald"||hair==="none") return "";
+  var svg="";
+  if(hair==="short"){
+    svg+='<ellipse cx="40" cy="9" rx="18" ry="10" fill="'+h+'"/>';
+    svg+='<rect x="22" y="9" width="36" height="10" fill="'+h+'"/>';
+  } else if(hair==="long"||hair==="shaggy"){
+    svg+='<ellipse cx="40" cy="9" rx="18" ry="10" fill="'+h+'"/>';
+    svg+='<rect x="22" y="9" width="36" height="10" fill="'+h+'"/>';
+    svg+='<path d="M22,14 Q18,28 20,40 Q22,44 25,42 Q23,30 24,14 Z" fill="'+h+'"/>';
+    svg+='<path d="M58,14 Q62,28 60,40 Q58,44 55,42 Q57,30 56,14 Z" fill="'+h+'"/>';
+  } else if(hair==="curly"){
+    svg+='<circle cx="25" cy="12" r="8" fill="'+h+'"/>';
+    svg+='<circle cx="33" cy="7" r="8" fill="'+h+'"/>';
+    svg+='<circle cx="40" cy="5" r="8" fill="'+h+'"/>';
+    svg+='<circle cx="47" cy="7" r="8" fill="'+h+'"/>';
+    svg+='<circle cx="55" cy="12" r="8" fill="'+h+'"/>';
+  } else if(hair==="bun"){
+    svg+='<ellipse cx="40" cy="9" rx="18" ry="10" fill="'+h+'"/>';
+    svg+='<rect x="22" y="9" width="36" height="10" fill="'+h+'"/>';
+    svg+='<circle cx="40" cy="4" r="8" fill="'+h+'"/>';
+  } else if(hair==="pigtail"){
+    svg+='<ellipse cx="40" cy="9" rx="18" ry="10" fill="'+h+'"/>';
+    svg+='<rect x="22" y="9" width="36" height="10" fill="'+h+'"/>';
+    svg+='<path d="M22,14 Q14,18 15,30 Q16,36 20,35 Q18,28 22,22 Z" fill="'+h+'"/>';
+    svg+='<path d="M58,14 Q66,18 65,30 Q64,36 60,35 Q62,28 58,22 Z" fill="'+h+'"/>';
+  } else if(hair==="ponytail"){
+    svg+='<ellipse cx="40" cy="9" rx="18" ry="10" fill="'+h+'"/>';
+    svg+='<rect x="22" y="9" width="36" height="10" fill="'+h+'"/>';
+    svg+='<path d="M56,12 Q66,16 64,35 Q62,40 58,38 Q60,28 58,18 Z" fill="'+h+'"/>';
+  } else if(hair==="mohawk"){
+    svg+='<rect x="35" y="1" width="10" height="16" rx="5" fill="'+h+'"/>';
+  } else if(hair==="pompadour"){
+    svg+='<ellipse cx="40" cy="9" rx="18" ry="10" fill="'+h+'"/>';
+    svg+='<rect x="22" y="9" width="36" height="10" fill="'+h+'"/>';
+    svg+='<path d="M26,10 Q30,2 40,1 Q50,0 54,8 Q48,6 40,6 Q32,6 26,10 Z" fill="'+h+'"/>';
+  } else if(hair==="messy"){
+    svg+='<ellipse cx="40" cy="9" rx="18" ry="10" fill="'+h+'"/>';
+    svg+='<rect x="22" y="9" width="36" height="10" fill="'+h+'"/>';
+    svg+='<path d="M24,11 Q22,6 26,4 Q28,8 27,12 Z" fill="'+h+'"/>';
+    svg+='<path d="M32,5 Q34,1 38,3 Q36,7 33,8 Z" fill="'+h+'"/>';
+    svg+='<path d="M48,5 Q52,2 54,6 Q51,9 48,8 Z" fill="'+h+'"/>';
+  }
+  return svg;
+}
+
+function renderHat(hat, h){
+  var svg="";
+  if(hat==="cap"||hat==="baseball"){
+    svg+='<ellipse cx="40" cy="10" rx="19" ry="10" fill="#dc2626"/>';
+    svg+='<rect x="21" y="10" width="38" height="8" fill="#dc2626"/>';
+    svg+='<path d="M21,16 Q14,17 12,20 Q20,20 21,18 Z" fill="#b91c1c"/>';
+    svg+='<ellipse cx="40" cy="18" rx="19" ry="3" fill="#b91c1c" opacity="0.5"/>';
+  } else if(hat==="backwards"){
+    svg+='<ellipse cx="40" cy="10" rx="19" ry="10" fill="#f43f5e"/>';
+    svg+='<rect x="21" y="10" width="38" height="8" fill="#f43f5e"/>';
+    svg+='<path d="M59,16 Q66,17 68,20 Q60,20 59,18 Z" fill="#e11d48"/>';
+  } else if(hat==="beanie"){
+    svg+='<path d="M22,16 Q22,2 40,1 Q58,2 58,16 Z" fill="'+h+'"/>';
+    svg+='<rect x="20" y="14" width="40" height="7" rx="3" fill="'+shadeColor(h,-10)+'"/>';
+    svg+='<circle cx="40" cy="1" r="4" fill="'+shadeColor(h,10)+'"/>';
+  } else if(hat==="helmet"){
+    svg+='<path d="M22,20 Q20,3 40,2 Q60,3 58,20 Z" fill="#0ea5e9"/>';
+    svg+='<rect x="18" y="18" width="44" height="6" rx="3" fill="#0284c7"/>';
+    svg+='<rect x="28" y="4" width="24" height="4" rx="2" fill="rgba(255,255,255,0.3)"/>';
+  } else if(hat==="chef"){
+    svg+='<rect x="27" y="14" width="26" height="5" rx="2" fill="#e2e8f0"/>';
+    svg+='<path d="M27,16 Q27,2 40,1 Q53,2 53,16 Z" fill="#f8fafc"/>';
+    svg+='<ellipse cx="40" cy="2" rx="10" ry="6" fill="#f8fafc"/>';
+  } else if(hat==="beret"){
+    svg+='<ellipse cx="40" cy="9" rx="20" ry="9" fill="#fbbf24"/>';
+    svg+='<circle cx="52" cy="7" r="4" fill="#f59e0b"/>';
+    svg+='<rect x="35" y="17" width="10" height="4" rx="2" fill="#d97706"/>';
+  } else if(hat==="headset"){
+    svg+='<path d="M22,18 Q22,2 40,2 Q58,2 58,18" stroke="#1a1a1a" stroke-width="4" fill="none"/>';
+    svg+='<rect x="19" y="16" width="7" height="12" rx="3" fill="#374151"/>';
+    svg+='<rect x="54" y="16" width="7" height="12" rx="3" fill="#374151"/>';
+  } else if(hat==="ninja"){
+    svg+='<rect x="20" y="4" width="40" height="36" rx="4" fill="#111827" opacity="0.92"/>';
+    svg+='<rect x="20" y="22" width="40" height="10" fill="#1f2937"/>';
+  } else if(hat==="goggle"){
+    svg+='<rect x="25" y="19" width="13" height="9" rx="4" fill="#0284c7" opacity="0.85"/>';
+    svg+='<rect x="42" y="19" width="13" height="9" rx="4" fill="#0284c7" opacity="0.85"/>';
+    svg+='<rect x="37" y="21" width="6" height="5" fill="#0369a1"/>';
+    svg+='<path d="M20,22 L25,22" stroke="#374151" stroke-width="2"/>';
+    svg+='<path d="M55,22 L60,22" stroke="#374151" stroke-width="2"/>';
+  }
+  return svg;
+}
+
+function renderExtra(extra, h, sh, s){
+  var svg="";
+  if(extra==="beard"){
+    svg+='<path d="M26,30 Q28,40 33,44 Q40,47 47,44 Q52,40 54,30 Q48,34 40,34 Q32,34 26,30 Z" fill="'+h+'" opacity="0.9"/>';
+  } else if(extra==="glasses"){
+    svg+='<rect x="26" y="20" width="12" height="8" rx="3" fill="none" stroke="#374151" stroke-width="2"/>';
+    svg+='<rect x="42" y="20" width="12" height="8" rx="3" fill="none" stroke="#374151" stroke-width="2"/>';
+    svg+='<line x1="38" y1="24" x2="42" y2="24" stroke="#374151" stroke-width="2"/>';
+    svg+='<line x1="22" y1="24" x2="26" y2="24" stroke="#374151" stroke-width="1.5"/>';
+    svg+='<line x1="54" y1="24" x2="58" y2="24" stroke="#374151" stroke-width="1.5"/>';
+  } else if(extra==="pierce"){
+    svg+='<circle cx="22" cy="24" r="2" fill="#c084fc"/>';
+    svg+='<circle cx="58" cy="20" r="1.5" fill="#a78bfa"/>';
+    svg+='<rect x="37" y="34" width="6" height="3" rx="1.5" fill="#d1d5db"/>';
+  } else if(extra==="tattoo"){
+    svg+='<path d="M8,55 Q10,50 12,55 Q14,60 12,63" stroke="#6b7280" stroke-width="2" fill="none"/>';
+    svg+='<path d="M10,50 Q13,47 15,50" stroke="#6b7280" stroke-width="1.5" fill="none"/>';
+  } else if(extra==="muscle"){
+    svg+='<ellipse cx="32" cy="56" rx="6" ry="5" fill="rgba(255,255,255,0.12)"/>';
+    svg+='<ellipse cx="48" cy="56" rx="6" ry="5" fill="rgba(255,255,255,0.12)"/>';
+    svg+='<path d="M35,66 Q40,68 45,66" stroke="rgba(255,255,255,0.2)" stroke-width="2" fill="none"/>';
+  } else if(extra==="stethoscope"){
+    svg+='<path d="M30,47 Q25,58 28,65 Q32,70 36,67" stroke="#94a3b8" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
+    svg+='<circle cx="36" cy="68" r="4" fill="#64748b"/>';
+    svg+='<circle cx="36" cy="68" r="2" fill="#94a3b8"/>';
+  } else if(extra==="belt"){
+    svg+='<rect x="22" y="68" width="36" height="6" rx="3" fill="#1a1a1a"/>';
+    svg+='<rect x="36" y="67" width="8" height="8" rx="2" fill="#f59e0b"/>';
+    svg+='<rect x="38" y="69" width="4" height="4" rx="1" fill="#1a1a1a"/>';
+  } else if(extra==="bow"){
+    svg+='<path d="M32,8 Q36,4 40,8 Q36,12 32,8 Z" fill="'+h+'"/>';
+    svg+='<path d="M40,8 Q44,4 48,8 Q44,12 40,8 Z" fill="'+h+'"/>';
+    svg+='<circle cx="40" cy="8" r="3" fill="'+shadeColor(h,-10)+'"/>';
+  }
   return svg;
 }
 
@@ -1173,11 +1301,18 @@ function adminPatientAv(p,size){
   size=size||54;
   var avObj=AVATARS.find(function(a){return a.id===(p.avatarId||0);})||null;
   var initials=(pn(p)||"?").split(" ").map(function(x){return x[0]||"";}).join("").slice(0,2).toUpperCase();
-  var inner = avObj ?
-    legoSVG(avObj,size)+
-    '<div style="position:absolute;bottom:2px;left:0;right:0;text-align:center;font-size:'+(size>44?11:9)+'px;font-weight:800;color:#fff;opacity:0.5;text-shadow:0 1px 3px rgba(0,0,0,0.8);pointer-events:none">'+initials+'</div>' :
-    av(pn(p),size);
-  return '<div onclick="adminChangeAvatar('+p.id+')" style="cursor:pointer;position:relative;width:'+size+'px;display:inline-block" title="Change avatar">'+inner+
+  if(avObj){
+    var svgH=Math.round(size*100/80);
+    var yShirt=Math.round(svgH*0.60);
+    var fSize=Math.round(size*0.19);
+    var inner='<div style="position:relative;display:inline-block">'+legoSVG(avObj,size)+
+      '<div style="position:absolute;top:'+yShirt+'px;left:0;right:0;text-align:center;font-size:'+fSize+'px;font-weight:900;color:rgba(0,0,0,0.80);letter-spacing:1px;line-height:1;pointer-events:none">'+initials+'</div></div>';
+    return '<div onclick="adminChangeAvatar('+p.id+')" style="cursor:pointer;position:relative;width:'+size+'px;display:inline-block" title="Change avatar">'+inner+
+      '<div style="position:absolute;bottom:-2px;right:-2px;background:#2B6CC4;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;border:2px solid #fff">✏️</div>'+
+      '</div>';
+  }
+  return '<div onclick="adminChangeAvatar('+p.id+')" style="cursor:pointer;position:relative;display:inline-block" title="Change avatar">'+
+    av(pn(p),size)+
     '<div style="position:absolute;bottom:-2px;right:-2px;background:#2B6CC4;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;border:2px solid #fff">✏️</div>'+
     '</div>';
 }
@@ -1197,14 +1332,17 @@ function legoAv(p,size){
   var avObj=AVATARS.find(function(a){return a.id===(p.avatarId||0);})||null;
   var initials=(pn(p)||"?").split(" ").map(function(x){return x[0]||"";}).join("").slice(0,2).toUpperCase();
   if(avObj){
-    // Avatar with initials overlay at bottom
+    var svgH=Math.round(size*100/80);
+    var yShirt=Math.round(svgH*0.60); // shirt chest position
+    var fSize=Math.round(size*0.19);
     return '<div onclick="showPatientProfile()" style="cursor:pointer;position:relative;width:'+size+'px;display:inline-block" title="My Profile">'+
+      '<div style="position:relative;display:inline-block">'+
       legoSVG(avObj,size)+
-      '<div style="position:absolute;bottom:2px;left:0;right:0;text-align:center;font-size:'+(size>44?11:9)+'px;font-weight:800;color:#fff;opacity:0.55;letter-spacing:0.5px;text-shadow:0 1px 3px rgba(0,0,0,0.8);pointer-events:none">'+initials+'</div>'+
+      '<div style="position:absolute;top:'+yShirt+'px;left:0;right:0;text-align:center;font-size:'+fSize+'px;font-weight:900;color:rgba(0,0,0,0.80);letter-spacing:1px;line-height:1;pointer-events:none">'+initials+'</div>'+
+      '</div>'+
       '<div style="position:absolute;bottom:-2px;right:-2px;background:#2B6CC4;border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;border:2px solid #fff">✏️</div>'+
       '</div>';
   }
-  // No avatar — show initials circle with edit badge
   return '<div onclick="showPatientProfile()" style="cursor:pointer;position:relative;display:inline-block" title="My Profile">'+
     av(pn(p),size)+
     '<div style="position:absolute;bottom:-2px;right:-2px;background:#2B6CC4;border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;border:2px solid #fff">✏️</div>'+
@@ -1687,8 +1825,8 @@ function om(m, editId){
       '<div><label class="lbl">'+Lx.pi+'</label><input class="inp" id="fpi" maxlength="4" value="'+(p.pin||"")+'" placeholder="1234"></div>'+
       '<div><label class="lbl">'+Lx.st+'</label><select class="inp" id="fst">'+ST.map(function(s){ return '<option'+(p.status===s?" selected":"")+'>'+s+'</option>'; }).join("")+'</select></div>'+
       '<div style="grid-column:1/-1"><label class="lbl">'+Lx.sp+'</label><select class="inp" id="fsp"><option value="">'+Lx.ss+'</option>'+getAllSports().map(function(s,i){ var allHe=getAllSportsHe(); var label=lng==="he"&&allHe[i]?allHe[i]:s; return '<option value="'+s+'"'+(p.sport===s?" selected":"")+'>'+label+'</option>'; }).join("")+'</select>'+
-      '<div style="margin-top:5px"><span style="font-size:11px;color:#4a6a8a">Not listed? </span><button type="button" onclick="addCustomSport()" style="font-size:11px;color:#2B6CC4;background:none;border:none;cursor:pointer;text-decoration:underline">+ Add sport</button></div></div>'+
-      '<div style="grid-column:1/-1"><label class="lbl">'+Lx.no+'</label><textarea class="inp" id="fno" style="height:68px">'+(p.notes||"")+'</textarea></div></div>'+
+      '<div style="margin-top:5px"><button type="button" onclick="omManageSports()" style="font-size:11px;color:#2B6CC4;background:none;border:none;cursor:pointer;text-decoration:underline">⚙️ '+(lng==="he"?"נהל רשימת ספורט":"Manage sports list")+'</button></div></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">'+(lng==="he"?"המטרה שלי / My Goal":"My Goal / המטרה שלי")+'</label><textarea class="inp" id="fno" style="height:68px">'+(p.notes||"")+'</textarea></div></div>'+
       '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btnd" onclick="cm()">'+Lx.ca+'</button><button class="btn" onclick="sp2()">'+Lx.sa+'</button></div>';
   } else if(m==="ae"){
     // Find exercise in plan day first, then flat exercises
@@ -2758,6 +2896,70 @@ function addCustomSport(){
   newOpt.value=en.trim(); newOpt.textContent=lng==="he"?he+" / "+en:en;
   newOpt.selected=true;
   sel.appendChild(newOpt);
+}
+
+function omManageSports(){
+  var isHe=lng==="he";
+  var custom=getCustomSports();
+  var c=g("MC");
+  c.innerHTML=
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'+
+    '<span style="font-size:17px;font-weight:800;color:#1a3a6e">⚽ '+(isHe?"ניהול ספורט":"Manage Sports")+'</span>'+
+    '<button onclick="cm()" style="background:rgba(0,0,0,0.08);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:16px">✕</button></div>'+
+    '<div style="font-size:11px;font-weight:700;color:#4a6a8a;text-transform:uppercase;margin-bottom:8px">'+(isHe?"רשימת ברירת מחדל":"Default Sports (read-only)")+'</div>'+
+    '<div style="max-height:160px;overflow-y:auto;margin-bottom:12px;background:#f8fbff;border-radius:8px;padding:8px">'+
+    SP.map(function(s,i){ return '<div style="font-size:12px;padding:4px 6px;color:#4a6a8a">'+(isHe&&SP_HE[i]?SP_HE[i]+' / ':'')+s+'</div>'; }).join("")+
+    '</div>'+
+    '<div style="font-size:11px;font-weight:700;color:#1a3a6e;text-transform:uppercase;margin-bottom:8px">'+(isHe?"ספורט מותאם אישית":"Custom Sports")+'</div>'+
+    '<div id="custom_sports_list">'+
+    (custom.length===0?'<div style="color:#4a6a8a;font-size:12px;padding:8px">'+(isHe?"אין ספורט מותאם":"No custom sports yet")+'</div>':
+    custom.map(function(s,i){
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:#f0f5ff;border-radius:8px;margin-bottom:5px">'+
+        '<div id="sport_view_'+i+'">'+
+        '<span style="font-weight:600;font-size:13px">'+(s.he||s.en)+'</span>'+
+        (s.he&&s.he!==s.en?'<span style="color:#4a6a8a;font-size:11px;margin-left:6px">/ '+s.en+'</span>':'')+
+        '</div>'+
+        '<div style="display:flex;gap:6px">'+
+        '<button onclick="editCustomSport('+i+')" style="background:#e8f2ff;border:1px solid #c8d8ee;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px">✏️</button>'+
+        '<button onclick="deleteCustomSport('+i+')" style="background:#fff0f0;border:1px solid #ffd0d0;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px;color:#e74c3c">✕</button>'+
+        '</div></div>';
+    }).join(""))+'</div>'+
+    '<div style="display:flex;gap:8px;margin-top:10px">'+
+    '<input class="inp" id="new_sport_en" placeholder="English name" style="flex:1">'+
+    '<input class="inp" id="new_sport_he" dir="rtl" placeholder="שם בעברית" style="flex:1">'+
+    '<button class="btn" onclick="addSportFromModal()">+ '+(isHe?"הוסף":"Add")+'</button>'+
+    '</div>';
+  g("MB").classList.add("on");
+}
+
+function addSportFromModal(){
+  var en=g("new_sport_en")?g("new_sport_en").value.trim():"";
+  var he=g("new_sport_he")?g("new_sport_he").value.trim():"";
+  if(!en&&!he) return;
+  var custom=getCustomSports();
+  custom.push({en:en||he, he:he||en});
+  saveCustomSports(custom);
+  omManageSports();
+}
+
+function editCustomSport(i){
+  var custom=getCustomSports(); var s=custom[i]; if(!s) return;
+  var isHe=lng==="he";
+  var newEn=prompt("English name:", s.en||"");
+  if(newEn===null) return;
+  var newHe=prompt("Hebrew name:", s.he||"");
+  if(newHe===null) return;
+  custom[i]={en:newEn.trim()||s.en, he:newHe.trim()||s.he};
+  saveCustomSports(custom);
+  omManageSports();
+}
+
+function deleteCustomSport(i){
+  if(!confirm("Delete this sport?")) return;
+  var custom=getCustomSports();
+  custom.splice(i,1);
+  saveCustomSports(custom);
+  omManageSports();
 }
 
 // ── Save patient / exercise / follow-up ──
