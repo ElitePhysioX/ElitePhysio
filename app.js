@@ -983,7 +983,10 @@ var exChecked = {};
 var activeTimer = null;
 var workoutStartTime = null;
 
-// ── Lego Avatar System ──
+// ── Avatar System ──
+var AVATAR_BG=["#f87171","#fb923c","#fbbf24","#34d399","#22d3ee","#60a5fa","#a78bfa","#f472b6","#4ade80","#2dd4bf","#38bdf8","#818cf8","#fb7185","#facc15","#86efac","#f97316","#10b981","#0ea5e9","#8b5cf6","#ec4899","#14b8a6","#f59e0b","#6366f1","#ef4444","#06b6d4","#84cc16","#e879f9","#f43f5e","#0891b2","#7c3aed"];
+function eyeColorFor(hc){try{var r=parseInt(hc.slice(1,3),16),g=parseInt(hc.slice(3,5),16),b=parseInt(hc.slice(5,7),16),lum=r*0.299+g*0.587+b*0.114;return lum>175?"#5b8dd9":lum>105?"#7a6544":"#4a2c0a";}catch(e){return "#4a2c0a";}}
+// (legacy name kept for any references)
 var AVATARS = [
   {id:1,label:"Young Man",skin:"#f4a47c",hair:"short",hairC:"#3d2200",shirt:"#2B6CC4",pants:"#1a3a6e",hat:"",extra:""},
   {id:2,label:"Young Woman",skin:"#f4a47c",hair:"long",hairC:"#8b4513",shirt:"#e84393",pants:"#6b21a8",hat:"",extra:""},
@@ -1020,51 +1023,65 @@ var AVATARS = [
 function legoSVG(av,size){
   size=size||60;
   var s=av.skin, h=av.hairC, sh=av.shirt, p=av.pants;
+  var bg=AVATAR_BG[(av.id-1)%AVATAR_BG.length];
+  var ec=eyeColorFor(h);
+  var bc=shadeColor(h,-10);
   var svg='<svg viewBox="0 0 80 80" width="'+size+'" height="'+size+'" xmlns="http://www.w3.org/2000/svg">';
 
-  // ── Background circle (light blue, like Flaticon Lego style) ──
-  svg+='<circle cx="40" cy="40" r="38" fill="#cfe8f5"/>';
-  svg+='<circle cx="40" cy="40" r="38" fill="rgba(255,255,255,0.18)"/>';
+  // ── Vibrant background ────────────────────────────────────────
+  svg+='<circle cx="40" cy="40" r="38" fill="'+bg+'"/>';
 
-  // ── LEGS ──────────────────────────────────────────────────────
-  svg+='<rect x="25" y="62" width="12" height="15" rx="3" fill="'+p+'" stroke="#111" stroke-width="1.5"/>';
-  svg+='<rect x="43" y="62" width="12" height="15" rx="3" fill="'+p+'" stroke="#111" stroke-width="1.5"/>';
-
-  // ── TORSO ─────────────────────────────────────────────────────
-  svg+='<rect x="22" y="47" width="36" height="17" rx="4" fill="'+sh+'" stroke="#111" stroke-width="1.5"/>';
-  // Shirt collar detail
-  svg+='<path d="M34,47 Q40,53 46,47" fill="rgba(255,255,255,0.22)" stroke="rgba(255,255,255,0.5)" stroke-width="1" stroke-linecap="round"/>';
-
-  // ── ARMS ──────────────────────────────────────────────────────
-  svg+='<rect x="12" y="48" width="10" height="15" rx="5" fill="'+sh+'" stroke="#111" stroke-width="1.5"/>';
-  svg+='<rect x="58" y="48" width="10" height="15" rx="5" fill="'+sh+'" stroke="#111" stroke-width="1.5"/>';
-
-  // ── HANDS ─────────────────────────────────────────────────────
-  svg+='<ellipse cx="17" cy="64" rx="5" ry="4.5" fill="'+s+'" stroke="#111" stroke-width="1.5"/>';
-  svg+='<ellipse cx="63" cy="64" rx="5" ry="4.5" fill="'+s+'" stroke="#111" stroke-width="1.5"/>';
+  // ── BODY / SHOULDERS ─────────────────────────────────────────
+  svg+='<rect x="16" y="58" width="48" height="26" rx="10" fill="'+sh+'"/>';
+  svg+='<ellipse cx="18" cy="60" rx="11" ry="7" fill="'+sh+'"/>';
+  svg+='<ellipse cx="62" cy="60" rx="11" ry="7" fill="'+sh+'"/>';
+  svg+='<path d="M33,59 Q40,65 47,59" fill="rgba(255,255,255,0.22)" stroke="rgba(255,255,255,0.45)" stroke-width="1.3" stroke-linecap="round" fill-opacity="0.22"/>';
 
   // ── NECK ──────────────────────────────────────────────────────
-  svg+='<rect x="33" y="40" width="14" height="9" rx="3" fill="'+s+'" stroke="#111" stroke-width="1.5"/>';
+  svg+='<rect x="35" y="47" width="10" height="14" rx="4" fill="'+s+'"/>';
 
-  // ── HEAD (Lego minifigure: tall rounded rectangle) ────────────
-  svg+='<rect x="22" y="13" width="36" height="28" rx="7" fill="'+s+'" stroke="#111" stroke-width="2"/>';
-
-  // ── LEGO STUD (cylinder bump on top of head) ──────────────────
-  svg+='<rect x="33" y="8" width="14" height="7" rx="3" fill="'+s+'" stroke="#111" stroke-width="1.5"/>';
-  svg+='<ellipse cx="40" cy="8" rx="7" ry="3.5" fill="'+shadeColor(s,-18)+'" stroke="#111" stroke-width="1.5"/>';
-
-  // ── EYES (simple dark Lego-style ovals) ───────────────────────
-  svg+='<ellipse cx="32" cy="25" rx="3.5" ry="4.5" fill="#1a1a2e"/>';
-  svg+='<ellipse cx="48" cy="25" rx="3.5" ry="4.5" fill="#1a1a2e"/>';
-  // Eye highlights
-  svg+='<ellipse cx="33.5" cy="23" rx="1.3" ry="1.8" fill="rgba(255,255,255,0.65)"/>';
-  svg+='<ellipse cx="49.5" cy="23" rx="1.3" ry="1.8" fill="rgba(255,255,255,0.65)"/>';
-
-  // ── SMILE (simple Lego curve) ─────────────────────────────────
-  svg+='<path d="M31,35 Q40,43 49,35" stroke="#111" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
-
-  // ── HAIR ──────────────────────────────────────────────────────
+  // ── HAIR back layer ───────────────────────────────────────────
   svg+=renderHair(av.hair, h, av.hat);
+
+  // ── EARS ──────────────────────────────────────────────────────
+  svg+='<ellipse cx="25" cy="30" rx="4.5" ry="5.5" fill="'+s+'"/>';
+  svg+='<ellipse cx="55" cy="30" rx="4.5" ry="5.5" fill="'+s+'"/>';
+  svg+='<ellipse cx="25" cy="30" rx="2.3" ry="3.3" fill="'+shadeColor(s,-18)+'"/>';
+  svg+='<ellipse cx="55" cy="30" rx="2.3" ry="3.3" fill="'+shadeColor(s,-18)+'"/>';
+
+  // ── FACE OVAL ─────────────────────────────────────────────────
+  svg+='<ellipse cx="40" cy="30" rx="15" ry="18" fill="'+s+'"/>';
+
+  // ── EYEBROWS ──────────────────────────────────────────────────
+  svg+='<path d="M27.5,21 Q32,18 36,20" stroke="'+bc+'" stroke-width="2.2" fill="none" stroke-linecap="round"/>';
+  svg+='<path d="M44,20 Q48,18 52.5,21" stroke="'+bc+'" stroke-width="2.2" fill="none" stroke-linecap="round"/>';
+
+  // ── EYES ──────────────────────────────────────────────────────
+  svg+='<ellipse cx="32" cy="27" rx="5" ry="4.5" fill="#fff"/>';
+  svg+='<circle cx="32" cy="27" r="3.2" fill="'+ec+'"/>';
+  svg+='<circle cx="32" cy="27" r="1.8" fill="#1a1a2e"/>';
+  svg+='<circle cx="33.3" cy="25.5" r="1.1" fill="rgba(255,255,255,0.9)"/>';
+  svg+='<path d="M27,25.5 Q32,22.5 37,25.5" stroke="'+shadeColor(s,-28)+'" stroke-width="1.5" fill="none" stroke-linecap="round"/>';
+  svg+='<ellipse cx="48" cy="27" rx="5" ry="4.5" fill="#fff"/>';
+  svg+='<circle cx="48" cy="27" r="3.2" fill="'+ec+'"/>';
+  svg+='<circle cx="48" cy="27" r="1.8" fill="#1a1a2e"/>';
+  svg+='<circle cx="49.3" cy="25.5" r="1.1" fill="rgba(255,255,255,0.9)"/>';
+  svg+='<path d="M43,25.5 Q48,22.5 53,25.5" stroke="'+shadeColor(s,-28)+'" stroke-width="1.5" fill="none" stroke-linecap="round"/>';
+
+  // ── NOSE ──────────────────────────────────────────────────────
+  svg+='<path d="M38,34 Q36,37 37.5,38.5 Q40,39.5 42.5,38.5 Q44,37 42,34" stroke="'+shadeColor(s,-22)+'" stroke-width="1.5" fill="none" stroke-linecap="round"/>';
+
+  // ── LIPS ──────────────────────────────────────────────────────
+  var lc=shadeColor(s,-32);
+  svg+='<path d="M33,42 Q36.5,40.5 40,41.5 Q43.5,40.5 47,42" stroke="'+lc+'" stroke-width="1.8" fill="none" stroke-linecap="round"/>';
+  svg+='<path d="M33,42 Q40,47 47,42" stroke="'+lc+'" stroke-width="1.5" fill="rgba(0,0,0,0.07)" stroke-linecap="round"/>';
+
+  // Cheek blush
+  svg+='<ellipse cx="24" cy="37" rx="5" ry="3" fill="rgba(255,100,80,0.16)"/>';
+  svg+='<ellipse cx="56" cy="37" rx="5" ry="3" fill="rgba(255,100,80,0.16)"/>';
+
+  // ── HAIR front layer ──────────────────────────────────────────
+  svg+=renderHairFront(av.hair, h, av.hat);
 
   // ── HAT ───────────────────────────────────────────────────────
   svg+=renderHat(av.hat, h);
@@ -1073,7 +1090,7 @@ function legoSVG(av,size){
   svg+=renderExtra(av.extra, h, sh, s);
 
   // ── FRAME ─────────────────────────────────────────────────────
-  svg+='<circle cx="40" cy="40" r="38" fill="none" stroke="rgba(0,0,0,0.13)" stroke-width="2.5"/>';
+  svg+='<circle cx="40" cy="40" r="38" fill="none" stroke="rgba(0,0,0,0.07)" stroke-width="2"/>';
 
   svg+='</svg>';
   return svg;
@@ -1090,167 +1107,149 @@ function shadeColor(hex, pct){
 }
 
 function renderHair(hair, h, hat){
+  // Back layer — drawn before face oval so it appears behind the face.
+  // Face oval: cx=40, cy=30, rx=15, ry=18 → top y=12, sides x=25/55
   if(hat==="ninja"||hat==="chef") return "";
   if(hair==="bald"||hair==="none") return "";
-  // Head rect: x=22,y=13,w=36,h=28 → top-left(22,13) top-right(58,13)
-  // Stud top: ~y=4; hair sits on top of stud & head.
   var svg="";
   if(hair==="short"){
-    // Classic Lego short hair piece: dome cap covering head top
-    svg+='<path d="M22,24 Q22,5 40,5 Q58,5 58,24 Q54,14 40,14 Q26,14 22,24 Z" fill="'+h+'" stroke="#111" stroke-width="1.5" stroke-linejoin="round"/>';
+    svg+='<path d="M25,30 Q25,9 40,9 Q55,9 55,30 Q52,18 40,17 Q28,18 25,30 Z" fill="'+h+'"/>';
   } else if(hair==="long"){
-    // Long straight — top cap + side curtains flowing down
-    svg+='<path d="M22,24 Q22,5 40,5 Q58,5 58,24 Q54,14 40,14 Q26,14 22,24 Z" fill="'+h+'" stroke="#111" stroke-width="1.5"/>';
-    svg+='<path d="M22,20 Q15,30 15,52 Q17,57 21,54 Q20,40 23,24 Z" fill="'+h+'" stroke="#111" stroke-width="1.5" stroke-linejoin="round"/>';
-    svg+='<path d="M58,20 Q65,30 65,52 Q63,57 59,54 Q60,40 57,24 Z" fill="'+h+'" stroke="#111" stroke-width="1.5" stroke-linejoin="round"/>';
+    svg+='<path d="M22,34 Q20,9 40,8 Q60,9 58,34 Q53,18 40,17 Q27,18 22,34 Z" fill="'+h+'"/>';
+    svg+='<path d="M22,28 Q14,36 13,58 Q15,63 19,61 Q17,46 22,30 Z" fill="'+h+'"/>';
+    svg+='<path d="M58,28 Q66,36 67,58 Q65,63 61,61 Q63,46 58,30 Z" fill="'+h+'"/>';
   } else if(hair==="shaggy"){
-    // Shaggy = long but rougher edges
-    svg+='<path d="M22,24 Q22,5 40,5 Q58,5 58,24 Q54,14 40,14 Q26,14 22,24 Z" fill="'+h+'" stroke="#111" stroke-width="1.5"/>';
-    svg+='<path d="M22,20 Q14,28 14,50 Q16,56 20,53 Q19,39 23,24 Z" fill="'+h+'" stroke="#111" stroke-width="1.5"/>';
-    svg+='<path d="M58,20 Q66,28 66,50 Q64,56 60,53 Q61,39 57,24 Z" fill="'+h+'" stroke="#111" stroke-width="1.5"/>';
-    // Messy side spikes
-    svg+='<path d="M22,18 Q18,12 22,10 Q21,16 23,20 Z" fill="'+h+'"/>';
-    svg+='<path d="M58,18 Q62,12 58,10 Q59,16 57,20 Z" fill="'+h+'"/>';
+    svg+='<path d="M22,34 Q20,9 40,8 Q60,9 58,34 Q53,18 40,17 Q27,18 22,34 Z" fill="'+h+'"/>';
+    svg+='<path d="M22,27 Q13,35 12,56 Q14,62 18,60 Q16,44 22,29 Z" fill="'+h+'"/>';
+    svg+='<path d="M58,27 Q67,35 68,56 Q66,62 62,60 Q64,44 58,29 Z" fill="'+h+'"/>';
+    svg+='<path d="M22,20 Q17,13 22,11 Q21,17 23,22 Z" fill="'+h+'"/>';
+    svg+='<path d="M58,20 Q63,13 58,11 Q59,17 57,22 Z" fill="'+h+'"/>';
   } else if(hair==="curly"){
-    // Big curly afro cloud
-    svg+='<ellipse cx="40" cy="10" rx="20" ry="13" fill="'+h+'" stroke="#111" stroke-width="1.5"/>';
-    svg+='<circle cx="22" cy="18" r="10" fill="'+h+'" stroke="#111" stroke-width="1.5"/>';
-    svg+='<circle cx="58" cy="18" r="10" fill="'+h+'" stroke="#111" stroke-width="1.5"/>';
-    svg+='<rect x="21" y="18" width="38" height="8" fill="'+h+'" stroke="none"/>'; // fill gap at base
+    svg+='<ellipse cx="40" cy="11" rx="19" ry="12" fill="'+h+'"/>';
+    svg+='<circle cx="23" cy="20" r="10" fill="'+h+'"/>';
+    svg+='<circle cx="57" cy="20" r="10" fill="'+h+'"/>';
+    svg+='<rect x="22" y="20" width="36" height="11" fill="'+h+'"/>';
   } else if(hair==="bun"){
-    // Short base + round bun on top
-    svg+='<path d="M22,24 Q22,5 40,5 Q58,5 58,24 Q54,14 40,14 Q26,14 22,24 Z" fill="'+h+'" stroke="#111" stroke-width="1.5"/>';
-    svg+='<circle cx="40" cy="4" r="8" fill="'+h+'" stroke="#111" stroke-width="1.5"/>';
+    svg+='<path d="M25,30 Q25,9 40,9 Q55,9 55,30 Q52,18 40,17 Q28,18 25,30 Z" fill="'+h+'"/>';
+    svg+='<circle cx="40" cy="7" r="8" fill="'+h+'"/>';
   } else if(hair==="pigtail"){
-    // Short top + twin pigtails on sides
-    svg+='<path d="M22,24 Q22,5 40,5 Q58,5 58,24 Q54,14 40,14 Q26,14 22,24 Z" fill="'+h+'" stroke="#111" stroke-width="1.5"/>';
-    svg+='<path d="M22,20 Q13,24 12,40 Q13,48 17,46 Q15,34 20,23 Z" fill="'+h+'" stroke="#111" stroke-width="1.5"/>';
-    svg+='<path d="M58,20 Q67,24 68,40 Q67,48 63,46 Q65,34 60,23 Z" fill="'+h+'" stroke="#111" stroke-width="1.5"/>';
-    svg+='<circle cx="14" cy="44" r="4" fill="'+shadeColor(h,-20)+'" stroke="#111" stroke-width="1"/>';
-    svg+='<circle cx="66" cy="44" r="4" fill="'+shadeColor(h,-20)+'" stroke="#111" stroke-width="1"/>';
+    svg+='<path d="M25,30 Q25,9 40,9 Q55,9 55,30 Q52,18 40,17 Q28,18 25,30 Z" fill="'+h+'"/>';
+    svg+='<path d="M25,26 Q15,31 14,47 Q15,55 19,53 Q17,41 22,28 Z" fill="'+h+'"/>';
+    svg+='<path d="M55,26 Q65,31 66,47 Q65,55 61,53 Q63,41 58,28 Z" fill="'+h+'"/>';
+    svg+='<circle cx="15" cy="51" r="4.5" fill="'+shadeColor(h,-22)+'"/>';
+    svg+='<circle cx="65" cy="51" r="4.5" fill="'+shadeColor(h,-22)+'"/>';
   } else if(hair==="ponytail"){
-    // Short top + side ponytail
-    svg+='<path d="M22,24 Q22,5 40,5 Q58,5 58,24 Q54,14 40,14 Q26,14 22,24 Z" fill="'+h+'" stroke="#111" stroke-width="1.5"/>';
-    svg+='<path d="M57,15 Q68,19 67,38 Q66,46 62,44 Q63,31 61,19 Z" fill="'+h+'" stroke="#111" stroke-width="1.5"/>';
+    svg+='<path d="M25,30 Q25,9 40,9 Q55,9 55,30 Q52,18 40,17 Q28,18 25,30 Z" fill="'+h+'"/>';
+    svg+='<path d="M54,18 Q66,22 65,42 Q64,51 60,49 Q61,35 58,20 Z" fill="'+h+'"/>';
   } else if(hair==="mohawk"){
-    // Tall mohawk fin
-    svg+='<path d="M34,22 Q36,1 40,0 Q44,1 46,22 Q43,10 40,10 Q37,10 34,22 Z" fill="'+h+'" stroke="#111" stroke-width="1.5" stroke-linejoin="round"/>';
+    svg+='<path d="M36,22 Q37,3 40,1 Q43,3 44,22 Q42,10 40,10 Q38,10 36,22 Z" fill="'+h+'"/>';
   } else if(hair==="pompadour"){
-    // Base cap + swept-back pompadour ridge
-    svg+='<path d="M22,24 Q22,5 40,5 Q58,5 58,24 Q54,14 40,14 Q26,14 22,24 Z" fill="'+h+'" stroke="#111" stroke-width="1.5"/>';
-    svg+='<path d="M24,16 Q30,3 40,2 Q50,3 57,13 Q48,8 40,8 Q32,8 24,16 Z" fill="'+shadeColor(h,30)+'" stroke="#111" stroke-width="1"/>';
+    svg+='<path d="M25,30 Q25,9 40,9 Q55,9 55,30 Q52,18 40,17 Q28,18 25,30 Z" fill="'+h+'"/>';
+    svg+='<path d="M27,18 Q33,4 40,3 Q47,4 54,15 Q46,9 40,9 Q34,9 27,18 Z" fill="'+shadeColor(h,28)+'"/>';
   } else if(hair==="messy"){
-    // Base cap + wild spike strands
-    svg+='<path d="M22,24 Q22,5 40,5 Q58,5 58,24 Q54,14 40,14 Q26,14 22,24 Z" fill="'+h+'" stroke="#111" stroke-width="1.5"/>';
-    svg+='<path d="M24,16 Q21,7 27,6 Q26,13 25,19 Z" fill="'+h+'" stroke="#111" stroke-width="1"/>';
-    svg+='<path d="M36,8 Q38,0 42,2 Q40,10 37,11 Z" fill="'+h+'" stroke="#111" stroke-width="1"/>';
-    svg+='<path d="M50,9 Q54,1 58,5 Q54,13 51,12 Z" fill="'+h+'" stroke="#111" stroke-width="1"/>';
+    svg+='<path d="M25,30 Q25,9 40,9 Q55,9 55,30 Q52,18 40,17 Q28,18 25,30 Z" fill="'+h+'"/>';
+    svg+='<path d="M27,18 Q24,9 30,8 Q29,14 28,21 Z" fill="'+h+'"/>';
+    svg+='<path d="M37,9 Q39,1 43,3 Q41,11 38,12 Z" fill="'+h+'"/>';
+    svg+='<path d="M51,10 Q55,2 59,6 Q55,14 52,13 Z" fill="'+h+'"/>';
+  }
+  return svg;
+}
+
+function renderHairFront(hair, h, hat){
+  // Front layer — drawn after face for natural overlap on long styles.
+  if(hat==="ninja"||hat==="chef") return "";
+  if(hair==="bald"||hair==="none") return "";
+  var svg="";
+  if(hair==="long"||hair==="shaggy"){
+    svg+='<path d="M27,23 Q23,30 22,44" stroke="'+h+'" stroke-width="5" fill="none" stroke-linecap="round" opacity="0.65"/>';
+    svg+='<path d="M53,23 Q57,30 58,44" stroke="'+h+'" stroke-width="5" fill="none" stroke-linecap="round" opacity="0.65"/>';
+  } else if(hair==="curly"){
+    svg+='<circle cx="25" cy="26" r="6.5" fill="'+h+'"/>';
+    svg+='<circle cx="55" cy="26" r="6.5" fill="'+h+'"/>';
   }
   return svg;
 }
 
 function renderHat(hat, h){
-  // Head rect: x=22,y=13 → hat sits above/on the head. Bold Lego-style with outlines.
+  // Face oval top: y=12. Hats sit above and on the head.
   var svg="";
   if(hat==="cap"||hat==="baseball"){
-    // Baseball cap dome + front brim
-    svg+='<path d="M22,23 Q22,5 40,5 Q58,5 58,23 Q54,13 40,13 Q26,13 22,23 Z" fill="#dc2626" stroke="#111" stroke-width="1.5"/>';
-    // Brim (left-facing)
-    svg+='<path d="M22,22 Q11,21 8,27 Q12,31 22,27 Z" fill="#b91c1c" stroke="#111" stroke-width="1.5"/>';
-    // Band stripe
-    svg+='<rect x="22" y="20" width="36" height="5" rx="2" fill="rgba(0,0,0,0.18)"/>';
+    svg+='<path d="M25,28 Q25,9 40,9 Q55,9 55,28 Q52,17 40,17 Q28,17 25,28 Z" fill="#dc2626"/>';
+    svg+='<path d="M25,26 Q13,25 9,31 Q13,36 25,31 Z" fill="#b91c1c"/>';
+    svg+='<rect x="25" y="24" width="30" height="5" rx="2" fill="rgba(0,0,0,0.2)"/>';
   } else if(hat==="backwards"){
-    // Backwards cap: dome + brim on the right side
-    svg+='<path d="M22,23 Q22,5 40,5 Q58,5 58,23 Q54,13 40,13 Q26,13 22,23 Z" fill="#f43f5e" stroke="#111" stroke-width="1.5"/>';
-    svg+='<path d="M58,22 Q69,21 72,27 Q68,31 58,27 Z" fill="#e11d48" stroke="#111" stroke-width="1.5"/>';
+    svg+='<path d="M25,28 Q25,9 40,9 Q55,9 55,28 Q52,17 40,17 Q28,17 25,28 Z" fill="#f43f5e"/>';
+    svg+='<path d="M55,26 Q67,25 71,31 Q67,36 55,31 Z" fill="#e11d48"/>';
   } else if(hat==="beanie"){
-    // Slouchy knit beanie with pom-pom
-    svg+='<path d="M22,26 Q22,4 40,4 Q58,4 58,26 Q54,12 40,12 Q26,12 22,26 Z" fill="'+h+'" stroke="#111" stroke-width="1.5"/>';
-    svg+='<rect x="21" y="22" width="38" height="7" rx="3.5" fill="'+shadeColor(h,-20)+'" stroke="#111" stroke-width="1.5"/>';
-    svg+='<circle cx="40" cy="4" r="5" fill="'+shadeColor(h,25)+'" stroke="#111" stroke-width="1.5"/>';
+    svg+='<path d="M25,30 Q25,7 40,7 Q55,7 55,30 Q52,15 40,15 Q28,15 25,30 Z" fill="'+h+'"/>';
+    svg+='<rect x="24" y="26" width="32" height="7" rx="3.5" fill="'+shadeColor(h,-22)+'"/>';
+    svg+='<circle cx="40" cy="7" r="5" fill="'+shadeColor(h,28)+'"/>';
   } else if(hat==="helmet"){
-    // Sports helmet with visor strip
-    svg+='<path d="M20,26 Q20,4 40,4 Q60,4 60,26 Q56,11 40,11 Q24,11 20,26 Z" fill="#0ea5e9" stroke="#111" stroke-width="1.5"/>';
-    svg+='<rect x="20" y="22" width="40" height="7" rx="3.5" fill="#0284c7" stroke="#111" stroke-width="1.5"/>';
-    svg+='<rect x="30" y="9" width="20" height="5" rx="2.5" fill="rgba(255,255,255,0.5)"/>';
+    svg+='<path d="M22,28 Q22,7 40,7 Q58,7 58,28 Q55,13 40,13 Q25,13 22,28 Z" fill="#0ea5e9"/>';
+    svg+='<rect x="22" y="24" width="36" height="7" rx="3.5" fill="#0284c7"/>';
+    svg+='<rect x="30" y="11" width="20" height="5" rx="2.5" fill="rgba(255,255,255,0.5)"/>';
   } else if(hat==="chef"){
-    // Tall white chef toque + band
-    svg+='<rect x="26" y="20" width="28" height="8" rx="4" fill="#e2e8f0" stroke="#111" stroke-width="1.5"/>';
-    svg+='<path d="M28,24 Q28,4 40,4 Q52,4 52,24 Z" fill="#f8fafc" stroke="#111" stroke-width="1.5"/>';
-    svg+='<circle cx="40" cy="3" r="7" fill="#f8fafc" stroke="#111" stroke-width="1.5"/>';
+    svg+='<rect x="28" y="21" width="24" height="8" rx="4" fill="#e2e8f0"/>';
+    svg+='<path d="M30,25 Q30,7 40,7 Q50,7 50,25 Z" fill="#f8fafc"/>';
+    svg+='<circle cx="40" cy="6" r="7" fill="#f8fafc"/>';
   } else if(hat==="beret"){
-    // Tilted artist beret with button
-    svg+='<ellipse cx="43" cy="14" rx="20" ry="11" fill="'+h+'" stroke="#111" stroke-width="1.5"/>';
-    svg+='<circle cx="55" cy="9" r="4" fill="'+shadeColor(h,-15)+'" stroke="#111" stroke-width="1"/>';
-    svg+='<rect x="32" y="21" width="16" height="5" rx="2.5" fill="'+shadeColor(h,-10)+'" stroke="#111" stroke-width="1"/>';
+    svg+='<ellipse cx="43" cy="15" rx="19" ry="11" fill="'+h+'"/>';
+    svg+='<circle cx="54" cy="10" r="4" fill="'+shadeColor(h,-15)+'"/>';
+    svg+='<rect x="33" y="22" width="14" height="5" rx="2.5" fill="'+shadeColor(h,-10)+'"/>';
   } else if(hat==="headset"){
-    // Gaming headset arc + ear cups
-    svg+='<path d="M20,22 Q20,4 40,4 Q60,4 60,22" stroke="#1f2937" stroke-width="5" fill="none" stroke-linecap="round"/>';
-    svg+='<rect x="13" y="20" width="11" height="15" rx="5.5" fill="#374151" stroke="#111" stroke-width="1.5"/>';
-    svg+='<rect x="56" y="20" width="11" height="15" rx="5.5" fill="#374151" stroke="#111" stroke-width="1.5"/>';
-    // Mic boom
-    svg+='<path d="M24,31 Q28,38 32,39" stroke="#374151" stroke-width="2" fill="none" stroke-linecap="round"/>';
-    svg+='<circle cx="32" cy="39" r="2.5" fill="#1f2937" stroke="#111" stroke-width="1"/>';
+    svg+='<path d="M22,24 Q22,7 40,7 Q58,7 58,24" stroke="#1f2937" stroke-width="5" fill="none" stroke-linecap="round"/>';
+    svg+='<rect x="14" y="22" width="10" height="14" rx="5" fill="#374151"/>';
+    svg+='<rect x="56" y="22" width="10" height="14" rx="5" fill="#374151"/>';
+    svg+='<path d="M24,32 Q28,39 32,40" stroke="#374151" stroke-width="2" fill="none" stroke-linecap="round"/>';
+    svg+='<circle cx="32" cy="40" r="2.5" fill="#1f2937"/>';
   } else if(hat==="ninja"){
-    // Full ninja mask — wraps entire face except eye slit
-    svg+='<path d="M19,49 Q19,5 40,5 Q61,5 61,49 Q61,33 40,31 Q19,33 19,49 Z" fill="#111827" stroke="#111" stroke-width="1.5" opacity="0.95"/>';
-    // Eye slit opening
-    svg+='<rect x="22" y="26" width="36" height="9" rx="2" fill="#1f2937"/>';
-    svg+='<rect x="22" y="27" width="36" height="5" rx="2" fill="#2d3748" opacity="0.6"/>';
+    svg+='<path d="M20,50 Q20,6 40,6 Q60,6 60,50 Q60,34 40,32 Q20,34 20,50 Z" fill="#111827" opacity="0.95"/>';
+    svg+='<rect x="24" y="27" width="32" height="9" rx="2" fill="#1f2937"/>';
+    svg+='<rect x="24" y="28" width="32" height="5" rx="2" fill="#2d3748" opacity="0.5"/>';
   } else if(hat==="goggle"){
-    // Swim/sport goggles with strap
-    svg+='<rect x="23" y="21" width="15" height="12" rx="6" fill="#0284c7" opacity="0.92" stroke="#111" stroke-width="1.5"/>';
-    svg+='<rect x="42" y="21" width="15" height="12" rx="6" fill="#0284c7" opacity="0.92" stroke="#111" stroke-width="1.5"/>';
-    svg+='<rect x="38" y="23" width="4" height="8" fill="#075985" stroke="none"/>';
-    svg+='<rect x="16" y="24" width="7" height="5" rx="2.5" fill="#374151" stroke="#111" stroke-width="1"/>';
-    svg+='<rect x="57" y="24" width="7" height="5" rx="2.5" fill="#374151" stroke="#111" stroke-width="1"/>';
+    svg+='<rect x="23" y="22" width="14" height="11" rx="5.5" fill="#0284c7" opacity="0.92"/>';
+    svg+='<rect x="43" y="22" width="14" height="11" rx="5.5" fill="#0284c7" opacity="0.92"/>';
+    svg+='<rect x="37" y="24" width="6" height="7" fill="#075985"/>';
+    svg+='<rect x="17" y="25" width="6" height="4" rx="2" fill="#374151"/>';
+    svg+='<rect x="57" y="25" width="6" height="4" rx="2" fill="#374151"/>';
   }
   return svg;
 }
 
 function renderExtra(extra, h, sh, s){
-  // Head: y=13-41; Torso: y=47-64; Arms: x=12-22 left, x=58-68 right
+  // Face oval: cx=40,cy=30,rx=15,ry=18 → chin at y=48. Shoulders: y=58+
   var svg="";
   if(extra==="beard"){
-    // Beard covering chin/lower face area (face y=13-41, lower third y=34-41)
-    svg+='<path d="M23,34 Q25,48 32,52 Q40,55 48,52 Q55,48 57,34 Q48,41 40,41 Q32,41 23,34 Z" fill="'+h+'" stroke="#111" stroke-width="1" opacity="0.92"/>';
+    svg+='<path d="M26,37 Q28,51 35,55 Q40,57 45,55 Q52,51 54,37 Q46,44 40,44 Q34,44 26,37 Z" fill="'+h+'" opacity="0.9"/>';
   } else if(extra==="glasses"){
-    // Glasses sitting on face — eyes at cy=25, glasses at y=21
-    svg+='<rect x="23" y="21" width="13" height="10" rx="5" fill="rgba(180,220,255,0.35)" stroke="#111" stroke-width="2"/>';
-    svg+='<rect x="44" y="21" width="13" height="10" rx="5" fill="rgba(180,220,255,0.35)" stroke="#111" stroke-width="2"/>';
-    svg+='<line x1="36" y1="26" x2="44" y2="26" stroke="#111" stroke-width="2"/>';
-    svg+='<line x1="17" y1="26" x2="23" y2="26" stroke="#111" stroke-width="2"/>';
-    svg+='<line x1="57" y1="26" x2="63" y2="26" stroke="#111" stroke-width="2"/>';
+    svg+='<rect x="24" y="23" width="12" height="9" rx="4.5" fill="rgba(200,230,255,0.4)" stroke="#374151" stroke-width="1.8"/>';
+    svg+='<rect x="44" y="23" width="12" height="9" rx="4.5" fill="rgba(200,230,255,0.4)" stroke="#374151" stroke-width="1.8"/>';
+    svg+='<line x1="36" y1="27.5" x2="44" y2="27.5" stroke="#374151" stroke-width="1.8"/>';
+    svg+='<line x1="18" y1="27.5" x2="24" y2="27.5" stroke="#374151" stroke-width="1.8"/>';
+    svg+='<line x1="56" y1="27.5" x2="62" y2="27.5" stroke="#374151" stroke-width="1.8"/>';
   } else if(extra==="pierce"){
-    // Ear stud + eyebrow bar + small nose stud
-    svg+='<circle cx="21" cy="30" r="3" fill="#c084fc" stroke="#111" stroke-width="1"/>';
-    svg+='<circle cx="59" cy="26" r="2.5" fill="#a78bfa" stroke="#111" stroke-width="1"/>';
-    svg+='<circle cx="40" cy="36" r="2" fill="#d4d4d4" stroke="#111" stroke-width="0.8"/>';
+    svg+='<circle cx="22" cy="32" r="2.8" fill="#c084fc"/>';
+    svg+='<circle cx="58" cy="27" r="2.2" fill="#a78bfa"/>';
+    svg+='<circle cx="40" cy="39" r="1.8" fill="#e2e2e2"/>';
   } else if(extra==="tattoo"){
-    // Tribal tattoo on left arm (arm: x=12-22, y=48-63)
-    svg+='<path d="M13,57 Q15,50 17,57 Q18,63 16,67" stroke="#6b7280" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
-    svg+='<path d="M13,51 Q17,46 19,51" stroke="#6b7280" stroke-width="2" fill="none" stroke-linecap="round"/>';
-    svg+='<path d="M15,44 Q17,40 19,44" stroke="#6b7280" stroke-width="1.8" fill="none" stroke-linecap="round"/>';
+    svg+='<path d="M20,67 Q22,59 24,67 Q25,73 23,77" stroke="#6b7280" stroke-width="2" fill="none" stroke-linecap="round"/>';
+    svg+='<path d="M20,61 Q23,55 25,61" stroke="#6b7280" stroke-width="1.8" fill="none" stroke-linecap="round"/>';
   } else if(extra==="muscle"){
-    // Bulging muscle definition on torso (torso y=47-64)
-    svg+='<ellipse cx="31" cy="55" rx="5" ry="6.5" fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.45)" stroke-width="1.2"/>';
-    svg+='<ellipse cx="49" cy="55" rx="5" ry="6.5" fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.45)" stroke-width="1.2"/>';
+    svg+='<ellipse cx="29" cy="68" rx="5" ry="5.5" fill="rgba(255,255,255,0.22)" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>';
+    svg+='<ellipse cx="51" cy="68" rx="5" ry="5.5" fill="rgba(255,255,255,0.22)" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>';
   } else if(extra==="stethoscope"){
-    // Stethoscope draped over torso — ear-pieces at collar, disc at bottom
-    svg+='<path d="M33,50 Q27,62 30,70 Q34,76 38,73" stroke="#94a3b8" stroke-width="3" fill="none" stroke-linecap="round"/>';
-    svg+='<circle cx="38" cy="73" r="5" fill="#64748b" stroke="#111" stroke-width="1"/>';
-    svg+='<circle cx="38" cy="73" r="2.5" fill="#cbd5e1"/>';
-    svg+='<line x1="33" y1="48" x2="47" y2="48" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round"/>';
+    svg+='<path d="M35,61 Q28,72 31,78" stroke="#94a3b8" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
+    svg+='<circle cx="31" cy="78" r="4" fill="#64748b"/>';
+    svg+='<circle cx="31" cy="78" r="2" fill="#cbd5e1"/>';
+    svg+='<line x1="35" y1="60" x2="45" y2="60" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/>';
   } else if(extra==="belt"){
-    // Martial arts / karate belt across waist (waist ~y=62-64, between torso & legs)
-    svg+='<rect x="22" y="62" width="36" height="6" rx="3" fill="#1f2937" stroke="#111" stroke-width="1"/>';
-    svg+='<rect x="36" y="61" width="8" height="8" rx="2" fill="#f59e0b" stroke="#111" stroke-width="1"/>';
-    svg+='<circle cx="40" cy="65" r="1.5" fill="#1f2937"/>';
+    svg+='<rect x="22" y="72" width="36" height="5" rx="2.5" fill="#1f2937"/>';
+    svg+='<rect x="37" y="71" width="6" height="7" rx="1.5" fill="#f59e0b"/>';
+    svg+='<circle cx="40" cy="74.5" r="1.5" fill="#1f2937"/>';
   } else if(extra==="bow"){
-    // Hair bow placed at top of head (y≈4-13)
-    svg+='<path d="M30,8 Q35,2 40,8 Q35,14 30,8 Z" fill="'+h+'" stroke="#111" stroke-width="1"/>';
-    svg+='<path d="M40,8 Q45,2 50,8 Q45,14 40,8 Z" fill="'+h+'" stroke="#111" stroke-width="1"/>';
-    svg+='<circle cx="40" cy="8" r="3.5" fill="'+shadeColor(h,-20)+'" stroke="#111" stroke-width="1"/>';
+    svg+='<path d="M30,9 Q35,3 40,9 Q35,15 30,9 Z" fill="'+h+'"/>';
+    svg+='<path d="M40,9 Q45,3 50,9 Q45,15 40,9 Z" fill="'+h+'"/>';
+    svg+='<circle cx="40" cy="9" r="3.5" fill="'+shadeColor(h,-22)+'"/>';
   }
   return svg;
 }
