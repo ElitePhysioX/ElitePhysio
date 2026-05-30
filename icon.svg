@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#0d2248"/>
+      <stop offset="55%"  stop-color="#1a3a6e"/>
+      <stop offset="100%" stop-color="#2B6CC4"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" fill="url(#bg)"/>
+
+  <!-- White muscular flex silhouette -->
+  <g fill="white">
+
+    <!-- Head -->
+    <circle cx="256" cy="92" r="46"/>
+
+    <!-- Neck (widens from head to shoulders) -->
+    <path d="M234,136 L278,136 L285,182 L227,182 Z"/>
+
+    <!-- Torso: wide at shoulders (with slight arch), tapers to waist -->
+    <path d="
+      M148,182
+      Q148,176 256,168
+      Q364,176 364,182
+      L348,370
+      Q344,378 328,378
+      L184,378
+      Q168,378 164,370
+      Z
+    "/>
+
+    <!-- LEFT UPPER ARM: from shoulder going left-and-down to elbow -->
+    <path d="
+      M152,196
+      L74,270
+      Q54,288 56,308
+      L96,320
+      Q104,302 118,286
+      L162,218
+      Z
+    "/>
+
+    <!-- LEFT FOREARM: from elbow going UP (flex pose) -->
+    <path d="
+      M54,296
+      L50,164
+      Q50,144 70,140
+      L104,150
+      Q102,172 98,200
+      L96,312
+      Z
+    "/>
+
+    <!-- RIGHT UPPER ARM: mirror of left -->
+    <path d="
+      M360,196
+      L438,270
+      Q458,288 456,308
+      L416,320
+      Q408,302 394,286
+      L350,218
+      Z
+    "/>
+
+    <!-- RIGHT FOREARM: mirror of left -->
+    <path d="
+      M458,296
+      L462,164
+      Q462,144 442,140
+      L408,150
+      Q410,172 414,200
+      L416,312
+      Z
+    "/>
+
+  </g>
+</svg>
