@@ -10,6 +10,8 @@ var AI_KEY = "";
 var pts = [], lng = "he", auth = null, cur = null, ctab = "ex", ptab = "ex", stmr = null, mmode = "";
 var deletedPatients = []; // recycle bin for patients
 var deletedExercises = []; // recycle bin for exercises
+var appts = [];
+var calWeekOffset = 0;
 
 function loadRecycleBin(){
   try{
@@ -282,6 +284,121 @@ function gv(v){
   else if(v==="s") rs();
 }
 
+// ── Calendar ──
+function calWeekStart(offset){
+  var d=new Date(); var day=d.getDay(); d.setHours(0,0,0,0); d.setDate(d.getDate()-day+(offset*7)); return d;
+}
+function calDays(offset){
+  var ws=calWeekStart(offset);
+  return [0,1,2,3,4,5,6].map(function(i){ var d=new Date(ws); d.setDate(d.getDate()+i); return d; });
+}
+function fmtDate(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function fmtDayLabel(d){
+  var n=lng==="he"?['א',"ב","ג","ד","ה","ו","ש"]:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  return n[d.getDay()]+'<br><span style="font-size:15px;font-weight:800">'+d.getDate()+'</span>';
+}
+function loadAppts(cb){
+  if(ADMIN_TOKEN){
+    apiCall("appts","GET",null,function(err,data){
+      if(!err&&Array.isArray(data)){ appts=data; }
+      else{ try{ appts=JSON.parse(localStorage.getItem("ep_appts")||"[]"); }catch(e){ appts=[]; } }
+      cb();
+    });
+  } else {
+    try{ appts=JSON.parse(localStorage.getItem("ep_appts")||"[]"); }catch(e){ appts=[]; }
+    cb();
+  }
+}
+function saveApptLocal(){ try{ localStorage.setItem("ep_appts",JSON.stringify(appts)); }catch(e){} }
+function addAppt(a){
+  a.id=a.id||Date.now(); appts.push(a); saveApptLocal();
+  if(ADMIN_TOKEN) apiCall("appts","POST",a,function(){});
+  renderCal();
+}
+function deleteAppt(id){
+  appts=appts.filter(function(a){ return a.id!=id; }); saveApptLocal();
+  if(ADMIN_TOKEN) apiCall("appts/"+id,"DELETE",null,function(){});
+  renderCal();
+}
+function buildCalHTML(){
+  var days=calDays(calWeekOffset);
+  var todayStr=fmtDate(new Date());
+  var ws=days[0],we=days[6];
+  var lo=lng==="he"?"he-IL":"en-US";
+  var wLabel=ws.toLocaleDateString(lo,{month:"short",day:"numeric"})+" – "+we.toLocaleDateString(lo,{month:"short",day:"numeric",year:"numeric"});
+  var slots=[]; for(var h=7;h<21;h++){ slots.push(String(h).padStart(2,"0")+":00"); slots.push(String(h).padStart(2,"0")+":30"); }
+  var amap={}; appts.forEach(function(a){ var k=a.date+"__"+a.time; if(!amap[k]) amap[k]=[]; amap[k].push(a); });
+  var H='<div class="card" style="padding:0;overflow:hidden;margin-bottom:24px">';
+  H+='<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #e2e8f0;background:#f8fafc;flex-wrap:wrap;gap:8px">';
+  H+='<div style="display:flex;align-items:center;gap:8px">';
+  H+='<button class="btn" style="padding:5px 13px;font-size:15px;background:#fff;border:1px solid #d1d9e0;color:#1a3a6e" onclick="calWeekOffset--;renderCal()">&#8249;</button>';
+  H+='<span style="font-size:13px;font-weight:700;color:#1a3a6e;min-width:160px;text-align:center">'+wLabel+'</span>';
+  H+='<button class="btn" style="padding:5px 13px;font-size:15px;background:#fff;border:1px solid #d1d9e0;color:#1a3a6e" onclick="calWeekOffset++;renderCal()">&#8250;</button>';
+  if(calWeekOffset!==0) H+='<button class="btn" style="padding:5px 10px;font-size:12px;background:#e8f0fe;color:#2B6CC4;border:none" onclick="calWeekOffset=0;renderCal()">'+(lng==="he"?"היום":"Today")+'</button>';
+  H+='</div>';
+  H+='<button class="btn" style="font-size:13px;background:#2B6CC4;color:#fff" onclick="openNewAppt()">'+(lng==="he"?"+ תור חדש":"+ New Appt")+'</button>';
+  H+='</div>';
+  H+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:500px">';
+  H+='<thead><tr><th style="width:48px;min-width:48px;padding:6px 4px;border-bottom:2px solid #e2e8f0;border-right:1px solid #e2e8f0;background:#f8fafc"></th>';
+  days.forEach(function(d){
+    var ds=fmtDate(d); var it=ds===todayStr;
+    H+='<th style="padding:8px 4px;border-bottom:2px solid #e2e8f0;border-right:1px solid #f0f4f8;text-align:center;font-size:11px;font-weight:700;color:'+(it?"#2B6CC4":"#1a3a6e")+';background:'+(it?"#e8f0fe":"#f8fafc")+'">'+fmtDayLabel(d)+'</th>';
+  });
+  H+='</tr></thead><tbody>';
+  slots.forEach(function(slot){
+    var isH=slot.endsWith(":00");
+    H+='<tr style="height:40px">';
+    H+='<td style="padding:0 5px;border-right:1px solid #e2e8f0;border-bottom:1px solid '+(isH?"#e2e8f0":"#f5f7fa")+';font-size:10px;color:#8a9bbf;text-align:right;vertical-align:top;padding-top:3px;background:#fafbfd;white-space:nowrap">'+(isH?slot:'')+'</td>';
+    days.forEach(function(d){
+      var ds=fmtDate(d); var it=ds===todayStr;
+      var da=(amap[ds+"__"+slot])||[];
+      H+='<td style="padding:2px;border-right:1px solid #f0f4f8;border-bottom:1px solid '+(isH?"#e2e8f0":"#f5f7fa")+';vertical-align:top;background:'+(it?"#f5f8ff":"#fff")+';cursor:pointer" onclick="openNewApptAt(\''+ds+'\',\''+slot+'\')">';
+      da.forEach(function(a){
+        var p=pts.find(function(x){ return x.id==a.patientId; });
+        var nm=p?pn(p):(a.patientName||"?");
+        H+='<div style="background:#2B6CC415;border-left:3px solid #2B6CC4;border-radius:3px;padding:2px 22px 2px 5px;margin-bottom:1px;font-size:11px;font-weight:600;color:#2B6CC4;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer;position:relative" onclick="event.stopPropagation();'+(p?'op('+p.id+')':'')+'" title="'+nm+(a.notes?' — '+a.notes:'')+'">';
+        H+=nm+'<span style="position:absolute;right:4px;top:2px;font-size:10px;opacity:.5;cursor:pointer" onclick="event.stopPropagation();deleteAppt('+a.id+')">&#x2715;</span></div>';
+      });
+      H+='</td>';
+    });
+    H+='</tr>';
+  });
+  H+='</tbody></table></div></div>';
+  return H;
+}
+function renderCal(){ var s=g("cal-section"); if(s) s.innerHTML=buildCalHTML(); }
+function openNewAppt(){ openNewApptAt("",""); }
+function openNewApptAt(date,time){
+  var td=fmtDate(new Date());
+  var pO=pts.map(function(p){ return '<option value="'+p.id+'">'+pn(p)+'</option>'; }).join("");
+  if(!pO) pO='<option value="">No patients</option>';
+  var tO=""; for(var h=7;h<21;h++){ var hs=String(h).padStart(2,"0"); tO+='<option value="'+hs+':00">'+hs+':00</option><option value="'+hs+':30">'+hs+':30</option>'; }
+  var iS='style="width:100%;padding:9px 10px;border:1px solid #d1d9e0;border-radius:8px;font-size:14px;margin-bottom:14px;background:#f8fafc;box-sizing:border-box"';
+  g("MC").innerHTML=
+    '<div style="padding:4px 0">'+
+    '<div style="font-size:18px;font-weight:800;color:#1a3a6e;margin-bottom:18px">'+(lng==="he"?"תור חדש":"New Appointment")+'</div>'+
+    '<label style="font-size:12px;color:#4a6a8a;font-weight:600;display:block;margin-bottom:5px">'+(lng==="he"?"מטופל":"Patient")+'</label>'+
+    '<select id="ca-pat" '+iS+'>'+pO+'</select>'+
+    '<label style="font-size:12px;color:#4a6a8a;font-weight:600;display:block;margin-bottom:5px">'+(lng==="he"?"תאריך":"Date")+'</label>'+
+    '<input id="ca-date" type="date" value="'+(date||td)+'" '+iS+'>'+
+    '<label style="font-size:12px;color:#4a6a8a;font-weight:600;display:block;margin-bottom:5px">'+(lng==="he"?"שעה":"Time")+'</label>'+
+    '<select id="ca-time" '+iS+'>'+tO+'</select>'+
+    '<label style="font-size:12px;color:#4a6a8a;font-weight:600;display:block;margin-bottom:5px">'+(lng==="he"?"הערות":"Notes")+'</label>'+
+    '<input id="ca-notes" type="text" placeholder="'+(lng==="he"?"הערות...":"Notes...")+'" '+iS+'>'+
+    '<div style="display:flex;gap:10px;margin-top:6px">'+
+    '<button class="btn" style="flex:1;background:#2B6CC4;color:#fff;padding:11px;font-size:14px" onclick="saveNewAppt()">'+(lng==="he"?"שמור":"Save")+'</button>'+
+    '<button class="btn" style="flex:1;background:#f1f5f9;color:#1a3a6e;padding:11px;font-size:14px" onclick="cm()">'+(lng==="he"?"ביטול":"Cancel")+'</button>'+
+    '</div></div>';
+  var ts=g("ca-time"); if(ts&&time) ts.value=time;
+  g("MB").classList.add("on");
+}
+function saveNewAppt(){
+  var ep=g("ca-pat"),ed=g("ca-date"),et=g("ca-time"),en=g("ca-notes");
+  if(!ep||!ed||!et||!ep.value||!ed.value||!et.value) return;
+  addAppt({patientId:parseInt(ep.value),date:ed.value,time:et.value,notes:en?en.value:""});
+  cm();
+}
+
 // ── Dashboard ──
 function rd(){
   var tx=pts.reduce(function(a,p){ return a+(p.exercises||[]).length; },0);
@@ -297,6 +414,8 @@ function rd(){
         '<div style="font-size:28px;font-weight:800;color:'+x[0]+'">'+x[1]+'</div>'+
         '<div style="font-size:11px;color:#4a6a8a;text-transform:uppercase;letter-spacing:.8px;margin-top:3px">'+x[2]+'</div></div>';
     }).join("")+'</div>'+
+    '<div style="font-size:15px;font-weight:700;color:#1a3a6e;margin-bottom:12px">'+(lng==="he"?"לוח תורים":"Appointment Calendar")+'</div>'+
+    '<div id="cal-section"><div style="text-align:center;padding:32px;color:#4a6a8a;font-size:13px">Loading...</div></div>'+
     '<div class="row"><span class="st">'+L().rp2+'</span>'+
     '<div style="display:flex;gap:8px">'+
     '<button class="btn" style="font-size:12px;background:#fff3f3;color:#e74c3c;border:1px solid rgba(231,76,60,0.3)" onclick="omRecycleBin()">🗑 Recycle Bin '+(deletedPatients.length+deletedExercises.length>0?'('+( deletedPatients.length+deletedExercises.length)+')':'')+'</button>'+
@@ -308,6 +427,7 @@ function rd(){
         '<div><div class="pat-name">'+dn+'</div><div class="pat-sub">'+(p.injury||"—")+'</div></div></div>'+
         '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">'+bdg(p.sport)+' '+sbdg(p.status)+'</div></div></div>';
     }).join("");
+  loadAppts(renderCal);
 }
 
 // ── Patient List ──
