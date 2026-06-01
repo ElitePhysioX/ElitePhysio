@@ -152,6 +152,15 @@ export default {
         return json({ ok: true });
       }
 
+      // Update appointment date/time (admin only)
+      if(path.startsWith("/api/appts/") && request.method === "PATCH"){
+        const token = (request.headers.get("Authorization")||"").replace("Bearer ","");
+        if(token !== ADMIN_PASSWORD) return json({ error:"Unauthorized" }, 401);
+        const id = path.split("/")[3];
+        await sbFetch(SB_KEY, "appointments?id=eq."+id, "PATCH", body);
+        return json({ ok: true });
+      }
+
       // Get all appointments (admin only)
       if(path === "/api/appts" && request.method === "GET"){
         const token = (request.headers.get("Authorization")||"").replace("Bearer ","");

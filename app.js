@@ -12,6 +12,7 @@ var deletedPatients = []; // recycle bin for patients
 var deletedExercises = []; // recycle bin for exercises
 var appts = [];
 var calWeekOffset = 0;
+var calDrag = null;
 
 function loadRecycleBin(){
   try{
@@ -318,15 +319,22 @@ function deleteAppt(id){
     if(!err){ appts=appts.filter(function(a){ return a.id!=id; }); renderCal(); }
   });
 }
+function timeToSlotIdx(t){ var p=(t||"07:00").split(':'),h=parseInt(p[0]),m=parseInt(p[1]||0); return (h-7)*2+(m>=30?1:0); }
+function slotIdxToTime(i){ var h=7+Math.floor(i/2),m=i%2===0?'00':'30'; return String(h).padStart(2,'0')+':'+m; }
+function addMinutes(t,mins){ var p=(t||"00:00").split(':'),h=parseInt(p[0]),m=parseInt(p[1]||0)+mins; h+=Math.floor(m/60); m=m%60; return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0'); }
+function calBodyClick(e,date){ if(calDrag) return; var r=e.currentTarget.getBoundingClientRect(); var idx=Math.max(0,Math.min(Math.floor((e.clientY-r.top)/28),24)); openNewApptAt(date,slotIdxToTime(idx)); }
+
 function buildCalHTML(){
+  var SH=28, N=26, HDR=38, TCOL=38, gridH=N*SH;
   var days=calDays(calWeekOffset);
   var todayStr=fmtDate(new Date());
   var ws=days[0],we=days[6];
   var lo=lng==="he"?"he-IL":"en-US";
   var wLabel=ws.toLocaleDateString(lo,{month:"short",day:"numeric"})+" – "+we.toLocaleDateString(lo,{month:"short",day:"numeric",year:"numeric"});
-  var slots=[]; for(var h=7;h<20;h++){ slots.push(String(h).padStart(2,"0")+":00"); slots.push(String(h).padStart(2,"0")+":30"); }
-  var amap={}; appts.forEach(function(a){ var k=a.date+"__"+a.time; if(!amap[k]) amap[k]=[]; amap[k].push(a); });
+  // Time labels (hours only)
+  var tL=""; for(var i=0;i<N;i+=2){ tL+='<div style="position:absolute;top:'+(i*SH-5)+'px;right:3px;font-size:9px;color:#9aabcf;line-height:1">'+String(7+i/2).padStart(2,'0')+':00</div>'; }
   var H='<div class="card" style="padding:0;overflow:hidden;margin-bottom:24px">';
+  // Header bar
   H+='<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid #e2e8f0;background:#f8fafc;flex-wrap:wrap;gap:6px">';
   H+='<div style="display:flex;align-items:center;gap:6px">';
   H+='<button class="btn" style="padding:3px 11px;font-size:15px;background:#fff;border:1px solid #d1d9e0;color:#1a3a6e" onclick="calWeekOffset--;renderCal()">&#8249;</button>';
@@ -336,35 +344,104 @@ function buildCalHTML(){
   H+='</div>';
   H+='<button class="btn" style="font-size:12px;padding:4px 12px;background:#2B6CC4;color:#fff" onclick="openNewAppt()">'+(lng==="he"?"+ תור חדש":"+ New Appt")+'</button>';
   H+='</div>';
-  H+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:500px">';
-  H+='<thead><tr><th style="width:36px;min-width:36px;padding:4px 3px;border-bottom:2px solid #e2e8f0;border-right:1px solid #e2e8f0;background:#f8fafc"></th>';
+  // Grid container (always LTR for calendar layout)
+  H+='<div style="overflow-x:auto"><div style="display:flex;min-width:480px;direction:ltr">';
+  // Time column
+  H+='<div style="width:'+TCOL+'px;flex-shrink:0"><div style="height:'+HDR+'px;background:#f8fafc;border-bottom:2px solid #e2e8f0;border-right:1px solid #e2e8f0"></div>';
+  H+='<div style="position:relative;height:'+gridH+'px;background:#fafbfd;border-right:1px solid #e2e8f0">'+tL+'</div></div>';
+  // Day columns
   days.forEach(function(d){
     var ds=fmtDate(d); var it=ds===todayStr;
-    H+='<th style="padding:5px 3px;border-bottom:2px solid #e2e8f0;border-right:1px solid #f0f4f8;text-align:center;font-size:10px;font-weight:700;color:'+(it?"#2B6CC4":"#1a3a6e")+';background:'+(it?"#e8f0fe":"#f8fafc")+'">'+fmtDayLabel(d)+'</th>';
-  });
-  H+='</tr></thead><tbody>';
-  slots.forEach(function(slot){
-    var isH=slot.endsWith(":00");
-    H+='<tr style="height:22px">';
-    H+='<td style="padding:0 4px;border-right:1px solid #e2e8f0;border-bottom:1px solid '+(isH?"#dde3ec":"#f0f2f6")+';font-size:9px;color:#9aabcf;text-align:right;vertical-align:top;padding-top:2px;background:#fafbfd;white-space:nowrap">'+(isH?slot:'')+'</td>';
-    days.forEach(function(d){
-      var ds=fmtDate(d); var it=ds===todayStr;
-      var da=(amap[ds+"__"+slot])||[];
-      H+='<td style="padding:1px;border-right:1px solid #f0f4f8;border-bottom:1px solid '+(isH?"#dde3ec":"#f0f2f6")+';vertical-align:top;background:'+(it?"#f5f8ff":"#fff")+';cursor:pointer" onclick="openNewApptAt(\''+ds+'\',\''+slot+'\')">';
-      da.forEach(function(a){
-        var p=pts.find(function(x){ return x.id==a.patientId; });
-        var nm=p?pn(p):(a.patientName||"?");
-        H+='<div style="background:#2B6CC418;border-left:3px solid #2B6CC4;border-radius:2px;padding:1px 16px 1px 4px;margin-bottom:1px;font-size:10px;font-weight:600;color:#1a4a90;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer;position:relative;line-height:1.3" onclick="event.stopPropagation();'+(p?'op('+p.id+')':'')+'" title="'+nm+(a.notes?' — '+a.notes:'')+'">';
-        H+=nm+'<span style="position:absolute;right:3px;top:1px;font-size:9px;opacity:.45;cursor:pointer" onclick="event.stopPropagation();deleteAppt('+a.id+')">&#x2715;</span></div>';
-      });
-      H+='</td>';
+    var da=appts.filter(function(a){ return a.date===ds; });
+    H+='<div style="flex:1;min-width:56px;border-right:1px solid #f0f4f8">';
+    H+='<div style="height:'+HDR+'px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;text-align:center;color:'+(it?"#2B6CC4":"#1a3a6e")+';background:'+(it?"#e8f0fe":"#f8fafc")+';border-bottom:2px solid #e2e8f0">'+fmtDayLabel(d)+'</div>';
+    H+='<div class="cal-day-body" data-date="'+ds+'" style="position:relative;height:'+gridH+'px;background:'+(it?"#f5f8ff":"#fff")+'" onclick="calBodyClick(event,\''+ds+'\')">';
+    // Grid lines
+    for(var i=0;i<N;i++){ H+='<div style="position:absolute;top:'+(i*SH)+'px;left:0;right:0;height:'+SH+'px;border-bottom:1px solid '+(i%2===0?"#e2e8f0":"#f5f7fa")+'"></div>'; }
+    // Appointment blocks (60 min = 2 slots)
+    da.forEach(function(a){
+      var p=pts.find(function(x){ return x.id==a.patientId; });
+      var nm=p?pn(p):(a.patientName||"?");
+      var si=Math.max(0,Math.min(timeToSlotIdx(a.time),N-2));
+      H+='<div style="position:absolute;top:'+(si*SH+1)+'px;left:2px;right:2px;height:'+(2*SH-3)+'px;background:#2B6CC418;border-left:3px solid #2B6CC4;border-radius:4px;padding:3px 18px 2px 5px;font-size:10px;font-weight:600;color:#1a4a90;overflow:hidden;cursor:grab;box-sizing:border-box;z-index:2;touch-action:none;user-select:none" ';
+      H+='onclick="event.stopPropagation();'+(p?'op('+p.id+')':'')+'" ';
+      H+='onpointerdown="calDragStart(event,'+a.id+')" ';
+      H+='title="'+nm+(a.notes?' — '+a.notes:'')+'">';
+      H+='<div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3">'+nm+'</div>';
+      H+='<div style="font-size:9px;opacity:.6;margin-top:1px">'+a.time+' – '+addMinutes(a.time,60)+'</div>';
+      H+='<span style="position:absolute;right:3px;top:3px;font-size:9px;opacity:.4;cursor:pointer;touch-action:none" onclick="event.stopPropagation();deleteAppt('+a.id+')">&#x2715;</span>';
+      H+='</div>';
     });
-    H+='</tr>';
+    H+='</div></div>'; // day-body + day-col
   });
-  H+='</tbody></table></div></div>';
+  H+='</div></div></div>'; // flex + overflow + card
   return H;
 }
 function renderCal(){ var s=g("cal-section"); if(s) s.innerHTML=buildCalHTML(); }
+
+// Drag-and-drop
+function calDragStart(e,apptId){
+  if(e.button!==undefined&&e.button!==0) return;
+  e.preventDefault(); e.stopPropagation();
+  var a=appts.find(function(x){return x.id==apptId;}); if(!a) return;
+  var p=pts.find(function(x){return x.id==a.patientId;});
+  var nm=p?pn(p):(a.patientName||"?");
+  var el=e.currentTarget, rect=el.getBoundingClientRect();
+  var ghost=document.createElement('div');
+  ghost.style.cssText='position:fixed;z-index:9999;pointer-events:none;left:'+rect.left+'px;top:'+rect.top+'px;width:'+rect.width+'px;height:'+rect.height+'px;background:#2B6CC428;border-left:3px solid #2B6CC4;border-radius:4px;padding:3px 5px;font-size:10px;font-weight:600;color:#1a4a90;box-shadow:0 4px 18px rgba(43,108,196,0.35);box-sizing:border-box;opacity:.9;transform:scale(1.04)';
+  ghost.innerHTML='<div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+nm+'</div><div style="font-size:9px;opacity:.6;margin-top:1px">'+a.time+' – '+addMinutes(a.time,60)+'</div>';
+  document.body.appendChild(ghost);
+  el.style.opacity='.25';
+  el.setPointerCapture(e.pointerId);
+  calDrag={id:apptId,el:el,ghost:ghost,ox:e.clientX-rect.left,oy:e.clientY-rect.top,pid:e.pointerId,origDate:a.date,origTime:a.time};
+  el.addEventListener('pointermove',calOnMove);
+  el.addEventListener('pointerup',calOnUp);
+  el.addEventListener('pointercancel',calOnCancel);
+}
+function calOnMove(e){
+  if(!calDrag) return;
+  calDrag.ghost.style.left=(e.clientX-calDrag.ox)+'px';
+  calDrag.ghost.style.top=(e.clientY-calDrag.oy)+'px';
+}
+function calOnUp(e){
+  if(!calDrag) return;
+  calDrag.el.removeEventListener('pointermove',calOnMove);
+  calDrag.el.removeEventListener('pointerup',calOnUp);
+  calDrag.el.removeEventListener('pointercancel',calOnCancel);
+  try{ calDrag.el.releasePointerCapture(calDrag.pid); }catch(err){}
+  calDrag.el.style.opacity='';
+  document.body.removeChild(calDrag.ghost);
+  var newDate=null,newTime=null;
+  var bodies=document.querySelectorAll('.cal-day-body');
+  for(var i=0;i<bodies.length;i++){
+    var r=bodies[i].getBoundingClientRect();
+    if(e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom){
+      newDate=bodies[i].dataset.date;
+      newTime=slotIdxToTime(Math.max(0,Math.min(Math.floor((e.clientY-r.top)/28),24)));
+      break;
+    }
+  }
+  var drag=calDrag; calDrag=null;
+  if(newDate&&newTime&&(newDate!==drag.origDate||newTime!==drag.origTime)){
+    updateApptDateTime(drag.id,newDate,newTime);
+  } else { renderCal(); }
+}
+function calOnCancel(e){
+  if(!calDrag) return;
+  calDrag.el.removeEventListener('pointermove',calOnMove);
+  calDrag.el.removeEventListener('pointerup',calOnUp);
+  calDrag.el.removeEventListener('pointercancel',calOnCancel);
+  try{ calDrag.el.releasePointerCapture(calDrag.pid); }catch(err){}
+  calDrag.el.style.opacity='';
+  document.body.removeChild(calDrag.ghost);
+  calDrag=null; renderCal();
+}
+function updateApptDateTime(id,date,time){
+  var a=appts.find(function(x){return x.id==id;}); if(!a) return;
+  a.date=date; a.time=time;
+  if(ADMIN_TOKEN) apiCall("appts/"+id,"PATCH",{date:date,time:time},function(){});
+  renderCal();
+}
 function openNewAppt(){ openNewApptAt("",""); }
 function openNewApptAt(date,time,preselectId){
   var td=fmtDate(new Date());
