@@ -152,6 +152,31 @@ export default {
         return json({ ok: true });
       }
 
+      // Get all appointments (admin only)
+      if(path === "/api/appts" && request.method === "GET"){
+        const token = (request.headers.get("Authorization")||"").replace("Bearer ","");
+        if(token !== ADMIN_PASSWORD) return json({ error:"Unauthorized" }, 401);
+        const rows = await sbFetch(SB_KEY, "appointments?select=*&order=id.asc");
+        return json(Array.isArray(rows)?rows:[]);
+      }
+
+      // Save appointment (admin only)
+      if(path === "/api/appts" && request.method === "POST"){
+        const token = (request.headers.get("Authorization")||"").replace("Bearer ","");
+        if(token !== ADMIN_PASSWORD) return json({ error:"Unauthorized" }, 401);
+        await sbFetch(SB_KEY, "appointments", "POST", body);
+        return json({ ok: true });
+      }
+
+      // Delete appointment (admin only)
+      if(path.startsWith("/api/appts/") && request.method === "DELETE"){
+        const token = (request.headers.get("Authorization")||"").replace("Bearer ","");
+        if(token !== ADMIN_PASSWORD) return json({ error:"Unauthorized" }, 401);
+        const id = path.split("/")[3];
+        await sbFetch(SB_KEY, "appointments?id=eq."+id, "DELETE");
+        return json({ ok: true });
+      }
+
       return json({ error: "Not found" }, 404);
     }
 

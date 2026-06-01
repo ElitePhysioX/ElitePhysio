@@ -10,6 +10,8 @@ var AI_KEY = "";
 var pts = [], lng = "he", auth = null, cur = null, ctab = "ex", ptab = "ex", stmr = null, mmode = "";
 var deletedPatients = []; // recycle bin for patients
 var deletedExercises = []; // recycle bin for exercises
+var appts = [];
+var calWeekOffset = 0;
 
 function loadRecycleBin(){
   try{
@@ -282,6 +284,119 @@ function gv(v){
   else if(v==="s") rs();
 }
 
+// ── Calendar ──
+function calWeekStart(offset){
+  var d=new Date(); var day=d.getDay(); d.setHours(0,0,0,0); d.setDate(d.getDate()-day+(offset*7)); return d;
+}
+function calDays(offset){
+  var ws=calWeekStart(offset);
+  return [0,1,2,3,4,5,6].map(function(i){ var d=new Date(ws); d.setDate(d.getDate()+i); return d; });
+}
+function fmtDate(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function fmtDayLabel(d){
+  var n=lng==="he"?['א',"ב","ג","ד","ה","ו","ש"]:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  return n[d.getDay()]+'<br><span style="font-size:15px;font-weight:800">'+d.getDate()+'</span>';
+}
+function loadAppts(cb){
+  if(!ADMIN_TOKEN){ appts=[]; cb(); return; }
+  apiCall("appts","GET",null,function(err,data){
+    if(!err&&Array.isArray(data)){ appts=data; }
+    else{ appts=[]; }
+    cb();
+  });
+}
+function addAppt(a){
+  if(!ADMIN_TOKEN) return;
+  a.id=a.id||Date.now();
+  apiCall("appts","POST",a,function(err){
+    if(!err){ appts.push(a); renderCal(); }
+  });
+}
+function deleteAppt(id){
+  if(!ADMIN_TOKEN) return;
+  apiCall("appts/"+id,"DELETE",null,function(err){
+    if(!err){ appts=appts.filter(function(a){ return a.id!=id; }); renderCal(); }
+  });
+}
+function buildCalHTML(){
+  var days=calDays(calWeekOffset);
+  var todayStr=fmtDate(new Date());
+  var ws=days[0],we=days[6];
+  var lo=lng==="he"?"he-IL":"en-US";
+  var wLabel=ws.toLocaleDateString(lo,{month:"short",day:"numeric"})+" – "+we.toLocaleDateString(lo,{month:"short",day:"numeric",year:"numeric"});
+  var slots=[]; for(var h=7;h<21;h++){ slots.push(String(h).padStart(2,"0")+":00"); slots.push(String(h).padStart(2,"0")+":30"); }
+  var amap={}; appts.forEach(function(a){ var k=a.date+"__"+a.time; if(!amap[k]) amap[k]=[]; amap[k].push(a); });
+  var H='<div class="card" style="padding:0;overflow:hidden;margin-bottom:24px">';
+  H+='<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #e2e8f0;background:#f8fafc;flex-wrap:wrap;gap:8px">';
+  H+='<div style="display:flex;align-items:center;gap:8px">';
+  H+='<button class="btn" style="padding:5px 13px;font-size:15px;background:#fff;border:1px solid #d1d9e0;color:#1a3a6e" onclick="calWeekOffset--;renderCal()">&#8249;</button>';
+  H+='<span style="font-size:13px;font-weight:700;color:#1a3a6e;min-width:160px;text-align:center">'+wLabel+'</span>';
+  H+='<button class="btn" style="padding:5px 13px;font-size:15px;background:#fff;border:1px solid #d1d9e0;color:#1a3a6e" onclick="calWeekOffset++;renderCal()">&#8250;</button>';
+  if(calWeekOffset!==0) H+='<button class="btn" style="padding:5px 10px;font-size:12px;background:#e8f0fe;color:#2B6CC4;border:none" onclick="calWeekOffset=0;renderCal()">'+(lng==="he"?"היום":"Today")+'</button>';
+  H+='</div>';
+  H+='<button class="btn" style="font-size:13px;background:#2B6CC4;color:#fff" onclick="openNewAppt()">'+(lng==="he"?"+ תור חדש":"+ New Appt")+'</button>';
+  H+='</div>';
+  H+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:500px">';
+  H+='<thead><tr><th style="width:48px;min-width:48px;padding:6px 4px;border-bottom:2px solid #e2e8f0;border-right:1px solid #e2e8f0;background:#f8fafc"></th>';
+  days.forEach(function(d){
+    var ds=fmtDate(d); var it=ds===todayStr;
+    H+='<th style="padding:8px 4px;border-bottom:2px solid #e2e8f0;border-right:1px solid #f0f4f8;text-align:center;font-size:11px;font-weight:700;color:'+(it?"#2B6CC4":"#1a3a6e")+';background:'+(it?"#e8f0fe":"#f8fafc")+'">'+fmtDayLabel(d)+'</th>';
+  });
+  H+='</tr></thead><tbody>';
+  slots.forEach(function(slot){
+    var isH=slot.endsWith(":00");
+    H+='<tr style="height:40px">';
+    H+='<td style="padding:0 5px;border-right:1px solid #e2e8f0;border-bottom:1px solid '+(isH?"#e2e8f0":"#f5f7fa")+';font-size:10px;color:#8a9bbf;text-align:right;vertical-align:top;padding-top:3px;background:#fafbfd;white-space:nowrap">'+(isH?slot:'')+'</td>';
+    days.forEach(function(d){
+      var ds=fmtDate(d); var it=ds===todayStr;
+      var da=(amap[ds+"__"+slot])||[];
+      H+='<td style="padding:2px;border-right:1px solid #f0f4f8;border-bottom:1px solid '+(isH?"#e2e8f0":"#f5f7fa")+';vertical-align:top;background:'+(it?"#f5f8ff":"#fff")+';cursor:pointer" onclick="openNewApptAt(\''+ds+'\',\''+slot+'\')">';
+      da.forEach(function(a){
+        var p=pts.find(function(x){ return x.id==a.patientId; });
+        var nm=p?pn(p):(a.patientName||"?");
+        H+='<div style="background:#2B6CC415;border-left:3px solid #2B6CC4;border-radius:3px;padding:2px 22px 2px 5px;margin-bottom:1px;font-size:11px;font-weight:600;color:#2B6CC4;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer;position:relative" onclick="event.stopPropagation();'+(p?'op('+p.id+')':'')+'" title="'+nm+(a.notes?' — '+a.notes:'')+'">';
+        H+=nm+'<span style="position:absolute;right:4px;top:2px;font-size:10px;opacity:.5;cursor:pointer" onclick="event.stopPropagation();deleteAppt('+a.id+')">&#x2715;</span></div>';
+      });
+      H+='</td>';
+    });
+    H+='</tr>';
+  });
+  H+='</tbody></table></div></div>';
+  return H;
+}
+function renderCal(){ var s=g("cal-section"); if(s) s.innerHTML=buildCalHTML(); }
+function openNewAppt(){ openNewApptAt("",""); }
+function openNewApptAt(date,time){
+  var td=fmtDate(new Date());
+  var pO=pts.map(function(p){ return '<option value="'+p.id+'">'+pn(p)+'</option>'; }).join("");
+  if(!pO) pO='<option value="">No patients</option>';
+  var tO=""; for(var h=7;h<21;h++){ var hs=String(h).padStart(2,"0"); tO+='<option value="'+hs+':00">'+hs+':00</option><option value="'+hs+':30">'+hs+':30</option>'; }
+  var iS='style="width:100%;padding:9px 10px;border:1px solid #d1d9e0;border-radius:8px;font-size:14px;margin-bottom:14px;background:#f8fafc;box-sizing:border-box"';
+  g("MC").innerHTML=
+    '<div style="padding:4px 0">'+
+    '<div style="font-size:18px;font-weight:800;color:#1a3a6e;margin-bottom:18px">'+(lng==="he"?"תור חדש":"New Appointment")+'</div>'+
+    '<label style="font-size:12px;color:#4a6a8a;font-weight:600;display:block;margin-bottom:5px">'+(lng==="he"?"מטופל":"Patient")+'</label>'+
+    '<select id="ca-pat" '+iS+'>'+pO+'</select>'+
+    '<label style="font-size:12px;color:#4a6a8a;font-weight:600;display:block;margin-bottom:5px">'+(lng==="he"?"תאריך":"Date")+'</label>'+
+    '<input id="ca-date" type="date" value="'+(date||td)+'" '+iS+'>'+
+    '<label style="font-size:12px;color:#4a6a8a;font-weight:600;display:block;margin-bottom:5px">'+(lng==="he"?"שעה":"Time")+'</label>'+
+    '<select id="ca-time" '+iS+'>'+tO+'</select>'+
+    '<label style="font-size:12px;color:#4a6a8a;font-weight:600;display:block;margin-bottom:5px">'+(lng==="he"?"הערות":"Notes")+'</label>'+
+    '<input id="ca-notes" type="text" placeholder="'+(lng==="he"?"הערות...":"Notes...")+'" '+iS+'>'+
+    '<div style="display:flex;gap:10px;margin-top:6px">'+
+    '<button class="btn" style="flex:1;background:#2B6CC4;color:#fff;padding:11px;font-size:14px" onclick="saveNewAppt()">'+(lng==="he"?"שמור":"Save")+'</button>'+
+    '<button class="btn" style="flex:1;background:#f1f5f9;color:#1a3a6e;padding:11px;font-size:14px" onclick="cm()">'+(lng==="he"?"ביטול":"Cancel")+'</button>'+
+    '</div></div>';
+  var ts=g("ca-time"); if(ts&&time) ts.value=time;
+  g("MB").classList.add("on");
+}
+function saveNewAppt(){
+  var ep=g("ca-pat"),ed=g("ca-date"),et=g("ca-time"),en=g("ca-notes");
+  if(!ep||!ed||!et||!ep.value||!ed.value||!et.value) return;
+  addAppt({patientId:parseInt(ep.value),date:ed.value,time:et.value,notes:en?en.value:""});
+  cm();
+}
+
 // ── Dashboard ──
 function rd(){
   var tx=pts.reduce(function(a,p){ return a+(p.exercises||[]).length; },0);
@@ -297,6 +412,8 @@ function rd(){
         '<div style="font-size:28px;font-weight:800;color:'+x[0]+'">'+x[1]+'</div>'+
         '<div style="font-size:11px;color:#4a6a8a;text-transform:uppercase;letter-spacing:.8px;margin-top:3px">'+x[2]+'</div></div>';
     }).join("")+'</div>'+
+    '<div style="font-size:15px;font-weight:700;color:#1a3a6e;margin-bottom:12px">'+(lng==="he"?"לוח תורים":"Appointment Calendar")+'</div>'+
+    '<div id="cal-section"><div style="text-align:center;padding:32px;color:#4a6a8a;font-size:13px">Loading...</div></div>'+
     '<div class="row"><span class="st">'+L().rp2+'</span>'+
     '<div style="display:flex;gap:8px">'+
     '<button class="btn" style="font-size:12px;background:#fff3f3;color:#e74c3c;border:1px solid rgba(231,76,60,0.3)" onclick="omRecycleBin()">🗑 Recycle Bin '+(deletedPatients.length+deletedExercises.length>0?'('+( deletedPatients.length+deletedExercises.length)+')':'')+'</button>'+
@@ -308,6 +425,7 @@ function rd(){
         '<div><div class="pat-name">'+dn+'</div><div class="pat-sub">'+(p.injury||"—")+'</div></div></div>'+
         '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">'+bdg(p.sport)+' '+sbdg(p.status)+'</div></div></div>';
     }).join("");
+  loadAppts(renderCal);
 }
 
 // ── Patient List ──
@@ -983,7 +1101,10 @@ var exChecked = {};
 var activeTimer = null;
 var workoutStartTime = null;
 
-// ── Lego Avatar System ──
+// ── Avatar System ──
+var AVATAR_BG=["#f87171","#fb923c","#fbbf24","#34d399","#22d3ee","#60a5fa","#a78bfa","#f472b6","#4ade80","#2dd4bf","#38bdf8","#818cf8","#fb7185","#facc15","#86efac","#f97316","#10b981","#0ea5e9","#8b5cf6","#ec4899","#14b8a6","#f59e0b","#6366f1","#ef4444","#06b6d4","#84cc16","#e879f9","#f43f5e","#0891b2","#7c3aed"];
+function eyeColorFor(hc){try{var r=parseInt(hc.slice(1,3),16),g=parseInt(hc.slice(3,5),16),b=parseInt(hc.slice(5,7),16),lum=r*0.299+g*0.587+b*0.114;return lum>175?"#5b8dd9":lum>105?"#7a6544":"#4a2c0a";}catch(e){return "#4a2c0a";}}
+// (legacy name kept for any references)
 var AVATARS = [
   {id:1,label:"Young Man",skin:"#f4a47c",hair:"short",hairC:"#3d2200",shirt:"#2B6CC4",pants:"#1a3a6e",hat:"",extra:""},
   {id:2,label:"Young Woman",skin:"#f4a47c",hair:"long",hairC:"#8b4513",shirt:"#e84393",pants:"#6b21a8",hat:"",extra:""},
@@ -1020,60 +1141,74 @@ var AVATARS = [
 function legoSVG(av,size){
   size=size||60;
   var s=av.skin, h=av.hairC, sh=av.shirt, p=av.pants;
-  var r=38; // circle radius
-  var cx=40, cy=40; // center
+  var bg=AVATAR_BG[(av.id-1)%AVATAR_BG.length];
+  var ec=eyeColorFor(h);
+  var bc=shadeColor(h,-10);
   var svg='<svg viewBox="0 0 80 80" width="'+size+'" height="'+size+'" xmlns="http://www.w3.org/2000/svg">';
 
-  // Background circle
-  svg+='<circle cx="40" cy="40" r="38" fill="'+sh+'"/>';
+  // ── Vibrant background ────────────────────────────────────────
+  svg+='<circle cx="40" cy="40" r="38" fill="'+bg+'"/>';
 
-  // Body / torso (bottom half of circle)
-  svg+='<path d="M8,60 Q10,78 40,78 Q70,78 72,60 Q60,52 40,52 Q20,52 8,60 Z" fill="'+sh+'"/>';
+  // ── BODY / SHOULDERS ─────────────────────────────────────────
+  svg+='<rect x="16" y="58" width="48" height="26" rx="10" fill="'+sh+'"/>';
+  svg+='<ellipse cx="18" cy="60" rx="11" ry="7" fill="'+sh+'"/>';
+  svg+='<ellipse cx="62" cy="60" rx="11" ry="7" fill="'+sh+'"/>';
+  svg+='<path d="M33,59 Q40,65 47,59" fill="rgba(255,255,255,0.22)" stroke="rgba(255,255,255,0.45)" stroke-width="1.3" stroke-linecap="round" fill-opacity="0.22"/>';
 
-  // Neck
-  svg+='<rect x="33" y="44" width="14" height="12" rx="4" fill="'+s+'"/>';
+  // ── NECK ──────────────────────────────────────────────────────
+  svg+='<rect x="35" y="47" width="10" height="14" rx="4" fill="'+s+'"/>';
 
-  // Head
-  svg+='<circle cx="40" cy="32" r="20" fill="'+s+'"/>';
-
-  // Ears
-  svg+='<circle cx="20" cy="32" r="4" fill="'+s+'"/>';
-  svg+='<circle cx="60" cy="32" r="4" fill="'+s+'"/>';
-
-  // Eyes - large, expressive, flat style
-  svg+='<ellipse cx="33" cy="30" rx="4.5" ry="5" fill="#fff"/>';
-  svg+='<ellipse cx="47" cy="30" rx="4.5" ry="5" fill="#fff"/>';
-  svg+='<circle cx="34" cy="31" r="3" fill="#1a1a2e"/>';
-  svg+='<circle cx="48" cy="31" r="3" fill="#1a1a2e"/>';
-  svg+='<circle cx="35" cy="29.5" r="1.2" fill="#fff"/>';
-  svg+='<circle cx="49" cy="29.5" r="1.2" fill="#fff"/>';
-
-  // Eyebrows
-  svg+='<path d="M29,24 Q33,21.5 37,23.5" stroke="'+h+'" stroke-width="2.2" fill="none" stroke-linecap="round"/>';
-  svg+='<path d="M43,23.5 Q47,21.5 51,24" stroke="'+h+'" stroke-width="2.2" fill="none" stroke-linecap="round"/>';
-
-  // Nose - simple flat dot/line
-  svg+='<ellipse cx="40" cy="35" rx="2" ry="1.5" fill="rgba(0,0,0,0.10)"/>';
-
-  // Mouth - friendly smile
-  svg+='<path d="M34,40 Q40,45 46,40" stroke="#c0665a" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
-  svg+='<path d="M35,40.5 Q40,44 45,40.5" stroke="#e8857a" stroke-width="1.5" fill="none" stroke-linecap="round"/>';
-
-  // Cheek blush
-  svg+='<circle cx="26" cy="37" r="5" fill="#ffb3a0" opacity="0.35"/>';
-  svg+='<circle cx="54" cy="37" r="5" fill="#ffb3a0" opacity="0.35"/>';
-
-  // Hair
+  // ── HAIR back layer ───────────────────────────────────────────
   svg+=renderHair(av.hair, h, av.hat);
 
-  // Hat
+  // ── EARS ──────────────────────────────────────────────────────
+  svg+='<ellipse cx="25" cy="30" rx="4.5" ry="5.5" fill="'+s+'"/>';
+  svg+='<ellipse cx="55" cy="30" rx="4.5" ry="5.5" fill="'+s+'"/>';
+  svg+='<ellipse cx="25" cy="30" rx="2.3" ry="3.3" fill="'+shadeColor(s,-18)+'"/>';
+  svg+='<ellipse cx="55" cy="30" rx="2.3" ry="3.3" fill="'+shadeColor(s,-18)+'"/>';
+
+  // ── FACE OVAL ─────────────────────────────────────────────────
+  svg+='<ellipse cx="40" cy="30" rx="15" ry="18" fill="'+s+'"/>';
+
+  // ── EYEBROWS ──────────────────────────────────────────────────
+  svg+='<path d="M27.5,21 Q32,18 36,20" stroke="'+bc+'" stroke-width="2.2" fill="none" stroke-linecap="round"/>';
+  svg+='<path d="M44,20 Q48,18 52.5,21" stroke="'+bc+'" stroke-width="2.2" fill="none" stroke-linecap="round"/>';
+
+  // ── EYES ──────────────────────────────────────────────────────
+  svg+='<ellipse cx="32" cy="27" rx="5" ry="4.5" fill="#fff"/>';
+  svg+='<circle cx="32" cy="27" r="3.2" fill="'+ec+'"/>';
+  svg+='<circle cx="32" cy="27" r="1.8" fill="#1a1a2e"/>';
+  svg+='<circle cx="33.3" cy="25.5" r="1.1" fill="rgba(255,255,255,0.9)"/>';
+  svg+='<path d="M27,25.5 Q32,22.5 37,25.5" stroke="'+shadeColor(s,-28)+'" stroke-width="1.5" fill="none" stroke-linecap="round"/>';
+  svg+='<ellipse cx="48" cy="27" rx="5" ry="4.5" fill="#fff"/>';
+  svg+='<circle cx="48" cy="27" r="3.2" fill="'+ec+'"/>';
+  svg+='<circle cx="48" cy="27" r="1.8" fill="#1a1a2e"/>';
+  svg+='<circle cx="49.3" cy="25.5" r="1.1" fill="rgba(255,255,255,0.9)"/>';
+  svg+='<path d="M43,25.5 Q48,22.5 53,25.5" stroke="'+shadeColor(s,-28)+'" stroke-width="1.5" fill="none" stroke-linecap="round"/>';
+
+  // ── NOSE ──────────────────────────────────────────────────────
+  svg+='<path d="M38,34 Q36,37 37.5,38.5 Q40,39.5 42.5,38.5 Q44,37 42,34" stroke="'+shadeColor(s,-22)+'" stroke-width="1.5" fill="none" stroke-linecap="round"/>';
+
+  // ── LIPS ──────────────────────────────────────────────────────
+  var lc=shadeColor(s,-32);
+  svg+='<path d="M33,42 Q36.5,40.5 40,41.5 Q43.5,40.5 47,42" stroke="'+lc+'" stroke-width="1.8" fill="none" stroke-linecap="round"/>';
+  svg+='<path d="M33,42 Q40,47 47,42" stroke="'+lc+'" stroke-width="1.5" fill="rgba(0,0,0,0.07)" stroke-linecap="round"/>';
+
+  // Cheek blush
+  svg+='<ellipse cx="24" cy="37" rx="5" ry="3" fill="rgba(255,100,80,0.16)"/>';
+  svg+='<ellipse cx="56" cy="37" rx="5" ry="3" fill="rgba(255,100,80,0.16)"/>';
+
+  // ── HAIR front layer ──────────────────────────────────────────
+  svg+=renderHairFront(av.hair, h, av.hat);
+
+  // ── HAT ───────────────────────────────────────────────────────
   svg+=renderHat(av.hat, h);
 
-  // Extras
+  // ── EXTRAS ────────────────────────────────────────────────────
   svg+=renderExtra(av.extra, h, sh, s);
 
-  // Clip circle frame
-  svg+='<circle cx="40" cy="40" r="38" fill="none" stroke="rgba(0,0,0,0.08)" stroke-width="2"/>';
+  // ── FRAME ─────────────────────────────────────────────────────
+  svg+='<circle cx="40" cy="40" r="38" fill="none" stroke="rgba(0,0,0,0.07)" stroke-width="2"/>';
 
   svg+='</svg>';
   return svg;
@@ -1090,123 +1225,149 @@ function shadeColor(hex, pct){
 }
 
 function renderHair(hair, h, hat){
+  // Back layer — drawn before face oval so it appears behind the face.
+  // Face oval: cx=40, cy=30, rx=15, ry=18 → top y=12, sides x=25/55
   if(hat==="ninja"||hat==="chef") return "";
   if(hair==="bald"||hair==="none") return "";
   var svg="";
-  // All hair drawn on top of head circle (head center cx=40,cy=32,r=20)
   if(hair==="short"){
-    svg+='<path d="M20,32 Q20,10 40,10 Q60,10 60,32 Q55,20 40,19 Q25,20 20,32 Z" fill="'+h+'"/>';
-  } else if(hair==="long"||hair==="shaggy"){
-    svg+='<path d="M20,32 Q20,10 40,10 Q60,10 60,32 Q55,20 40,19 Q25,20 20,32 Z" fill="'+h+'"/>';
-    svg+='<path d="M20,30 Q16,42 17,55 Q20,58 22,55 Q21,44 22,30 Z" fill="'+h+'"/>';
-    svg+='<path d="M60,30 Q64,42 63,55 Q60,58 58,55 Q59,44 58,30 Z" fill="'+h+'"/>';
+    svg+='<path d="M25,30 Q25,9 40,9 Q55,9 55,30 Q52,18 40,17 Q28,18 25,30 Z" fill="'+h+'"/>';
+  } else if(hair==="long"){
+    svg+='<path d="M22,34 Q20,9 40,8 Q60,9 58,34 Q53,18 40,17 Q27,18 22,34 Z" fill="'+h+'"/>';
+    svg+='<path d="M22,28 Q14,36 13,58 Q15,63 19,61 Q17,46 22,30 Z" fill="'+h+'"/>';
+    svg+='<path d="M58,28 Q66,36 67,58 Q65,63 61,61 Q63,46 58,30 Z" fill="'+h+'"/>';
+  } else if(hair==="shaggy"){
+    svg+='<path d="M22,34 Q20,9 40,8 Q60,9 58,34 Q53,18 40,17 Q27,18 22,34 Z" fill="'+h+'"/>';
+    svg+='<path d="M22,27 Q13,35 12,56 Q14,62 18,60 Q16,44 22,29 Z" fill="'+h+'"/>';
+    svg+='<path d="M58,27 Q67,35 68,56 Q66,62 62,60 Q64,44 58,29 Z" fill="'+h+'"/>';
+    svg+='<path d="M22,20 Q17,13 22,11 Q21,17 23,22 Z" fill="'+h+'"/>';
+    svg+='<path d="M58,20 Q63,13 58,11 Q59,17 57,22 Z" fill="'+h+'"/>';
   } else if(hair==="curly"){
-    svg+='<circle cx="22" cy="22" r="9" fill="'+h+'"/>';
-    svg+='<circle cx="32" cy="13" r="9" fill="'+h+'"/>';
-    svg+='<circle cx="40" cy="11" r="9" fill="'+h+'"/>';
-    svg+='<circle cx="48" cy="13" r="9" fill="'+h+'"/>';
-    svg+='<circle cx="58" cy="22" r="9" fill="'+h+'"/>';
-    svg+='<rect x="21" y="22" width="38" height="12" fill="'+h+'"/>';
+    svg+='<ellipse cx="40" cy="11" rx="19" ry="12" fill="'+h+'"/>';
+    svg+='<circle cx="23" cy="20" r="10" fill="'+h+'"/>';
+    svg+='<circle cx="57" cy="20" r="10" fill="'+h+'"/>';
+    svg+='<rect x="22" y="20" width="36" height="11" fill="'+h+'"/>';
   } else if(hair==="bun"){
-    svg+='<path d="M20,32 Q20,10 40,10 Q60,10 60,32 Q55,20 40,19 Q25,20 20,32 Z" fill="'+h+'"/>';
-    svg+='<circle cx="40" cy="8" r="8" fill="'+h+'"/>';
+    svg+='<path d="M25,30 Q25,9 40,9 Q55,9 55,30 Q52,18 40,17 Q28,18 25,30 Z" fill="'+h+'"/>';
+    svg+='<circle cx="40" cy="7" r="8" fill="'+h+'"/>';
   } else if(hair==="pigtail"){
-    svg+='<path d="M20,32 Q20,10 40,10 Q60,10 60,32 Q55,20 40,19 Q25,20 20,32 Z" fill="'+h+'"/>';
-    svg+='<path d="M20,28 Q12,30 11,42 Q12,48 16,46 Q14,38 18,30 Z" fill="'+h+'"/>';
-    svg+='<path d="M60,28 Q68,30 69,42 Q68,48 64,46 Q66,38 62,30 Z" fill="'+h+'"/>';
-    svg+='<circle cx="13" cy="43" r="3" fill="'+shadeColor(h,-20)+'"/>';
-    svg+='<circle cx="67" cy="43" r="3" fill="'+shadeColor(h,-20)+'"/>';
+    svg+='<path d="M25,30 Q25,9 40,9 Q55,9 55,30 Q52,18 40,17 Q28,18 25,30 Z" fill="'+h+'"/>';
+    svg+='<path d="M25,26 Q15,31 14,47 Q15,55 19,53 Q17,41 22,28 Z" fill="'+h+'"/>';
+    svg+='<path d="M55,26 Q65,31 66,47 Q65,55 61,53 Q63,41 58,28 Z" fill="'+h+'"/>';
+    svg+='<circle cx="15" cy="51" r="4.5" fill="'+shadeColor(h,-22)+'"/>';
+    svg+='<circle cx="65" cy="51" r="4.5" fill="'+shadeColor(h,-22)+'"/>';
   } else if(hair==="ponytail"){
-    svg+='<path d="M20,32 Q20,10 40,10 Q60,10 60,32 Q55,20 40,19 Q25,20 20,32 Z" fill="'+h+'"/>';
-    svg+='<path d="M58,18 Q68,22 67,40 Q66,48 62,46 Q63,34 61,22 Z" fill="'+h+'"/>';
+    svg+='<path d="M25,30 Q25,9 40,9 Q55,9 55,30 Q52,18 40,17 Q28,18 25,30 Z" fill="'+h+'"/>';
+    svg+='<path d="M54,18 Q66,22 65,42 Q64,51 60,49 Q61,35 58,20 Z" fill="'+h+'"/>';
   } else if(hair==="mohawk"){
-    svg+='<path d="M35,28 Q36,8 40,6 Q44,8 45,28 Z" fill="'+h+'"/>';
+    svg+='<path d="M36,22 Q37,3 40,1 Q43,3 44,22 Q42,10 40,10 Q38,10 36,22 Z" fill="'+h+'"/>';
   } else if(hair==="pompadour"){
-    svg+='<path d="M20,32 Q20,10 40,10 Q60,10 60,32 Q55,20 40,19 Q25,20 20,32 Z" fill="'+h+'"/>';
-    svg+='<path d="M24,18 Q28,8 40,7 Q52,6 57,16 Q50,12 40,12 Q30,12 24,18 Z" fill="'+shadeColor(h,15)+'"/>';
+    svg+='<path d="M25,30 Q25,9 40,9 Q55,9 55,30 Q52,18 40,17 Q28,18 25,30 Z" fill="'+h+'"/>';
+    svg+='<path d="M27,18 Q33,4 40,3 Q47,4 54,15 Q46,9 40,9 Q34,9 27,18 Z" fill="'+shadeColor(h,28)+'"/>';
   } else if(hair==="messy"){
-    svg+='<path d="M20,32 Q20,10 40,10 Q60,10 60,32 Q55,20 40,19 Q25,20 20,32 Z" fill="'+h+'"/>';
-    svg+='<path d="M22,18 Q20,12 25,11 Q24,16 23,20 Z" fill="'+h+'"/>';
-    svg+='<path d="M34,10 Q36,5 40,7 Q38,11 35,12 Z" fill="'+h+'"/>';
-    svg+='<path d="M46,10 Q50,5 54,8 Q51,13 47,12 Z" fill="'+h+'"/>';
+    svg+='<path d="M25,30 Q25,9 40,9 Q55,9 55,30 Q52,18 40,17 Q28,18 25,30 Z" fill="'+h+'"/>';
+    svg+='<path d="M27,18 Q24,9 30,8 Q29,14 28,21 Z" fill="'+h+'"/>';
+    svg+='<path d="M37,9 Q39,1 43,3 Q41,11 38,12 Z" fill="'+h+'"/>';
+    svg+='<path d="M51,10 Q55,2 59,6 Q55,14 52,13 Z" fill="'+h+'"/>';
+  }
+  return svg;
+}
+
+function renderHairFront(hair, h, hat){
+  // Front layer — drawn after face for natural overlap on long styles.
+  if(hat==="ninja"||hat==="chef") return "";
+  if(hair==="bald"||hair==="none") return "";
+  var svg="";
+  if(hair==="long"||hair==="shaggy"){
+    svg+='<path d="M27,23 Q23,30 22,44" stroke="'+h+'" stroke-width="5" fill="none" stroke-linecap="round" opacity="0.65"/>';
+    svg+='<path d="M53,23 Q57,30 58,44" stroke="'+h+'" stroke-width="5" fill="none" stroke-linecap="round" opacity="0.65"/>';
+  } else if(hair==="curly"){
+    svg+='<circle cx="25" cy="26" r="6.5" fill="'+h+'"/>';
+    svg+='<circle cx="55" cy="26" r="6.5" fill="'+h+'"/>';
   }
   return svg;
 }
 
 function renderHat(hat, h){
+  // Face oval top: y=12. Hats sit above and on the head.
   var svg="";
   if(hat==="cap"||hat==="baseball"){
-    svg+='<path d="M20,30 Q20,10 40,10 Q60,10 60,30 Q55,18 40,18 Q25,18 20,30 Z" fill="#dc2626"/>';
-    svg+='<path d="M20,28 Q14,28 11,32 Q15,34 20,32 Z" fill="#b91c1c"/>';
-    svg+='<rect x="20" y="27" width="40" height="5" rx="2" fill="#b91c1c" opacity="0.5"/>';
+    svg+='<path d="M25,28 Q25,9 40,9 Q55,9 55,28 Q52,17 40,17 Q28,17 25,28 Z" fill="#dc2626"/>';
+    svg+='<path d="M25,26 Q13,25 9,31 Q13,36 25,31 Z" fill="#b91c1c"/>';
+    svg+='<rect x="25" y="24" width="30" height="5" rx="2" fill="rgba(0,0,0,0.2)"/>';
   } else if(hat==="backwards"){
-    svg+='<path d="M20,30 Q20,10 40,10 Q60,10 60,30 Q55,18 40,18 Q25,18 20,30 Z" fill="#f43f5e"/>';
-    svg+='<path d="M60,28 Q66,28 69,32 Q65,34 60,32 Z" fill="#e11d48"/>';
+    svg+='<path d="M25,28 Q25,9 40,9 Q55,9 55,28 Q52,17 40,17 Q28,17 25,28 Z" fill="#f43f5e"/>';
+    svg+='<path d="M55,26 Q67,25 71,31 Q67,36 55,31 Z" fill="#e11d48"/>';
   } else if(hat==="beanie"){
-    svg+='<path d="M20,34 Q20,10 40,10 Q60,10 60,34 Q55,18 40,17 Q25,18 20,34 Z" fill="'+h+'"/>';
-    svg+='<rect x="19" y="30" width="42" height="7" rx="3" fill="'+shadeColor(h,-15)+'"/>';
-    svg+='<circle cx="40" cy="10" r="5" fill="'+shadeColor(h,20)+'"/>';
+    svg+='<path d="M25,30 Q25,7 40,7 Q55,7 55,30 Q52,15 40,15 Q28,15 25,30 Z" fill="'+h+'"/>';
+    svg+='<rect x="24" y="26" width="32" height="7" rx="3.5" fill="'+shadeColor(h,-22)+'"/>';
+    svg+='<circle cx="40" cy="7" r="5" fill="'+shadeColor(h,28)+'"/>';
   } else if(hat==="helmet"){
-    svg+='<path d="M18,34 Q18,8 40,8 Q62,8 62,34 Q56,16 40,15 Q24,16 18,34 Z" fill="#0ea5e9"/>';
-    svg+='<rect x="17" y="30" width="46" height="7" rx="3" fill="#0284c7"/>';
-    svg+='<rect x="30" y="12" width="20" height="5" rx="2.5" fill="rgba(255,255,255,0.4)"/>';
+    svg+='<path d="M22,28 Q22,7 40,7 Q58,7 58,28 Q55,13 40,13 Q25,13 22,28 Z" fill="#0ea5e9"/>';
+    svg+='<rect x="22" y="24" width="36" height="7" rx="3.5" fill="#0284c7"/>';
+    svg+='<rect x="30" y="11" width="20" height="5" rx="2.5" fill="rgba(255,255,255,0.5)"/>';
   } else if(hat==="chef"){
-    svg+='<rect x="26" y="28" width="28" height="7" rx="3" fill="#e2e8f0"/>';
-    svg+='<path d="M26,30 Q26,10 40,10 Q54,10 54,30 Z" fill="#f8fafc"/>';
-    svg+='<circle cx="40" cy="8" r="8" fill="#f8fafc"/>';
+    svg+='<rect x="28" y="21" width="24" height="8" rx="4" fill="#e2e8f0"/>';
+    svg+='<path d="M30,25 Q30,7 40,7 Q50,7 50,25 Z" fill="#f8fafc"/>';
+    svg+='<circle cx="40" cy="6" r="7" fill="#f8fafc"/>';
   } else if(hat==="beret"){
-    svg+='<ellipse cx="43" cy="18" rx="20" ry="12" fill="'+h+'"/>';
-    svg+='<circle cx="54" cy="13" r="4" fill="'+shadeColor(h,-15)+'"/>';
-    svg+='<rect x="33" y="28" width="14" height="5" rx="2.5" fill="'+shadeColor(h,-10)+'"/>';
+    svg+='<ellipse cx="43" cy="15" rx="19" ry="11" fill="'+h+'"/>';
+    svg+='<circle cx="54" cy="10" r="4" fill="'+shadeColor(h,-15)+'"/>';
+    svg+='<rect x="33" y="22" width="14" height="5" rx="2.5" fill="'+shadeColor(h,-10)+'"/>';
   } else if(hat==="headset"){
-    svg+='<path d="M20,28 Q20,10 40,10 Q60,10 60,28" stroke="#1f2937" stroke-width="5" fill="none"/>';
-    svg+='<rect x="16" y="26" width="8" height="13" rx="4" fill="#374151"/>';
-    svg+='<rect x="56" y="26" width="8" height="13" rx="4" fill="#374151"/>';
+    svg+='<path d="M22,24 Q22,7 40,7 Q58,7 58,24" stroke="#1f2937" stroke-width="5" fill="none" stroke-linecap="round"/>';
+    svg+='<rect x="14" y="22" width="10" height="14" rx="5" fill="#374151"/>';
+    svg+='<rect x="56" y="22" width="10" height="14" rx="5" fill="#374151"/>';
+    svg+='<path d="M24,32 Q28,39 32,40" stroke="#374151" stroke-width="2" fill="none" stroke-linecap="round"/>';
+    svg+='<circle cx="32" cy="40" r="2.5" fill="#1f2937"/>';
   } else if(hat==="ninja"){
-    svg+='<path d="M18,50 Q18,8 40,8 Q62,8 62,50 Q62,36 40,34 Q18,36 18,50 Z" fill="#111827" opacity="0.93"/>';
-    svg+='<rect x="18" y="34" width="44" height="9" fill="#1f2937"/>';
+    svg+='<path d="M20,50 Q20,6 40,6 Q60,6 60,50 Q60,34 40,32 Q20,34 20,50 Z" fill="#111827" opacity="0.95"/>';
+    svg+='<rect x="24" y="27" width="32" height="9" rx="2" fill="#1f2937"/>';
+    svg+='<rect x="24" y="28" width="32" height="5" rx="2" fill="#2d3748" opacity="0.5"/>';
   } else if(hat==="goggle"){
-    svg+='<rect x="24" y="26" width="16" height="11" rx="5" fill="#0284c7" opacity="0.88"/>';
-    svg+='<rect x="40" y="26" width="16" height="11" rx="5" fill="#0284c7" opacity="0.88"/>';
-    svg+='<rect x="39" y="28" width="2" height="7" fill="#075985"/>';
-    svg+='<rect x="18" y="30" width="6" height="3" rx="1.5" fill="#374151"/>';
-    svg+='<rect x="56" y="30" width="6" height="3" rx="1.5" fill="#374151"/>';
+    svg+='<rect x="23" y="22" width="14" height="11" rx="5.5" fill="#0284c7" opacity="0.92"/>';
+    svg+='<rect x="43" y="22" width="14" height="11" rx="5.5" fill="#0284c7" opacity="0.92"/>';
+    svg+='<rect x="37" y="24" width="6" height="7" fill="#075985"/>';
+    svg+='<rect x="17" y="25" width="6" height="4" rx="2" fill="#374151"/>';
+    svg+='<rect x="57" y="25" width="6" height="4" rx="2" fill="#374151"/>';
   }
   return svg;
 }
 
 function renderExtra(extra, h, sh, s){
+  // Face oval: cx=40,cy=30,rx=15,ry=18 → chin at y=48. Shoulders: y=58+
   var svg="";
   if(extra==="beard"){
-    svg+='<path d="M24,38 Q26,50 33,54 Q40,57 47,54 Q54,50 56,38 Q48,44 40,44 Q32,44 24,38 Z" fill="'+h+'" opacity="0.92"/>';
+    svg+='<path d="M26,37 Q28,51 35,55 Q40,57 45,55 Q52,51 54,37 Q46,44 40,44 Q34,44 26,37 Z" fill="'+h+'" opacity="0.9"/>';
   } else if(extra==="glasses"){
-    svg+='<rect x="24" y="26" width="14" height="10" rx="4" fill="rgba(255,255,255,0.15)" stroke="#374151" stroke-width="2.5"/>';
-    svg+='<rect x="42" y="26" width="14" height="10" rx="4" fill="rgba(255,255,255,0.15)" stroke="#374151" stroke-width="2.5"/>';
-    svg+='<line x1="38" y1="31" x2="42" y2="31" stroke="#374151" stroke-width="2"/>';
-    svg+='<line x1="18" y1="31" x2="24" y2="31" stroke="#374151" stroke-width="2"/>';
-    svg+='<line x1="56" y1="31" x2="62" y2="31" stroke="#374151" stroke-width="2"/>';
+    svg+='<rect x="24" y="23" width="12" height="9" rx="4.5" fill="rgba(200,230,255,0.4)" stroke="#374151" stroke-width="1.8"/>';
+    svg+='<rect x="44" y="23" width="12" height="9" rx="4.5" fill="rgba(200,230,255,0.4)" stroke="#374151" stroke-width="1.8"/>';
+    svg+='<line x1="36" y1="27.5" x2="44" y2="27.5" stroke="#374151" stroke-width="1.8"/>';
+    svg+='<line x1="18" y1="27.5" x2="24" y2="27.5" stroke="#374151" stroke-width="1.8"/>';
+    svg+='<line x1="56" y1="27.5" x2="62" y2="27.5" stroke="#374151" stroke-width="1.8"/>';
   } else if(extra==="pierce"){
-    svg+='<circle cx="20" cy="33" r="2.5" fill="#c084fc"/>';
-    svg+='<circle cx="60" cy="29" r="2" fill="#a78bfa"/>';
-    svg+='<rect x="37" y="43" width="6" height="3" rx="1.5" fill="#9ca3af"/>';
+    svg+='<circle cx="22" cy="32" r="2.8" fill="#c084fc"/>';
+    svg+='<circle cx="58" cy="27" r="2.2" fill="#a78bfa"/>';
+    svg+='<circle cx="40" cy="39" r="1.8" fill="#e2e2e2"/>';
   } else if(extra==="tattoo"){
-    svg+='<path d="M8,62 Q10,55 13,62 Q15,68 12,72" stroke="#6b7280" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
-    svg+='<path d="M9,56 Q13,51 16,56" stroke="#6b7280" stroke-width="2" fill="none" stroke-linecap="round"/>';
+    svg+='<path d="M20,67 Q22,59 24,67 Q25,73 23,77" stroke="#6b7280" stroke-width="2" fill="none" stroke-linecap="round"/>';
+    svg+='<path d="M20,61 Q23,55 25,61" stroke="#6b7280" stroke-width="1.8" fill="none" stroke-linecap="round"/>';
   } else if(extra==="muscle"){
-    svg+='<path d="M28,58 Q30,53 36,55 Q38,60 36,64 Q30,65 28,58 Z" fill="rgba(255,255,255,0.15)"/>';
-    svg+='<path d="M52,58 Q50,53 44,55 Q42,60 44,64 Q50,65 52,58 Z" fill="rgba(255,255,255,0.15)"/>';
+    svg+='<ellipse cx="29" cy="68" rx="5" ry="5.5" fill="rgba(255,255,255,0.22)" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>';
+    svg+='<ellipse cx="51" cy="68" rx="5" ry="5.5" fill="rgba(255,255,255,0.22)" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>';
   } else if(extra==="stethoscope"){
-    svg+='<path d="M32,54 Q26,64 29,72 Q33,77 37,74" stroke="#94a3b8" stroke-width="3" fill="none" stroke-linecap="round"/>';
-    svg+='<circle cx="37" cy="75" r="5" fill="#64748b"/>';
-    svg+='<circle cx="37" cy="75" r="2.5" fill="#cbd5e1"/>';
+    svg+='<path d="M35,61 Q28,72 31,78" stroke="#94a3b8" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
+    svg+='<circle cx="31" cy="78" r="4" fill="#64748b"/>';
+    svg+='<circle cx="31" cy="78" r="2" fill="#cbd5e1"/>';
+    svg+='<line x1="35" y1="60" x2="45" y2="60" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/>';
   } else if(extra==="belt"){
-    svg+='<rect x="22" y="74" width="36" height="6" rx="3" fill="#1f2937"/>';
-    svg+='<rect x="36" y="73" width="8" height="8" rx="2" fill="#f59e0b"/>';
-    svg+='<circle cx="40" cy="77" r="2" fill="#1f2937"/>';
+    svg+='<rect x="22" y="72" width="36" height="5" rx="2.5" fill="#1f2937"/>';
+    svg+='<rect x="37" y="71" width="6" height="7" rx="1.5" fill="#f59e0b"/>';
+    svg+='<circle cx="40" cy="74.5" r="1.5" fill="#1f2937"/>';
   } else if(extra==="bow"){
-    svg+='<path d="M30,12 Q35,7 40,12 Q35,17 30,12 Z" fill="'+h+'"/>';
-    svg+='<path d="M40,12 Q45,7 50,12 Q45,17 40,12 Z" fill="'+h+'"/>';
-    svg+='<circle cx="40" cy="12" r="3.5" fill="'+shadeColor(h,-15)+'"/>';
+    svg+='<path d="M30,9 Q35,3 40,9 Q35,15 30,9 Z" fill="'+h+'"/>';
+    svg+='<path d="M40,9 Q45,3 50,9 Q45,15 40,9 Z" fill="'+h+'"/>';
+    svg+='<circle cx="40" cy="9" r="3.5" fill="'+shadeColor(h,-22)+'"/>';
   }
   return svg;
 }
