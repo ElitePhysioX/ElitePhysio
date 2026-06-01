@@ -298,27 +298,25 @@ function fmtDayLabel(d){
   return n[d.getDay()]+'<br><span style="font-size:15px;font-weight:800">'+d.getDate()+'</span>';
 }
 function loadAppts(cb){
-  if(ADMIN_TOKEN){
-    apiCall("appts","GET",null,function(err,data){
-      if(!err&&Array.isArray(data)){ appts=data; }
-      else{ try{ appts=JSON.parse(localStorage.getItem("ep_appts")||"[]"); }catch(e){ appts=[]; } }
-      cb();
-    });
-  } else {
-    try{ appts=JSON.parse(localStorage.getItem("ep_appts")||"[]"); }catch(e){ appts=[]; }
+  if(!ADMIN_TOKEN){ appts=[]; cb(); return; }
+  apiCall("appts","GET",null,function(err,data){
+    if(!err&&Array.isArray(data)){ appts=data; }
+    else{ appts=[]; }
     cb();
-  }
+  });
 }
-function saveApptLocal(){ try{ localStorage.setItem("ep_appts",JSON.stringify(appts)); }catch(e){} }
 function addAppt(a){
-  a.id=a.id||Date.now(); appts.push(a); saveApptLocal();
-  if(ADMIN_TOKEN) apiCall("appts","POST",a,function(){});
-  renderCal();
+  if(!ADMIN_TOKEN) return;
+  a.id=a.id||Date.now();
+  apiCall("appts","POST",a,function(err){
+    if(!err){ appts.push(a); renderCal(); }
+  });
 }
 function deleteAppt(id){
-  appts=appts.filter(function(a){ return a.id!=id; }); saveApptLocal();
-  if(ADMIN_TOKEN) apiCall("appts/"+id,"DELETE",null,function(){});
-  renderCal();
+  if(!ADMIN_TOKEN) return;
+  apiCall("appts/"+id,"DELETE",null,function(err){
+    if(!err){ appts=appts.filter(function(a){ return a.id!=id; }); renderCal(); }
+  });
 }
 function buildCalHTML(){
   var days=calDays(calWeekOffset);
