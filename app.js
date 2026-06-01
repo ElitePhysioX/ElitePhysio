@@ -324,38 +324,38 @@ function buildCalHTML(){
   var ws=days[0],we=days[6];
   var lo=lng==="he"?"he-IL":"en-US";
   var wLabel=ws.toLocaleDateString(lo,{month:"short",day:"numeric"})+" – "+we.toLocaleDateString(lo,{month:"short",day:"numeric",year:"numeric"});
-  var slots=[]; for(var h=7;h<21;h++){ slots.push(String(h).padStart(2,"0")+":00"); slots.push(String(h).padStart(2,"0")+":30"); }
+  var slots=[]; for(var h=7;h<20;h++){ slots.push(String(h).padStart(2,"0")+":00"); slots.push(String(h).padStart(2,"0")+":30"); }
   var amap={}; appts.forEach(function(a){ var k=a.date+"__"+a.time; if(!amap[k]) amap[k]=[]; amap[k].push(a); });
   var H='<div class="card" style="padding:0;overflow:hidden;margin-bottom:24px">';
-  H+='<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #e2e8f0;background:#f8fafc;flex-wrap:wrap;gap:8px">';
-  H+='<div style="display:flex;align-items:center;gap:8px">';
-  H+='<button class="btn" style="padding:5px 13px;font-size:15px;background:#fff;border:1px solid #d1d9e0;color:#1a3a6e" onclick="calWeekOffset--;renderCal()">&#8249;</button>';
-  H+='<span style="font-size:13px;font-weight:700;color:#1a3a6e;min-width:160px;text-align:center">'+wLabel+'</span>';
-  H+='<button class="btn" style="padding:5px 13px;font-size:15px;background:#fff;border:1px solid #d1d9e0;color:#1a3a6e" onclick="calWeekOffset++;renderCal()">&#8250;</button>';
-  if(calWeekOffset!==0) H+='<button class="btn" style="padding:5px 10px;font-size:12px;background:#e8f0fe;color:#2B6CC4;border:none" onclick="calWeekOffset=0;renderCal()">'+(lng==="he"?"היום":"Today")+'</button>';
+  H+='<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid #e2e8f0;background:#f8fafc;flex-wrap:wrap;gap:6px">';
+  H+='<div style="display:flex;align-items:center;gap:6px">';
+  H+='<button class="btn" style="padding:3px 11px;font-size:15px;background:#fff;border:1px solid #d1d9e0;color:#1a3a6e" onclick="calWeekOffset--;renderCal()">&#8249;</button>';
+  H+='<span style="font-size:12px;font-weight:700;color:#1a3a6e;min-width:150px;text-align:center">'+wLabel+'</span>';
+  H+='<button class="btn" style="padding:3px 11px;font-size:15px;background:#fff;border:1px solid #d1d9e0;color:#1a3a6e" onclick="calWeekOffset++;renderCal()">&#8250;</button>';
+  if(calWeekOffset!==0) H+='<button class="btn" style="padding:3px 8px;font-size:11px;background:#e8f0fe;color:#2B6CC4;border:none" onclick="calWeekOffset=0;renderCal()">'+(lng==="he"?"היום":"Today")+'</button>';
   H+='</div>';
-  H+='<button class="btn" style="font-size:13px;background:#2B6CC4;color:#fff" onclick="openNewAppt()">'+(lng==="he"?"+ תור חדש":"+ New Appt")+'</button>';
+  H+='<button class="btn" style="font-size:12px;padding:4px 12px;background:#2B6CC4;color:#fff" onclick="openNewAppt()">'+(lng==="he"?"+ תור חדש":"+ New Appt")+'</button>';
   H+='</div>';
   H+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:500px">';
-  H+='<thead><tr><th style="width:48px;min-width:48px;padding:6px 4px;border-bottom:2px solid #e2e8f0;border-right:1px solid #e2e8f0;background:#f8fafc"></th>';
+  H+='<thead><tr><th style="width:36px;min-width:36px;padding:4px 3px;border-bottom:2px solid #e2e8f0;border-right:1px solid #e2e8f0;background:#f8fafc"></th>';
   days.forEach(function(d){
     var ds=fmtDate(d); var it=ds===todayStr;
-    H+='<th style="padding:8px 4px;border-bottom:2px solid #e2e8f0;border-right:1px solid #f0f4f8;text-align:center;font-size:11px;font-weight:700;color:'+(it?"#2B6CC4":"#1a3a6e")+';background:'+(it?"#e8f0fe":"#f8fafc")+'">'+fmtDayLabel(d)+'</th>';
+    H+='<th style="padding:5px 3px;border-bottom:2px solid #e2e8f0;border-right:1px solid #f0f4f8;text-align:center;font-size:10px;font-weight:700;color:'+(it?"#2B6CC4":"#1a3a6e")+';background:'+(it?"#e8f0fe":"#f8fafc")+'">'+fmtDayLabel(d)+'</th>';
   });
   H+='</tr></thead><tbody>';
   slots.forEach(function(slot){
     var isH=slot.endsWith(":00");
-    H+='<tr style="height:40px">';
-    H+='<td style="padding:0 5px;border-right:1px solid #e2e8f0;border-bottom:1px solid '+(isH?"#e2e8f0":"#f5f7fa")+';font-size:10px;color:#8a9bbf;text-align:right;vertical-align:top;padding-top:3px;background:#fafbfd;white-space:nowrap">'+(isH?slot:'')+'</td>';
+    H+='<tr style="height:22px">';
+    H+='<td style="padding:0 4px;border-right:1px solid #e2e8f0;border-bottom:1px solid '+(isH?"#dde3ec":"#f0f2f6")+';font-size:9px;color:#9aabcf;text-align:right;vertical-align:top;padding-top:2px;background:#fafbfd;white-space:nowrap">'+(isH?slot:'')+'</td>';
     days.forEach(function(d){
       var ds=fmtDate(d); var it=ds===todayStr;
       var da=(amap[ds+"__"+slot])||[];
-      H+='<td style="padding:2px;border-right:1px solid #f0f4f8;border-bottom:1px solid '+(isH?"#e2e8f0":"#f5f7fa")+';vertical-align:top;background:'+(it?"#f5f8ff":"#fff")+';cursor:pointer" onclick="openNewApptAt(\''+ds+'\',\''+slot+'\')">';
+      H+='<td style="padding:1px;border-right:1px solid #f0f4f8;border-bottom:1px solid '+(isH?"#dde3ec":"#f0f2f6")+';vertical-align:top;background:'+(it?"#f5f8ff":"#fff")+';cursor:pointer" onclick="openNewApptAt(\''+ds+'\',\''+slot+'\')">';
       da.forEach(function(a){
         var p=pts.find(function(x){ return x.id==a.patientId; });
         var nm=p?pn(p):(a.patientName||"?");
-        H+='<div style="background:#2B6CC415;border-left:3px solid #2B6CC4;border-radius:3px;padding:2px 22px 2px 5px;margin-bottom:1px;font-size:11px;font-weight:600;color:#2B6CC4;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer;position:relative" onclick="event.stopPropagation();'+(p?'op('+p.id+')':'')+'" title="'+nm+(a.notes?' — '+a.notes:'')+'">';
-        H+=nm+'<span style="position:absolute;right:4px;top:2px;font-size:10px;opacity:.5;cursor:pointer" onclick="event.stopPropagation();deleteAppt('+a.id+')">&#x2715;</span></div>';
+        H+='<div style="background:#2B6CC418;border-left:3px solid #2B6CC4;border-radius:2px;padding:1px 16px 1px 4px;margin-bottom:1px;font-size:10px;font-weight:600;color:#1a4a90;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer;position:relative;line-height:1.3" onclick="event.stopPropagation();'+(p?'op('+p.id+')':'')+'" title="'+nm+(a.notes?' — '+a.notes:'')+'">';
+        H+=nm+'<span style="position:absolute;right:3px;top:1px;font-size:9px;opacity:.45;cursor:pointer" onclick="event.stopPropagation();deleteAppt('+a.id+')">&#x2715;</span></div>';
       });
       H+='</td>';
     });
@@ -370,7 +370,7 @@ function openNewApptAt(date,time){
   var td=fmtDate(new Date());
   var pO=pts.map(function(p){ return '<option value="'+p.id+'">'+pn(p)+'</option>'; }).join("");
   if(!pO) pO='<option value="">No patients</option>';
-  var tO=""; for(var h=7;h<21;h++){ var hs=String(h).padStart(2,"0"); tO+='<option value="'+hs+':00">'+hs+':00</option><option value="'+hs+':30">'+hs+':30</option>'; }
+  var tO=""; for(var h=7;h<20;h++){ var hs=String(h).padStart(2,"0"); tO+='<option value="'+hs+':00">'+hs+':00</option><option value="'+hs+':30">'+hs+':30</option>'; }
   var iS='style="width:100%;padding:9px 10px;border:1px solid #d1d9e0;border-radius:8px;font-size:14px;margin-bottom:14px;background:#f8fafc;box-sizing:border-box"';
   g("MC").innerHTML=
     '<div style="padding:4px 0">'+
@@ -404,16 +404,16 @@ function rd(){
   var ts=Object.entries(sc).sort(function(a,b){ return b[1]-a[1]; })[0];
   var fc=pts.reduce(function(a,p){ return a+(p.followUps||[]).length; },0);
   g("vd").innerHTML=
-    '<div style="margin-bottom:22px"><div style="font-size:24px;font-weight:800;color:#1a3a6e">Good day, ElitePhysio &#128075;</div>'+
-    '<div style="font-size:13px;color:#4a6a8a;margin-top:3px">'+L().sub+'</div></div>'+
-    '<div class="g2" style="margin-bottom:24px">'+
+    '<div style="margin-bottom:12px"><div style="font-size:20px;font-weight:800;color:#1a3a6e">Good day, ElitePhysio &#128075;</div>'+
+    '<div style="font-size:12px;color:#4a6a8a;margin-top:2px">'+L().sub+'</div></div>'+
+    '<div class="g2" style="margin-bottom:16px">'+
     [["#2B6CC4",pts.length,L().to],["#00a86b",tx,L().ex],["#d97706",ts?ts[0]:"—","Top Sport"],["#7c3aed",fc,L().fu]].map(function(x){
-      return '<div class="stat-card"><div class="accent-bar" style="background:linear-gradient(90deg,'+x[0]+','+x[0]+'80)"></div>'+
-        '<div style="font-size:28px;font-weight:800;color:'+x[0]+'">'+x[1]+'</div>'+
-        '<div style="font-size:11px;color:#4a6a8a;text-transform:uppercase;letter-spacing:.8px;margin-top:3px">'+x[2]+'</div></div>';
+      return '<div class="stat-card" style="padding:10px 14px"><div class="accent-bar" style="background:linear-gradient(90deg,'+x[0]+','+x[0]+'80)"></div>'+
+        '<div style="font-size:22px;font-weight:800;color:'+x[0]+'">'+x[1]+'</div>'+
+        '<div style="font-size:10px;color:#4a6a8a;text-transform:uppercase;letter-spacing:.8px;margin-top:2px">'+x[2]+'</div></div>';
     }).join("")+'</div>'+
-    '<div style="font-size:15px;font-weight:700;color:#1a3a6e;margin-bottom:12px">'+(lng==="he"?"לוח תורים":"Appointment Calendar")+'</div>'+
-    '<div id="cal-section"><div style="text-align:center;padding:32px;color:#4a6a8a;font-size:13px">Loading...</div></div>'+
+    '<div style="font-size:13px;font-weight:700;color:#1a3a6e;margin-bottom:8px">'+(lng==="he"?"לוח תורים":"Appointment Calendar")+'</div>'+
+    '<div id="cal-section"><div style="text-align:center;padding:20px;color:#4a6a8a;font-size:13px">Loading...</div></div>'+
     '<div class="row"><span class="st">'+L().rp2+'</span>'+
     '<div style="display:flex;gap:8px">'+
     '<button class="btn" style="font-size:12px;background:#fff3f3;color:#e74c3c;border:1px solid rgba(231,76,60,0.3)" onclick="omRecycleBin()">🗑 Recycle Bin '+(deletedPatients.length+deletedExercises.length>0?'('+( deletedPatients.length+deletedExercises.length)+')':'')+'</button>'+
