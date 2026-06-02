@@ -299,7 +299,8 @@ function fmtDayLabel(d){
   var mob=window.innerWidth<700;
   var n=lng==="he"?['א',"ב","ג","ד","ה","ו","ש"]:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
   var nm=mob?n[d.getDay()].slice(0,1):n[d.getDay()];
-  return nm+'<br><span style="font-size:'+(mob?'13':'15')+'px;font-weight:800">'+d.getDate()+'</span>';
+  return '<div style="font-size:9px;letter-spacing:.4px;font-weight:600;opacity:.7;line-height:1;margin-bottom:3px">'+nm+'</div>'+
+         '<div style="font-size:'+(mob?'14':'17')+'px;font-weight:800;line-height:1">'+d.getDate()+'</div>';
 }
 function loadAppts(cb){
   if(!ADMIN_TOKEN){ appts=[]; cb(); return; }
