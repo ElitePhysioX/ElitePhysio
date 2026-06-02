@@ -238,7 +238,8 @@ function alog(){
       ADMIN_TOKEN = pw;
       SB_KEY = d.sbKey||"";
       auth="admin"; g("apw").value="";
-      sessionStorage.setItem("ep_session", JSON.stringify({auth:"admin", token:pw, sbKey:SB_KEY, lng:lng}));
+      setL("he");
+      sessionStorage.setItem("ep_session", JSON.stringify({auth:"admin", token:pw, sbKey:SB_KEY, lng:"he"}));
       syncCustomLib();
       ss2("a");
       sbLoad(function(){
@@ -300,8 +301,10 @@ function fmtDayLabel(d){
   var nHe=['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
   var nEn=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   var dayName=lng==="he"?nHe[d.getDay()]:nEn[d.getDay()];
-  return '<div style="font-size:'+(mob?'13':'16')+'px;font-weight:800;line-height:1;margin-bottom:2px">'+d.getDate()+'</div>'+
-         '<div style="font-size:'+(mob?'7':'9')+'px;font-weight:500;opacity:.75;line-height:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%">'+dayName+'</div>';
+  return '<div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px">'+
+         '<div style="font-size:'+(mob?'13':'16')+'px;font-weight:800;line-height:1">'+d.getDate()+'</div>'+
+         '<div style="font-size:'+(mob?'7':'9')+'px;font-weight:500;opacity:.75;line-height:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:52px">'+dayName+'</div>'+
+         '</div>';
 }
 function loadAppts(cb){
   if(!ADMIN_TOKEN){ appts=[]; cb(); return; }
