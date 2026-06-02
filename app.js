@@ -379,8 +379,8 @@ function buildCalHTML(){
     H+='<div style="flex:1;min-width:56px;border-right:1px solid #f0f4f8">';
     H+='<div style="height:'+HDR+'px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;text-align:center;color:'+(it?"#2B6CC4":"#1a3a6e")+';background:'+(it?"#e8f0fe":"#f8fafc")+';border-bottom:2px solid #e2e8f0">'+fmtDayLabel(d)+'</div>';
     H+='<div class="cal-day-body" data-date="'+ds+'" style="position:relative;height:'+gridH+'px;background:'+(it?"#f5f8ff":"#fff")+'" onclick="calBodyClick(event,\''+ds+'\')">';
-    // Grid lines: solid bold for hours, dashed light for half-hours
-    for(var i=0;i<N;i++){ H+='<div style="position:absolute;top:'+(i*SH)+'px;left:0;right:0;height:'+SH+'px;border-bottom:'+(i%2===0?'1px solid #b8c8da':'1px dashed #e8ecf2')+'"></div>'; }
+    // Grid lines: bold at hour starts (:30→:00 boundary), dashed at half-hours
+    for(var i=0;i<N;i++){ H+='<div style="position:absolute;top:'+(i*SH)+'px;left:0;right:0;height:'+SH+'px;border-bottom:'+(i%2===1?'1px solid #b8c8da':'1px dashed #e8ecf2')+'"></div>'; }
     // Appointment blocks
     da.forEach(function(a){
       var p=pts.find(function(x){ return x.id==a.patientId; });
