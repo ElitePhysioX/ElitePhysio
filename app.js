@@ -297,10 +297,11 @@ function calDays(offset){
 function fmtDate(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function fmtDayLabel(d){
   var mob=window.innerWidth<700;
-  var n=lng==="he"?['א',"ב","ג","ד","ה","ו","ש"]:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-  var nm=mob?n[d.getDay()].slice(0,1):n[d.getDay()];
-  return '<div style="font-size:9px;letter-spacing:.4px;font-weight:600;opacity:.7;line-height:1;margin-bottom:3px">'+nm+'</div>'+
-         '<div style="font-size:'+(mob?'14':'17')+'px;font-weight:800;line-height:1">'+d.getDate()+'</div>';
+  var nHe=['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+  var nEn=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  var dayName=lng==="he"?nHe[d.getDay()]:nEn[d.getDay()];
+  return '<div style="font-size:'+(mob?'13':'16')+'px;font-weight:800;line-height:1;margin-bottom:2px">'+d.getDate()+'</div>'+
+         '<div style="font-size:'+(mob?'7':'9')+'px;font-weight:500;opacity:.75;line-height:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%">'+dayName+'</div>';
 }
 function loadAppts(cb){
   if(!ADMIN_TOKEN){ appts=[]; cb(); return; }
@@ -349,7 +350,7 @@ function calBodyClick(e,date){ if(calDrag) return; var r=e.currentTarget.getBoun
 function buildCalHTML(){
   var mob=window.innerWidth<700;
   var SH=mob?16:28; calSH=SH;
-  var N=26, HDR=mob?30:38, TCOL=mob?28:38, gridH=N*SH;
+  var N=26, HDR=mob?36:44, TCOL=mob?28:38, gridH=N*SH;
   var days=calDays(calWeekOffset);
   var todayStr=fmtDate(new Date());
   var ws=days[0],we=days[6];
