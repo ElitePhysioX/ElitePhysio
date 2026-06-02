@@ -13,6 +13,7 @@ var deletedExercises = []; // recycle bin for exercises
 var appts = [];
 var calWeekOffset = 0;
 var calDrag = null;
+var calSH = 28; // slot height px, updated on each render
 
 function loadRecycleBin(){
   try{
@@ -295,8 +296,10 @@ function calDays(offset){
 }
 function fmtDate(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function fmtDayLabel(d){
+  var mob=window.innerWidth<700;
   var n=lng==="he"?['א',"ב","ג","ד","ה","ו","ש"]:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-  return n[d.getDay()]+'<br><span style="font-size:15px;font-weight:800">'+d.getDate()+'</span>';
+  var nm=mob?n[d.getDay()].slice(0,1):n[d.getDay()];
+  return nm+'<br><span style="font-size:'+(mob?'13':'15')+'px;font-weight:800">'+d.getDate()+'</span>';
 }
 function loadAppts(cb){
   if(!ADMIN_TOKEN){ appts=[]; cb(); return; }
@@ -322,10 +325,12 @@ function deleteAppt(id){
 function timeToSlotIdx(t){ var p=(t||"07:00").split(':'),h=parseInt(p[0]),m=parseInt(p[1]||0); return (h-7)*2+(m>=30?1:0); }
 function slotIdxToTime(i){ var h=7+Math.floor(i/2),m=i%2===0?'00':'30'; return String(h).padStart(2,'0')+':'+m; }
 function addMinutes(t,mins){ var p=(t||"00:00").split(':'),h=parseInt(p[0]),m=parseInt(p[1]||0)+mins; h+=Math.floor(m/60); m=m%60; return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0'); }
-function calBodyClick(e,date){ if(calDrag) return; var r=e.currentTarget.getBoundingClientRect(); var idx=Math.max(0,Math.min(Math.floor((e.clientY-r.top)/28),24)); openNewApptAt(date,slotIdxToTime(idx)); }
+function calBodyClick(e,date){ if(calDrag) return; var r=e.currentTarget.getBoundingClientRect(); var idx=Math.max(0,Math.min(Math.floor((e.clientY-r.top)/calSH),24)); openNewApptAt(date,slotIdxToTime(idx)); }
 
 function buildCalHTML(){
-  var SH=28, N=26, HDR=38, TCOL=38, gridH=N*SH;
+  var mob=window.innerWidth<700;
+  var SH=mob?16:28; calSH=SH;
+  var N=26, HDR=mob?30:38, TCOL=mob?28:38, gridH=N*SH;
   var days=calDays(calWeekOffset);
   var todayStr=fmtDate(new Date());
   var ws=days[0],we=days[6];
@@ -417,7 +422,7 @@ function calOnUp(e){
     var r=bodies[i].getBoundingClientRect();
     if(e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom){
       newDate=bodies[i].dataset.date;
-      newTime=slotIdxToTime(Math.max(0,Math.min(Math.floor((e.clientY-r.top)/28),24)));
+      newTime=slotIdxToTime(Math.max(0,Math.min(Math.floor((e.clientY-r.top)/calSH),24)));
       break;
     }
   }
