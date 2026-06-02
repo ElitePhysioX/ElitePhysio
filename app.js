@@ -318,6 +318,24 @@ function addAppt(a){
 }
 function deleteAppt(id){
   if(!ADMIN_TOKEN) return;
+  var a=appts.find(function(x){return x.id==id;});
+  var p=a?pts.find(function(x){return x.id==a.patientId;}):null;
+  var nm=p?pn(p):(a&&a.patientName||"?");
+  var info=a?(nm+' &mdash; '+a.date+' '+a.time+(a.end_time?' – '+a.end_time:'')):'';
+  g("MC").innerHTML=
+    '<div style="padding:8px 0;text-align:center">'+
+    '<div style="font-size:28px;margin-bottom:10px">&#128465;</div>'+
+    '<div style="font-size:16px;font-weight:800;color:#1a3a6e;margin-bottom:8px">'+(lng==="he"?"למחוק את התור?":"Delete appointment?")+'</div>'+
+    '<div style="font-size:12px;color:#4a6a8a;margin-bottom:22px">'+info+'</div>'+
+    '<div style="display:flex;gap:10px">'+
+    '<button class="btn" style="flex:1;background:#e74c3c;color:#fff;padding:12px;font-size:14px" onclick="confirmDeleteAppt('+id+')">'+(lng==="he"?"כן, מחק":"Yes, delete")+'</button>'+
+    '<button class="btn" style="flex:1;background:#f1f5f9;color:#1a3a6e;padding:12px;font-size:14px" onclick="cm()">'+(lng==="he"?"ביטול":"Cancel")+'</button>'+
+    '</div></div>';
+  g("MB").classList.add("on");
+}
+function confirmDeleteAppt(id){
+  cm();
+  if(!ADMIN_TOKEN) return;
   apiCall("appts/"+id,"DELETE",null,function(err){
     if(!err){ appts=appts.filter(function(a){ return a.id!=id; }); renderCal(); }
   });
@@ -361,19 +379,22 @@ function buildCalHTML(){
     H+='<div style="flex:1;min-width:56px;border-right:1px solid #f0f4f8">';
     H+='<div style="height:'+HDR+'px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;text-align:center;color:'+(it?"#2B6CC4":"#1a3a6e")+';background:'+(it?"#e8f0fe":"#f8fafc")+';border-bottom:2px solid #e2e8f0">'+fmtDayLabel(d)+'</div>';
     H+='<div class="cal-day-body" data-date="'+ds+'" style="position:relative;height:'+gridH+'px;background:'+(it?"#f5f8ff":"#fff")+'" onclick="calBodyClick(event,\''+ds+'\')">';
-    // Grid lines
-    for(var i=0;i<N;i++){ H+='<div style="position:absolute;top:'+(i*SH)+'px;left:0;right:0;height:'+SH+'px;border-bottom:1px solid '+(i%2===0?"#e2e8f0":"#f5f7fa")+'"></div>'; }
-    // Appointment blocks (60 min = 2 slots)
+    // Grid lines: solid bold for hours, dashed light for half-hours
+    for(var i=0;i<N;i++){ H+='<div style="position:absolute;top:'+(i*SH)+'px;left:0;right:0;height:'+SH+'px;border-bottom:'+(i%2===0?'1px solid #b8c8da':'1px dashed #e8ecf2')+'"></div>'; }
+    // Appointment blocks
     da.forEach(function(a){
       var p=pts.find(function(x){ return x.id==a.patientId; });
       var nm=p?pn(p):(a.patientName||"?");
-      var si=Math.max(0,Math.min(timeToSlotIdx(a.time),N-2));
-      H+='<div style="position:absolute;top:'+(si*SH+1)+'px;left:2px;right:2px;height:'+(2*SH-3)+'px;background:#2B6CC418;border-left:3px solid #2B6CC4;border-radius:4px;padding:3px 18px 2px 5px;font-size:10px;font-weight:600;color:#1a4a90;overflow:hidden;cursor:grab;box-sizing:border-box;z-index:2;touch-action:none;user-select:none" ';
+      var si=Math.max(0,Math.min(timeToSlotIdx(a.time),N-1));
+      var ei=a.end_time?Math.max(si+1,Math.min(timeToSlotIdx(a.end_time),N)):si+2;
+      var ht=(ei-si)*SH-3;
+      var endLabel=a.end_time||addMinutes(a.time,60);
+      H+='<div style="position:absolute;top:'+(si*SH+1)+'px;left:2px;right:2px;height:'+ht+'px;background:#2B6CC418;border-left:3px solid #2B6CC4;border-radius:4px;padding:3px 18px 2px 5px;font-size:10px;font-weight:600;color:#1a4a90;overflow:hidden;cursor:grab;box-sizing:border-box;z-index:2;touch-action:none;user-select:none" ';
       H+='onclick="event.stopPropagation();'+(p?'op('+p.id+')':'')+'" ';
       H+='onpointerdown="calDragStart(event,'+a.id+')" ';
       H+='title="'+nm+(a.notes?' — '+a.notes:'')+'">';
       H+='<div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3">'+nm+'</div>';
-      H+='<div style="font-size:9px;opacity:.6;margin-top:1px">'+a.time+' – '+addMinutes(a.time,60)+'</div>';
+      H+='<div style="font-size:9px;opacity:.6;margin-top:1px">'+a.time+' – '+endLabel+'</div>';
       H+='<span style="position:absolute;right:3px;top:3px;font-size:9px;opacity:.4;cursor:pointer;touch-action:none" onclick="event.stopPropagation();deleteAppt('+a.id+')">&#x2715;</span>';
       H+='</div>';
     });
@@ -443,9 +464,16 @@ function calOnCancel(e){
 }
 function updateApptDateTime(id,date,time){
   var a=appts.find(function(x){return x.id==id;}); if(!a) return;
-  a.date=date; a.time=time;
-  if(ADMIN_TOKEN) apiCall("appts/"+id,"PATCH",{date:date,time:time},function(){});
+  var dur=60;
+  if(a.end_time){ var si=timeToSlotIdx(a.time),ei=timeToSlotIdx(a.end_time); dur=Math.max(30,(ei-si)*30); }
+  a.date=date; a.time=time; a.end_time=addMinutes(time,dur);
+  if(ADMIN_TOKEN) apiCall("appts/"+id,"PATCH",{date:date,time:time,end_time:a.end_time},function(){});
   renderCal();
+}
+function caTimeChanged(){
+  var st=g("ca-time"),et=g("ca-etime"); if(!st||!et) return;
+  var opts=et.options;
+  for(var i=0;i<opts.length;i++){ if(opts[i].value===st.value){ et.selectedIndex=Math.min(i+2,opts.length-1); break; } }
 }
 function openNewAppt(){ openNewApptAt("",""); }
 function openNewApptAt(date,time,preselectId){
@@ -465,21 +493,30 @@ function openNewApptAt(date,time,preselectId){
     '<select id="ca-pat" '+iS+'>'+pO+'</select>'+
     '<label style="font-size:12px;color:#4a6a8a;font-weight:600;display:block;margin-bottom:5px">'+(lng==="he"?"תאריך":"Date")+'</label>'+
     '<input id="ca-date" type="date" value="'+(date||td)+'" '+iS+'>'+
-    '<label style="font-size:12px;color:#4a6a8a;font-weight:600;display:block;margin-bottom:5px">'+(lng==="he"?"שעה":"Time")+'</label>'+
-    '<select id="ca-time" '+iS+'>'+tO+'</select>'+
+    '<label style="font-size:12px;color:#4a6a8a;font-weight:600;display:block;margin-bottom:6px">'+(lng==="he"?"שעת התחלה וסיום":"Start &amp; end time")+'</label>'+
+    '<div style="display:flex;gap:8px;margin-bottom:14px">'+
+    '<div style="flex:1"><div style="font-size:10px;color:#6a8aaa;margin-bottom:3px">'+(lng==="he"?"התחלה":"Start")+'</div>'+
+    '<select id="ca-time" style="width:100%;padding:8px 6px;border:1px solid #d1d9e0;border-radius:8px;font-size:13px;background:#f8fafc;box-sizing:border-box" onchange="caTimeChanged()">'+tO+'</select></div>'+
+    '<div style="flex:1"><div style="font-size:10px;color:#6a8aaa;margin-bottom:3px">'+(lng==="he"?"סיום":"End")+'</div>'+
+    '<select id="ca-etime" style="width:100%;padding:8px 6px;border:1px solid #d1d9e0;border-radius:8px;font-size:13px;background:#f8fafc;box-sizing:border-box">'+tO+'</select></div>'+
+    '</div>'+
     '<label style="font-size:12px;color:#4a6a8a;font-weight:600;display:block;margin-bottom:5px">'+(lng==="he"?"הערות":"Notes")+'</label>'+
     '<input id="ca-notes" type="text" placeholder="'+(lng==="he"?"הערות...":"Notes...")+'" '+iS+'>'+
     '<div style="display:flex;gap:10px;margin-top:6px">'+
     '<button class="btn" style="flex:1;background:#2B6CC4;color:#fff;padding:11px;font-size:14px" onclick="saveNewAppt()">'+(lng==="he"?"שמור":"Save")+'</button>'+
     '<button class="btn" style="flex:1;background:#f1f5f9;color:#1a3a6e;padding:11px;font-size:14px" onclick="cm()">'+(lng==="he"?"ביטול":"Cancel")+'</button>'+
     '</div></div>';
-  if(!preselectId){ var ts=g("ca-time"); if(ts&&time) ts.value=time; }
+  if(!preselectId){
+    var ts=g("ca-time"); if(ts&&time){ ts.value=time; }
+    var te=g("ca-etime"); if(te){ te.value=addMinutes(time||"08:00",60); }
+  }
   g("MB").classList.add("on");
 }
 function saveNewAppt(){
-  var ep=g("ca-pat"),ed=g("ca-date"),et=g("ca-time"),en=g("ca-notes");
+  var ep=g("ca-pat"),ed=g("ca-date"),et=g("ca-time"),ee=g("ca-etime"),en=g("ca-notes");
   if(!ep||!ed||!et||!ep.value||!ed.value||!et.value) return;
-  addAppt({patientId:parseInt(ep.value),date:ed.value,time:et.value,notes:en?en.value:""});
+  var endT=ee&&ee.value&&ee.value>et.value?ee.value:addMinutes(et.value,60);
+  addAppt({patientId:parseInt(ep.value),date:ed.value,time:et.value,end_time:endT,notes:en?en.value:""});
   cm();
 }
 function openQuickNewPatient(d64,t64){
