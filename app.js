@@ -17,6 +17,8 @@ var calSH = 28; // slot height px, updated on each render
 var exDrag = null;
 var exReo = false; // click-to-reorder mode
 var exReoSel = null; // index of selected exercise in reorder mode
+var msReo = false; // milestone reorder mode
+var msReoSel = null; // selected milestone index
 var navSource = "p"; // track which view opened the patient detail ("d"=calendar, "p"=list)
 function navGoBack(){ gv(navSource||"p"); }
 var fuReadMap = {}; // {patientId: latestSeenNoteId} — tracks which follow-up notes admin has read
@@ -1093,7 +1095,7 @@ function saveEditPlan(planId){
   var milestones=[];
   for(var mi=0;mi<msTotal;mi++){
     var mf=g("ep_ms_from_"+mi),mt=g("ep_ms_to_"+mi),men=g("ep_ms_en_"+mi),mhe=g("ep_ms_he_"+mi);
-    if(!mf||mf.value==="__DEL__"||!mf.value) continue;
+    if(!mf||mf.value==="__DEL__") continue;
     milestones.push({weekFrom:parseInt(mf.value)||1,weekTo:parseInt(mt&&mt.value)||parseInt(mf.value)||1,text:men?men.value.trim():"",textHe:mhe?mhe.value.trim():""});
   }
   plan.milestones=milestones;
@@ -1138,26 +1140,72 @@ function deletePlan(planId){
   sv(); rplans();
 }
 
+function _msRow(m,i,clrs,bgs,isHe,editable){
+  var clr=clrs[i%clrs.length],bg=bgs[i%bgs.length];
+  var txt=(isHe&&m.textHe)?m.textHe:(m.text||'');
+  var wFrom=m.weekFrom||1,wTo=m.weekTo||wFrom;
+  var wLabel=isHe?('שב\' '+(wFrom===wTo?wFrom:wFrom+'–'+wTo)):('Wk '+(wFrom===wTo?wFrom:wFrom+'–'+wTo));
+  var sel=editable&&msReo&&msReoSel===i;
+  return '<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:7px;transition:all 0.15s'+(sel?';outline:2px solid #2B6CC4;border-radius:9px;padding:4px;background:rgba(43,108,196,0.04)':'')+'">'+
+    (editable&&msReo?
+      '<div onclick="msReoSelect('+i+')" style="cursor:pointer;flex-shrink:0;display:flex;align-items:center;padding-top:2px">'+
+      '<div style="width:22px;height:22px;border-radius:50%;border:2.5px solid '+(sel?'#2B6CC4':'#b0c4d8')+';background:'+(sel?'#2B6CC4':'#fff')+';display:flex;align-items:center;justify-content:center;transition:all 0.15s">'+
+      (sel?'<div style="width:8px;height:8px;border-radius:50%;background:#fff"></div>':'')+
+      '</div></div>':'')+
+    '<div style="flex-shrink:0;background:'+clr+';color:#fff;border-radius:6px;padding:4px 7px;font-size:10px;font-weight:700;line-height:1.3;min-width:42px;text-align:center;margin-top:2px">'+wLabel+'</div>'+
+    '<div style="flex:1;background:'+bg+';border-left:3px solid '+clr+';border-radius:0 8px 8px 0;padding:8px 11px;font-size:13px;color:#1a2535;line-height:1.5">'+(txt||('<span style="color:#9ab;font-style:italic">'+(isHe?'ללא טקסט':'No text')+'</span>'))+'</div>'+
+    '</div>';
+}
 function renderMilestones(plan,isHe){
   var ms=plan.milestones||[];
   if(!ms.length) return '';
   var clrs=['#2B6CC4','#6d28d9','#00a86b','#c8801e','#c0392b'];
   var bgs=['rgba(43,108,196,0.08)','rgba(109,40,217,0.08)','rgba(0,168,107,0.08)','rgba(200,128,30,0.08)','rgba(192,57,43,0.08)'];
-  var html='<div style="margin-bottom:14px">'+
-    '<div style="font-size:11px;font-weight:700;color:#1a3a6e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📅 '+(isHe?'ציר זמן מטרות':'Goal Timeline')+'</div>';
-  ms.forEach(function(m,i){
-    var clr=clrs[i%clrs.length];
-    var bg=bgs[i%bgs.length];
-    var txt=(isHe&&m.textHe)?m.textHe:(m.text||'');
-    if(!txt) return;
-    var wFrom=m.weekFrom||1,wTo=m.weekTo||wFrom;
-    var wLabel=isHe?('שב\' '+(wFrom===wTo?wFrom:wFrom+'–'+wTo)):('Wk '+(wFrom===wTo?wFrom:wFrom+'–'+wTo));
-    html+='<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:7px">'+
-      '<div style="flex-shrink:0;background:'+clr+';color:#fff;border-radius:6px;padding:4px 7px;font-size:10px;font-weight:700;line-height:1.3;min-width:42px;text-align:center;margin-top:2px">'+wLabel+'</div>'+
-      '<div style="flex:1;background:'+bg+';border-left:3px solid '+clr+';border-radius:0 8px 8px 0;padding:8px 11px;font-size:13px;color:#1a2535;line-height:1.5">'+txt+'</div>'+
-      '</div>';
-  });
+  var html='<div style="margin-bottom:14px"><div style="font-size:11px;font-weight:700;color:#1a3a6e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📅 '+(isHe?'ציר זמן מטרות':'Goal Timeline')+'</div>';
+  ms.forEach(function(m,i){ html+=_msRow(m,i,clrs,bgs,isHe,false); });
   return html+'</div>';
+}
+function renderMilestonesAdmin(plan,isHe){
+  var ms=plan.milestones||[];
+  if(!ms.length) return '';
+  var clrs=['#2B6CC4','#6d28d9','#00a86b','#c8801e','#c0392b'];
+  var bgs=['rgba(43,108,196,0.08)','rgba(109,40,217,0.08)','rgba(0,168,107,0.08)','rgba(200,128,30,0.08)','rgba(192,57,43,0.08)'];
+  var html='<div style="margin-bottom:14px">'+
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'+
+    '<div style="font-size:11px;font-weight:700;color:#1a3a6e;text-transform:uppercase;letter-spacing:.5px">📅 '+(isHe?'ציר זמן מטרות':'Goal Timeline')+'</div>'+
+    (ms.length>1?(msReo?
+      '<button onclick="msReoToggle()" style="font-size:11px;background:#2B6CC4;color:#fff;border:none;border-radius:6px;padding:3px 9px;cursor:pointer;font-weight:600">✓ '+(isHe?'סיום':'Done')+'</button>':
+      '<button onclick="msReoToggle()" style="font-size:11px;background:#f5f0ff;color:#6d28d9;border:1px solid rgba(109,40,217,0.2);border-radius:6px;padding:3px 9px;cursor:pointer;font-weight:600">⇅ '+(isHe?'סדר מחדש':'Reorder')+'</button>'):'')+'</div>';
+  if(msReo&&msReoSel===null) html+='<div style="font-size:12px;color:#2B6CC4;padding:4px 0 8px;font-weight:600">'+(isHe?'בחר מטרה להזזה ⬤':'Select a goal to move ⬤')+'</div>';
+  ms.forEach(function(m,i){
+    html+=msReoGap(i,ms.length);
+    html+=_msRow(m,i,clrs,bgs,isHe,true);
+  });
+  html+=msReoGap(ms.length,ms.length);
+  return html+'</div>';
+}
+function msReoToggle(){ msReo=!msReo; msReoSel=null; rplanOverview(curPlanId); }
+function msReoSelect(idx){ msReoSel=(msReoSel===idx?null:idx); rplanOverview(curPlanId); }
+function msReoMove(toIdx){
+  if(msReoSel===null) return;
+  var f=msReoSel; msReoSel=null; msReo=false;
+  var plan=(cur.workoutPlans||[]).find(function(p){ return p.id===curPlanId; });
+  if(!plan||!(plan.milestones||[]).length){rplanOverview(curPlanId);return;}
+  if(toIdx===f||toIdx===f+1){rplanOverview(curPlanId);return;}
+  var ms=plan.milestones.slice();
+  var item=ms.splice(f,1)[0];
+  ms.splice(toIdx>f?toIdx-1:toIdx,0,item);
+  plan.milestones=ms;
+  pts=pts.map(function(p){return p.id===cur.id?cur:p;});
+  sv(); rplanOverview(curPlanId);
+}
+function msReoGap(pos,n){
+  if(!msReo||msReoSel===null) return '';
+  var adj=(pos===msReoSel||pos===msReoSel+1);
+  if(adj) return '<div style="height:5px"></div>';
+  var isH=lng==="he";
+  var lbl=pos===0?(isH?'⬆ העבר לראש':'⬆ Move to top'):pos===n?(isH?'⬇ העבר לסוף':'⬇ Move to bottom'):(isH?'↕ הזז לכאן':'↕ Move here');
+  return '<div onclick="msReoMove('+pos+')" style="cursor:pointer;margin:3px 0;padding:7px 12px;border-radius:8px;background:rgba(43,108,196,0.1);border:2px dashed rgba(43,108,196,0.4);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#2B6CC4" onmouseenter="this.style.background=\'rgba(43,108,196,0.22)\'" onmouseleave="this.style.background=\'rgba(43,108,196,0.1)\'">'+lbl+'</div>';
 }
 
 // Open a specific plan (show goals overview)
@@ -1186,7 +1234,7 @@ function rplanOverview(planId){
       '<div style="background:#fff8e8;border-radius:10px;padding:9px 13px;border-left:3px solid #e8a020;margin-bottom:14px;font-size:12px;color:#7a5c00">'+
       '💡 '+(isHe?"לחץ \'ערוך תוכנית\' כדי להוסיף מטרות":"Click \'Edit Program\' to add goals")+'</div>'
     )+
-    renderMilestones(plan,isHe)+
+    renderMilestonesAdmin(plan,isHe)+
     (plan.type==="periodized"?
       (plan.phases||[]).map(function(ph,pi){
         var phName=isHe&&ph.nameHe?ph.nameHe:ph.name;
