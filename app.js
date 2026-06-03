@@ -15,6 +15,8 @@ var calWeekOffset = 0;
 var calDrag = null;
 var calSH = 28; // slot height px, updated on each render
 var exDrag = null;
+var navSource = "p"; // track which view opened the patient detail ("d"=calendar, "p"=list)
+function navGoBack(){ gv(navSource||"p"); }
 var fuReadMap = {}; // {patientId: latestSeenNoteId} — tracks which follow-up notes admin has read
 
 function loadFuRead(){ try{ fuReadMap=JSON.parse(localStorage.getItem("ep_furead")||"{}"); }catch(e){ fuReadMap={}; } }
@@ -463,7 +465,7 @@ function calDragStart(e,apptId){
   document.body.appendChild(ghost);
   el.style.opacity='.25';
   el.setPointerCapture(e.pointerId);
-  calDrag={id:apptId,el:el,ghost:ghost,ox:e.clientX-rect.left,oy:e.clientY-rect.top,pid:e.pointerId,origDate:a.date,origTime:a.time};
+  calDrag={id:apptId,el:el,ghost:ghost,ox:e.clientX-rect.left,oy:e.clientY-rect.top,pid:e.pointerId,origDate:a.date,origTime:a.time,startX:e.clientX,startY:e.clientY,moved:false};
   el.addEventListener('pointermove',calOnMove);
   el.addEventListener('pointerup',calOnUp);
   el.addEventListener('pointercancel',calOnCancel);
@@ -472,6 +474,10 @@ function calOnMove(e){
   if(!calDrag) return;
   calDrag.ghost.style.left=(e.clientX-calDrag.ox)+'px';
   calDrag.ghost.style.top=(e.clientY-calDrag.oy)+'px';
+  if(!calDrag.moved){
+    var dx=e.clientX-calDrag.startX, dy=e.clientY-calDrag.startY;
+    if(dx*dx+dy*dy>36) calDrag.moved=true; // >6px = real drag
+  }
 }
 function calOnUp(e){
   if(!calDrag) return;
@@ -492,14 +498,18 @@ function calOnUp(e){
     }
   }
   var drag=calDrag; calDrag=null;
-  if(newDate&&newTime&&(newDate!==drag.origDate||newTime!==drag.origTime)){
+  if(drag.moved && newDate&&newTime&&(newDate!==drag.origDate||newTime!==drag.origTime)){
+    // Real drag to a different slot — move appointment
     updateApptDateTime(drag.id,newDate,newTime);
-  } else {
-    // Tap (no drag movement) — navigate to patient profile
+  } else if(!drag.moved){
+    // True click (no movement) — navigate to patient profile
     if(auth==="admin"){
       var a=appts.find(function(x){ return x.id==drag.id; });
-      if(a){ var pid=a.patient_id||a.patientId; var p=pts.find(function(x){ return x.id==pid; }); if(p){ op(p.id); return; } }
+      if(a){ var pid=a.patient_id||a.patientId; var p=pts.find(function(x){ return x.id==pid; }); if(p){ op(p.id,"d"); return; } }
     }
+    renderCal();
+  } else {
+    // Dragged but dropped on same slot — just redraw
     renderCal();
   }
 }
@@ -718,7 +728,8 @@ function rs(){
 }
 
 // ── Open Patient ──
-function op(id){
+function op(id, source){
+  navSource = source || (g("vd")&&!g("vd").classList.contains("hid") ? "d" : "p");
   cur=pts.find(function(p){ return p.id===id; }); ctab="ex"; gv("pat"); rpd();
   if(auth==="admin"){ markNotesRead(id); rpl(); }
   // Fetch fresh data from Supabase in background to get latest workout history
@@ -1301,12 +1312,10 @@ function _exDragStart(el, idx, meta, e){
   ghost.style.cssText='position:fixed;z-index:9999;pointer-events:none;left:'+rect.left+'px;top:'+rect.top+'px;width:'+rect.width+'px;opacity:0.82;box-shadow:0 8px 28px rgba(43,108,196,.3);border-radius:10px;transform:scale(1.02);background:#fff;box-sizing:border-box';
   document.body.appendChild(ghost);
   el.style.opacity='0.3';
-  var handle=e.currentTarget;
-  handle.setPointerCapture(e.pointerId);
-  exDrag=Object.assign({el:el,ghost:ghost,handle:handle,pid:e.pointerId,fromIdx:idx,ox:e.clientX-rect.left,oy:e.clientY-rect.top},meta);
-  handle.addEventListener('pointermove',exOnMove);
-  handle.addEventListener('pointerup',exOnUp);
-  handle.addEventListener('pointercancel',exOnCancel);
+  exDrag=Object.assign({el:el,ghost:ghost,fromIdx:idx,ox:e.clientX-rect.left,oy:e.clientY-rect.top},meta);
+  document.addEventListener('pointermove',exOnMove);
+  document.addEventListener('pointerup',exOnUp);
+  document.addEventListener('pointercancel',exOnCancel);
 }
 function initDrag(el,idx,planId,phaseIdx,dayId){
   var h=el.querySelector('.ex-drag-handle'); if(!h) return;
@@ -1341,10 +1350,9 @@ function exShowDrop(idx){
 }
 function _exDragEnd(e){
   if(!exDrag) return;
-  exDrag.handle.removeEventListener('pointermove',exOnMove);
-  exDrag.handle.removeEventListener('pointerup',exOnUp);
-  exDrag.handle.removeEventListener('pointercancel',exOnCancel);
-  try{ exDrag.handle.releasePointerCapture(exDrag.pid); }catch(err){}
+  document.removeEventListener('pointermove',exOnMove);
+  document.removeEventListener('pointerup',exOnUp);
+  document.removeEventListener('pointercancel',exOnCancel);
   exDrag.el.style.opacity='';
   document.body.removeChild(exDrag.ghost);
   var old=document.getElementById('ex-drop-line'); if(old) old.remove();
