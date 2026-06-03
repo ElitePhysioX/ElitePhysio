@@ -2027,7 +2027,7 @@ function showFirstTimeWelcome(p){
     return '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"פציעה/מצב":"Injury/Condition")+' (EN)</label><input class="inp" id="w_injury_en" value="'+wiB.en+'"></div>'+
     '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"פציעה/מצב":"Injury/Condition")+' (עברית)</label><input class="inp" id="w_injury_he" dir="rtl" value="'+wiB.he+'"></div>'+
     '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"המטרה שלי":"My Goal")+' (EN)</label><input class="inp" id="w_goal_en" value="'+wgB.en+'"></div>'+
-    '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"המטרה שלי":"My Goal")+' (עברית)</label><input class="inp" id="w_goal_he" dir="rtl" value="'+wgB.he+'"></div>'; })())+
+    '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"המטרה שלי":"My Goal")+' (עברית)</label><input class="inp" id="w_goal_he" dir="rtl" value="'+wgB.he+'"></div>'; })()+
     '</div>'+
     '<button class="btn" style="width:100%;padding:12px;font-size:15px;font-weight:700" onclick="saveWelcome()">'+
     (isHe?"כניסה לתוכנית שלי ➜":"Enter My Program ➜")+'</button>';
@@ -2131,7 +2131,7 @@ function showPatientProfile(){
     '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"המטרה שלי":"My Goal")+' (EN)</label>'+
     '<input class="inp" id="pp_goal_en" value="'+nB.en+'"></div>'+
     '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"המטרה שלי":"My Goal")+' (עברית)</label>'+
-    '<input class="inp" id="pp_goal_he" dir="rtl" value="'+nB.he+'"></div>'; })())+
+    '<input class="inp" id="pp_goal_he" dir="rtl" value="'+nB.he+'"></div>'; })()+
     '</div>'+
     '<div style="display:flex;gap:8px">'+
     '<button class="btn btnd" onclick="cm()" style="flex:1">'+(isHe?"ביטול":"Cancel")+'</button>'+
