@@ -331,8 +331,10 @@ function loadAppts(cb){
 }
 function addAppt(a){
   if(!ADMIN_TOKEN) return;
-  apiCall("appts","POST",a,function(err){
-    if(!err){ loadAppts(function(){ renderCal(); }); }
+  if(!a.id) a.id = Math.floor(Date.now() / 1000); // Unix seconds fits in INT4 until 2038
+  appts.push(a); renderCal(); // show immediately
+  apiCall("appts","POST",a,function(err,d){
+    loadAppts(function(){ renderCal(); }); // sync real ids from server
   });
 }
 function deleteAppt(id){
@@ -375,7 +377,7 @@ function buildCalHTML(){
   var wLabel=ws.toLocaleDateString(lo,{month:"short",day:"numeric"})+" – "+we.toLocaleDateString(lo,{month:"short",day:"numeric",year:"numeric"});
   // Time labels (hours only)
   var tL=""; for(var i=0;i<N;i+=2){ tL+='<div style="position:absolute;top:'+(i*SH-5)+'px;right:3px;font-size:9px;color:#9aabcf;line-height:1">'+String(7+i/2).padStart(2,'0')+':00</div>'; }
-  var H='<div class="card" style="padding:0;overflow:hidden;margin-bottom:24px">';
+  var H='<div class="card cal-card" style="padding:0;overflow:hidden;margin-bottom:24px">';
   // Header bar
   H+='<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid #e2e8f0;background:#f8fafc;flex-wrap:wrap;gap:6px">';
   H+='<div style="display:flex;align-items:center;gap:6px">';
