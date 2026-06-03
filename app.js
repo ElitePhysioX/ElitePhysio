@@ -77,7 +77,8 @@ function apiCall(path, method, body, cb){
 function showToast(msg, type){
   var t=document.createElement("div");
   t.textContent=msg;
-  t.style.cssText="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:"+(type==="error"?"#c0392b":"#2B6CC4")+";color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;z-index:99999;box-shadow:0 4px 16px rgba(0,0,0,.25);max-width:90vw;text-align:center";
+  var bg=type==="error"?"#c0392b":type==="success"?"#00a86b":"#2B6CC4";
+  t.style.cssText="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:"+bg+";color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;z-index:99999;box-shadow:0 4px 16px rgba(0,0,0,.25);max-width:90vw;text-align:center";
   document.body.appendChild(t);
   setTimeout(function(){ t.remove(); }, 4000);
 }
@@ -350,6 +351,7 @@ function addAppt(a){
       console.error("Appointment save error:", err.message, d);
       showToast((d&&d.error)||err.message||"Save failed — check console", "error");
     } else {
+      showToast(lng==="he"?"התור נשמר בהצלחה ✓":"Appointment saved ✓","success");
       loadAppts(function(){ renderCal(); }); // sync real ids from server
     }
   });
@@ -434,7 +436,7 @@ function buildCalHTML(){
       var calDot=(auth==="admin"&&p&&hasNewNote(p))?'<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#f97316;vertical-align:middle;margin-right:3px;flex-shrink:0"></span>':'';
       H+='<div style="display:flex;align-items:center;gap:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3">'+calDot+'<span style="overflow:hidden;text-overflow:ellipsis">'+nm+'</span></div>';
       H+='<div style="font-size:9px;opacity:.6;margin-top:1px">'+a.time+' – '+endLabel+'</div>';
-      H+='<span style="position:absolute;right:3px;top:3px;font-size:9px;opacity:.4;cursor:pointer;touch-action:none" onclick="event.stopPropagation();deleteAppt('+a.id+')">&#x2715;</span>';
+      H+='<span style="position:absolute;right:3px;top:3px;font-size:9px;opacity:.4;cursor:pointer;touch-action:none" onpointerdown="event.stopPropagation()" onclick="event.stopPropagation();deleteAppt('+a.id+')">&#x2715;</span>';
       H+='</div>';
     });
     H+='</div></div>'; // day-body + day-col
