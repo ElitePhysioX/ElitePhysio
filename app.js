@@ -1319,15 +1319,15 @@ function _exDragStart(el, idx, meta, e){
   el.addEventListener('pointercancel',exOnCancel);
 }
 function initDrag(el,idx,planId,phaseIdx,dayId){
-  var h=el.querySelector('.ex-drag-handle'); if(!h) return;
-  h.addEventListener('pointerdown',function(e){
+  el.addEventListener('pointerdown',function(e){
+    if(!e.target.closest('.ex-drag-handle')) return;
     if(e.pointerType==='mouse'&&e.button!==0) return;
     _exDragStart(el,idx,{flat:false,planId:planId,phaseIdx:phaseIdx,dayId:dayId},e);
   });
 }
 function initDragFlat(el,idx){
-  var h=el.querySelector('.ex-drag-handle'); if(!h) return;
-  h.addEventListener('pointerdown',function(e){
+  el.addEventListener('pointerdown',function(e){
+    if(!e.target.closest('.ex-drag-handle')) return;
     if(e.pointerType==='mouse'&&e.button!==0) return;
     _exDragStart(el,idx,{flat:true},e);
   });
