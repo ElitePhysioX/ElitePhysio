@@ -15,6 +15,8 @@ var calWeekOffset = 0;
 var calDrag = null;
 var calSH = 28; // slot height px, updated on each render
 var exDrag = null;
+var exReo = false; // click-to-reorder mode
+var exReoSel = null; // index of selected exercise in reorder mode
 var navSource = "p"; // track which view opened the patient detail ("d"=calendar, "p"=list)
 function navGoBack(){ gv(navSource||"p"); }
 var fuReadMap = {}; // {patientId: latestSeenNoteId} — tracks which follow-up notes admin has read
@@ -1194,13 +1196,18 @@ function rex(){
     }).join(""))+'</div>'+
     // Exercises header
     '<div class="row"><span class="st">'+L().ex+' — '+dayName+'</span>'+
-    '<div style="display:flex;gap:8px">'+
-    '<button class="btn btnpu" style="font-size:12px" onclick="aisPlan()">'+L().ai+'</button>'+
-    '<button class="btn" style="font-size:12px;background:#f0f5ff;color:#2B6CC4;border:1px solid rgba(43,108,196,0.2)" onclick="omLib()">📚 Library</button>'+
-    '<button class="btn" style="font-size:12px" onclick="om(\'ae\')">'+L().ae+'</button></div></div>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+    (exReo?
+      '<button class="btn" style="font-size:12px;background:#2B6CC4;color:#fff" onclick="exReoToggle()">✓ '+(isHe?'סיום':'Done')+'</button>':
+      '<button class="btn btnpu" style="font-size:12px" onclick="aisPlan()">'+L().ai+'</button>'+
+      '<button class="btn" style="font-size:12px;background:#f0f5ff;color:#2B6CC4;border:1px solid rgba(43,108,196,0.2)" onclick="omLib()">📚 Library</button>'+
+      '<button class="btn" style="font-size:12px" onclick="om(\'ae\')">'+L().ae+'</button>'+
+      (exercises.length>1?'<button class="btn" style="font-size:12px;background:#f5f0ff;color:#6d28d9;border:1px solid rgba(109,40,217,0.2)" onclick="exReoToggle()">⇅ '+(isHe?'סדר מחדש':'Reorder')+'</button>':'')
+    )+'</div></div>'+
+    (exReo&&exReoSel===null?'<div style="font-size:13px;color:#2B6CC4;padding:8px 0;font-weight:600">'+
+      (isHe?'בחר תרגיל להזזה ⬤':'Select an exercise to move ⬤')+'</div>':'')+
     (exercises.length===0?'<div style="color:#4a6a8a;font-size:14px;padding:14px 0">'+L().nx+'</div>':"")+
     exercises.map(function(e,i){
-      // Always follow page language if translation exists, fall back to displayLng
       var isHeE;
       if(lng==="he" && e.nameHe) isHeE=true;
       else if(lng==="en" && e.name) isHeE=false;
@@ -1211,23 +1218,30 @@ function rex(){
       var lngBadge=isHeE?'<span style="font-size:10px;background:#e8f0ff;color:#2B6CC4;border-radius:4px;padding:1px 5px;margin-left:4px">🇮🇱</span>':
         '<span style="font-size:10px;background:#f0f5e8;color:#2a7a3a;border-radius:4px;padding:1px 5px;margin-left:4px">🇺🇸</span>';
       var setsReps='<span style="font-weight:600;color:#2B6CC4">'+e.sets+'</span> &times; <span style="font-weight:600;color:#2B6CC4">'+e.reps+'</span>';
-      return '<div class="xcard" data-ex-idx="'+i+'" id="excard_'+i+'" style="direction:'+(isHeE?"rtl":"ltr")+';transition:all 0.2s">'+
-        '<div style="display:flex;justify-content:space-between;align-items:flex-start">'+
+      var sel=exReo&&exReoSel===i;
+      var circle=exReo?('<div onclick="exReoSelect('+i+')" style="cursor:pointer;display:flex;align-items:center;padding:'+(isHeE?'0 0 0 10px':'0 10px 0 0')+'">'+
+        '<div style="width:24px;height:24px;border-radius:50%;border:2.5px solid '+(sel?'#2B6CC4':'#b0c4d8')+';background:'+(sel?'#2B6CC4':'#fff')+';flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.15s">'+
+        (sel?'<div style="width:9px;height:9px;border-radius:50%;background:#fff"></div>':'')+
+        '</div></div>'):'';
+      return exReoGap(i,exercises.length,'exReoMovePlan')+
+        '<div class="xcard" id="excard_'+i+'" style="direction:'+(isHeE?"rtl":"ltr")+';transition:all 0.18s'+(sel?';border:2px solid #2B6CC4;background:rgba(43,108,196,0.06)':'')+'">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start">'+(isHeE&&exReo?'':'')+circle+
         '<div style="flex:1">'+
         '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">'+bdg("#"+(i+1))+
         '<span style="font-weight:700;font-size:15px;color:#1a3a6e">'+eName+'</span>'+lngBadge+
-        '<span class="ex-drag-handle" style="font-size:15px;color:#a0b8d0;margin-left:6px;cursor:grab;touch-action:none;padding:2px 4px;border-radius:3px;user-select:none" title="Hold to drag">⠿</span></div>'+
+        (exReo?'':'<span class="ex-drag-handle" style="font-size:15px;color:#a0b8d0;margin-left:6px;cursor:grab;touch-action:none;padding:2px 4px;border-radius:3px;user-select:none" title="Hold to drag">⠿</span>')+
+        '</div>'+
         '<div style="font-size:13px;color:#4a6a8a;margin-bottom:4px">'+setsReps+' reps</div>'+
         (eDesc?'<div style="font-size:13px;color:#1a2535;margin-bottom:3px">'+eDesc+'</div>':"")+
         (eTips?'<div style="font-size:13px;color:#00a86b;margin-bottom:6px">&#128161; '+eTips+'</div>':"")+
         '<a href="'+ytUrl(eName)+'" target="_blank" style="font-size:12px;color:#6d28d9;border:1px solid rgba(109,40,217,0.3);border-radius:5px;padding:4px 11px;text-decoration:none;font-weight:600">'+L().wv+'</a></div>'+
-        '<div style="display:flex;flex-direction:column;gap:4px;margin-'+(isHeE?'right':'left')+':8px">'+
+        (exReo?'':'<div style="display:flex;flex-direction:column;gap:4px;margin-'+(isHeE?'right':'left')+':8px">'+
         '<button class="btn btnd" style="padding:4px 9px;font-size:12px" onclick="dePlan('+e.id+')">&#10005;</button>'+
         '<button class="btn" style="padding:4px 9px;font-size:12px;background:#f0f5ff" onclick="om(\'ae\','+e.id+')">✏️</button>'+
-        '</div></div></div>';
-    }).join("");
-  // Init drag listeners after render
-  setTimeout(function(){
+        '</div>')+
+        '</div></div>';
+    }).join("") + exReoGap(exercises.length,exercises.length,'exReoMovePlan');
+  if(!exReo) setTimeout(function(){
     exercises.forEach(function(_,i){
       var el=document.getElementById("excard_"+i);
       if(el && window.initDrag) initDrag(el,i,editDay.planId,editDay.phaseIdx,editDay.dayId);
@@ -1263,13 +1277,20 @@ var _origSe2 = null;
 // Old admin exercise list (used when no plans, or as fallback)
 function rexFlat(){
   var p=cur;
+  var exercises=p.exercises||[];
   g("pet").innerHTML=
     '<div class="row"><span class="st">'+L().ex+'</span><div style="display:flex;gap:8px;flex-wrap:wrap">'+
-    '<button class="btn btnpu" style="font-size:12px" onclick="ais()">'+L().ai+'</button>'+
-    '<button class="btn" style="font-size:12px;background:#f0f5ff;color:#2B6CC4;border:1px solid rgba(43,108,196,0.3)" onclick="omLib()">📚 Library</button>'+
-    '<button class="btn" style="font-size:12px" onclick="om(\'ae\')">'+L().ae+'</button></div></div>'+
-    (!(p.exercises||[]).length?'<div style="color:#4a6a8a;font-size:14px;padding:14px 0">'+L().nx+'</div>':"")+
-    (p.exercises||[]).map(function(e,i){
+    (exReo?
+      '<button class="btn" style="font-size:12px;background:#2B6CC4;color:#fff" onclick="exReoToggle()">✓ '+(lng==="he"?'סיום':'Done')+'</button>':
+      '<button class="btn btnpu" style="font-size:12px" onclick="ais()">'+L().ai+'</button>'+
+      '<button class="btn" style="font-size:12px;background:#f0f5ff;color:#2B6CC4;border:1px solid rgba(43,108,196,0.3)" onclick="omLib()">📚 Library</button>'+
+      '<button class="btn" style="font-size:12px" onclick="om(\'ae\')">'+L().ae+'</button>'+
+      (exercises.length>1?'<button class="btn" style="font-size:12px;background:#f5f0ff;color:#6d28d9;border:1px solid rgba(109,40,217,0.2)" onclick="exReoToggle()">⇅ '+(lng==="he"?'סדר מחדש':'Reorder')+'</button>':'')
+    )+'</div></div>'+
+    (exReo&&exReoSel===null?'<div style="font-size:13px;color:#2B6CC4;padding:8px 0;font-weight:600">'+
+      (lng==="he"?'בחר תרגיל להזזה ⬤':'Select an exercise to move ⬤')+'</div>':'')+
+    (!exercises.length?'<div style="color:#4a6a8a;font-size:14px;padding:14px 0">'+L().nx+'</div>':"")+
+    exercises.map(function(e,i){
       var isHe;
       if(lng==="he" && e.nameHe) isHe=true;
       else if(lng==="en" && e.name) isHe=false;
@@ -1280,27 +1301,66 @@ function rexFlat(){
       var lngBadge = isHe ? '<span style="font-size:10px;background:#e8f0ff;color:#2B6CC4;border-radius:4px;padding:1px 5px;margin-left:4px">🇮🇱 HE</span>' :
                             '<span style="font-size:10px;background:#f0f5e8;color:#2a7a3a;border-radius:4px;padding:1px 5px;margin-left:4px">🇺🇸 EN</span>';
       var setsReps = '<span style="font-weight:600;color:#2B6CC4">'+e.sets+'</span> &times; <span style="font-weight:600;color:#2B6CC4">'+e.reps+'</span>';
-      return '<div class="xcard" data-ex-idx="'+i+'" id="excard_'+i+'" style="direction:'+(isHe?"rtl":"ltr")+';transition:all 0.2s">'+
-        '<div style="display:flex;justify-content:space-between;align-items:flex-start">'+
+      var sel=exReo&&exReoSel===i;
+      var circle=exReo?('<div onclick="exReoSelect('+i+')" style="cursor:pointer;display:flex;align-items:center;padding:'+(isHe?'0 0 0 10px':'0 10px 0 0')+'">'+
+        '<div style="width:24px;height:24px;border-radius:50%;border:2.5px solid '+(sel?'#2B6CC4':'#b0c4d8')+';background:'+(sel?'#2B6CC4':'#fff')+';flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.15s">'+
+        (sel?'<div style="width:9px;height:9px;border-radius:50%;background:#fff"></div>':'')+
+        '</div></div>'):'';
+      return exReoGap(i,exercises.length,'exReoMoveFlat')+
+        '<div class="xcard" id="excard_'+i+'" style="direction:'+(isHe?"rtl":"ltr")+';transition:all 0.18s'+(sel?';border:2px solid #2B6CC4;background:rgba(43,108,196,0.06)':'')+'">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start">'+circle+
         '<div style="flex:1">'+
         '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;flex-wrap:wrap">'+bdg("#"+(i+1))+
         '<span style="font-weight:700;font-size:15px;color:#1a3a6e">'+eName+'</span>'+lngBadge+
-        '<span class="ex-drag-handle" style="font-size:15px;color:#a0b8d0;margin-left:6px;cursor:grab;touch-action:none;padding:2px 4px;border-radius:3px;user-select:none" title="Hold to drag">⠿</span></div>'+
+        (exReo?'':'<span class="ex-drag-handle" style="font-size:15px;color:#a0b8d0;margin-left:6px;cursor:grab;touch-action:none;padding:2px 4px;border-radius:3px;user-select:none" title="Hold to drag">⠿</span>')+
+        '</div>'+
         '<div style="font-size:13px;color:#4a6a8a;margin-bottom:6px">'+setsReps+' reps</div>'+
         (eDesc?'<div style="font-size:13px;color:#1a2535;margin-bottom:6px;line-height:1.5">'+eDesc+'</div>':"")+
         (eTips?'<div style="font-size:13px;color:#00a86b;margin-bottom:8px;line-height:1.5">&#128161; '+eTips+'</div>':"")+
         '<a href="'+ytUrl(eName)+'" target="_blank" style="font-size:12px;color:#6d28d9;border:1px solid rgba(109,40,217,0.3);border-radius:5px;padding:4px 11px;text-decoration:none;font-weight:600;display:inline-block">'+L().wv+'</a></div>'+
-        '<div style="display:flex;flex-direction:column;gap:4px;margin-'+(isHe?'right':'left')+':8px">'+
+        (exReo?'':'<div style="display:flex;flex-direction:column;gap:4px;margin-'+(isHe?'right':'left')+':8px">'+
         '<button class="btn btnd" style="padding:4px 9px;font-size:12px" onclick="de('+e.id+')">&#10005;</button>'+
         '<button class="btn" style="padding:4px 9px;font-size:12px;background:#f0f5ff" onclick="om(\'ae\','+e.id+')">✏️</button>'+
-        '</div></div></div>';
-    }).join("");
-  setTimeout(function(){
+        '</div>')+
+        '</div></div>';
+    }).join("") + exReoGap(exercises.length,exercises.length,'exReoMoveFlat');
+  if(!exReo) setTimeout(function(){
     (p.exercises||[]).forEach(function(_,i){
       var el=document.getElementById("excard_"+i);
       if(el) initDragFlat(el,i);
     });
   },100);
+}
+
+// ── Exercise Click-to-Reorder ──
+function exReoToggle(){
+  exReo=!exReo; exReoSel=null;
+  cur._editingDay?rex():rexFlat();
+}
+function exReoSelect(idx){
+  exReoSel=(exReoSel===idx?null:idx);
+  cur._editingDay?rex():rexFlat();
+}
+function exReoMovePlan(toIdx){
+  if(exReoSel===null) return;
+  var f=exReoSel; exReoSel=null;
+  if(toIdx===f||toIdx===f+1){rex();return;}
+  reorderExPlan(cur._editingDay.planId,cur._editingDay.phaseIdx,cur._editingDay.dayId,f,toIdx);
+}
+function exReoMoveFlat(toIdx){
+  if(exReoSel===null) return;
+  var f=exReoSel; exReoSel=null;
+  if(toIdx===f||toIdx===f+1){rexFlat();return;}
+  reorderExFlat(f,toIdx);
+}
+function exReoGap(pos,n,fn){
+  if(!exReo||exReoSel===null) return '';
+  var adj=(pos===exReoSel||pos===exReoSel+1);
+  if(adj) return '<div style="height:5px"></div>';
+  var isH=lng==="he";
+  var lbl=pos===0?(isH?'⬆ העבר לראש הרשימה':'⬆ Move to top'):
+          pos===n?(isH?'⬇ העבר לסוף הרשימה':'⬇ Move to bottom'):(isH?'↕ הזז לכאן':'↕ Move here');
+  return '<div onclick="'+fn+'('+pos+')" style="cursor:pointer;margin:3px 0;padding:7px 12px;border-radius:8px;background:rgba(43,108,196,0.1);border:2px dashed rgba(43,108,196,0.4);display:flex;align-items:center;justify-content:center;gap:6px;font-size:12px;font-weight:700;color:#2B6CC4" onmouseenter="this.style.background=\'rgba(43,108,196,0.22)\'" onmouseleave="this.style.background=\'rgba(43,108,196,0.1)\'">'+lbl+'</div>';
 }
 
 // ── Exercise Drag-to-Reorder ──
