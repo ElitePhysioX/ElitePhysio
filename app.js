@@ -435,7 +435,7 @@ function buildCalHTML(){
       var ht=(ei-si)*SH-3;
       var endLabel=a.end_time||addMinutes(a.time,60);
       H+='<div style="position:absolute;top:'+(si*SH+1)+'px;left:2px;right:2px;height:'+ht+'px;background:#2B6CC418;border-left:3px solid #2B6CC4;border-radius:4px;padding:3px 18px 2px 5px;font-size:10px;font-weight:600;color:#1a4a90;overflow:hidden;cursor:grab;box-sizing:border-box;z-index:2;touch-action:none;user-select:none" ';
-      H+='onclick="event.stopPropagation();'+(p?'op('+p.id+')':'')+'" ';
+      H+='onclick="event.stopPropagation();'+(p?'op('+p.id+',\'d\')':'')+'" ';
       H+='onpointerdown="calDragStart(event,'+a.id+')" ';
       H+='title="'+nm+(a.notes?' — '+a.notes:'')+'">';
       var calDot=(auth==="admin"&&p&&hasNewNote(p))?'<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#f97316;vertical-align:middle;margin-right:3px;flex-shrink:0"></span>':'';
@@ -1305,25 +1305,24 @@ function rexFlat(){
 
 // ── Exercise Drag-to-Reorder ──
 function _exDragStart(el, idx, meta, e){
-  if(e.button!==undefined&&e.button!==0) return;
+  if(e.button!==0) return;
   e.preventDefault(); e.stopPropagation();
   var rect=el.getBoundingClientRect();
   var ghost=el.cloneNode(true);
-  ghost.style.cssText='position:fixed;z-index:9999;pointer-events:none;left:'+rect.left+'px;top:'+rect.top+'px;width:'+rect.width+'px;opacity:0.82;box-shadow:0 8px 28px rgba(43,108,196,.3);border-radius:10px;transform:scale(1.02);background:#fff;box-sizing:border-box';
+  ghost.style.cssText='position:fixed;z-index:9999;pointer-events:none;transition:none;left:'+rect.left+'px;top:'+rect.top+'px;width:'+rect.width+'px;opacity:0.82;box-shadow:0 8px 28px rgba(43,108,196,.3);border-radius:10px;transform:scale(1.02);background:#fff;box-sizing:border-box';
   document.body.appendChild(ghost);
   el.style.opacity='0.3';
   exDrag=Object.assign({el:el,ghost:ghost,fromIdx:idx,ox:e.clientX-rect.left,oy:e.clientY-rect.top},meta);
-  document.addEventListener('pointermove',exOnMove);
-  document.addEventListener('pointerup',exOnUp);
-  document.addEventListener('pointercancel',exOnCancel);
+  document.addEventListener('mousemove',exOnMove);
+  document.addEventListener('mouseup',exOnUp);
 }
 function initDrag(el,idx,planId,phaseIdx,dayId){
   var h=el.querySelector('.ex-drag-handle'); if(!h) return;
-  h.addEventListener('pointerdown',function(e){ _exDragStart(el,idx,{flat:false,planId:planId,phaseIdx:phaseIdx,dayId:dayId},e); });
+  h.addEventListener('mousedown',function(e){ _exDragStart(el,idx,{flat:false,planId:planId,phaseIdx:phaseIdx,dayId:dayId},e); });
 }
 function initDragFlat(el,idx){
   var h=el.querySelector('.ex-drag-handle'); if(!h) return;
-  h.addEventListener('pointerdown',function(e){ _exDragStart(el,idx,{flat:true},e); });
+  h.addEventListener('mousedown',function(e){ _exDragStart(el,idx,{flat:true},e); });
 }
 function exOnMove(e){
   if(!exDrag) return;
@@ -1350,9 +1349,8 @@ function exShowDrop(idx){
 }
 function _exDragEnd(e){
   if(!exDrag) return;
-  document.removeEventListener('pointermove',exOnMove);
-  document.removeEventListener('pointerup',exOnUp);
-  document.removeEventListener('pointercancel',exOnCancel);
+  document.removeEventListener('mousemove',exOnMove);
+  document.removeEventListener('mouseup',exOnUp);
   exDrag.el.style.opacity='';
   document.body.removeChild(exDrag.ghost);
   var old=document.getElementById('ex-drop-line'); if(old) old.remove();
