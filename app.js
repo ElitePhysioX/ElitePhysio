@@ -1305,24 +1305,32 @@ function rexFlat(){
 
 // ── Exercise Drag-to-Reorder ──
 function _exDragStart(el, idx, meta, e){
-  if(e.button!==0) return;
   e.preventDefault(); e.stopPropagation();
   var rect=el.getBoundingClientRect();
   var ghost=el.cloneNode(true);
+  ghost.removeAttribute('id');
   ghost.style.cssText='position:fixed;z-index:9999;pointer-events:none;transition:none;left:'+rect.left+'px;top:'+rect.top+'px;width:'+rect.width+'px;opacity:0.82;box-shadow:0 8px 28px rgba(43,108,196,.3);border-radius:10px;transform:scale(1.02);background:#fff;box-sizing:border-box';
   document.body.appendChild(ghost);
   el.style.opacity='0.3';
-  exDrag=Object.assign({el:el,ghost:ghost,fromIdx:idx,ox:e.clientX-rect.left,oy:e.clientY-rect.top},meta);
-  window.addEventListener('mousemove',exOnMove,true);
-  window.addEventListener('mouseup',exOnUp,true);
+  el.setPointerCapture(e.pointerId);
+  exDrag=Object.assign({el:el,ghost:ghost,pid:e.pointerId,fromIdx:idx,ox:e.clientX-rect.left,oy:e.clientY-rect.top},meta);
+  el.addEventListener('pointermove',exOnMove);
+  el.addEventListener('pointerup',exOnUp);
+  el.addEventListener('pointercancel',exOnCancel);
 }
 function initDrag(el,idx,planId,phaseIdx,dayId){
   var h=el.querySelector('.ex-drag-handle'); if(!h) return;
-  h.addEventListener('mousedown',function(e){ _exDragStart(el,idx,{flat:false,planId:planId,phaseIdx:phaseIdx,dayId:dayId},e); });
+  h.addEventListener('pointerdown',function(e){
+    if(e.pointerType==='mouse'&&e.button!==0) return;
+    _exDragStart(el,idx,{flat:false,planId:planId,phaseIdx:phaseIdx,dayId:dayId},e);
+  });
 }
 function initDragFlat(el,idx){
   var h=el.querySelector('.ex-drag-handle'); if(!h) return;
-  h.addEventListener('mousedown',function(e){ _exDragStart(el,idx,{flat:true},e); });
+  h.addEventListener('pointerdown',function(e){
+    if(e.pointerType==='mouse'&&e.button!==0) return;
+    _exDragStart(el,idx,{flat:true},e);
+  });
 }
 function exOnMove(e){
   if(!exDrag) return;
@@ -1349,8 +1357,10 @@ function exShowDrop(idx){
 }
 function _exDragEnd(e){
   if(!exDrag) return;
-  window.removeEventListener('mousemove',exOnMove,true);
-  window.removeEventListener('mouseup',exOnUp,true);
+  exDrag.el.removeEventListener('pointermove',exOnMove);
+  exDrag.el.removeEventListener('pointerup',exOnUp);
+  exDrag.el.removeEventListener('pointercancel',exOnCancel);
+  try{exDrag.el.releasePointerCapture(exDrag.pid);}catch(err){}
   exDrag.el.style.opacity='';
   document.body.removeChild(exDrag.ghost);
   var old=document.getElementById('ex-drop-line'); if(old) old.remove();
@@ -1364,7 +1374,7 @@ function exOnUp(e){
   drag.flat?reorderExFlat(drag.fromIdx,toIdx):reorderExPlan(drag.planId,drag.phaseIdx,drag.dayId,drag.fromIdx,toIdx);
 }
 function exOnCancel(e){
-  _exDragEnd(e); exDrag=null; rex();
+  var drag=_exDragEnd(e); exDrag=null; if(drag&&drag.flat) rexFlat(); else rex();
 }
 function reorderExPlan(planId,phaseIdx,dayId,from,to){
   var plan=(cur.workoutPlans||[]).find(function(p){ return p.id===planId; }); if(!plan) return;
