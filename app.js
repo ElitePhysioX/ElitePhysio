@@ -312,6 +312,11 @@ function dout(){ auth=null; cur=null; ADMIN_TOKEN=""; SB_KEY=""; sessionStorage.
 
 // ── Navigation ──
 function gv(v){
+  if(v==="pat"){
+    if(g("vd")&&!g("vd").classList.contains("hid")) navSource="d";
+    else if(g("vs")&&!g("vs").classList.contains("hid")) navSource="s";
+    else navSource="p";
+  }
   ["d","p","s","pat"].forEach(function(x){ g("v"+(x==="pat"?"pat":x)).classList.add("hid"); });
   g("v"+(v==="pat"?"pat":v)).classList.remove("hid");
   ["d","p","s"].forEach(function(x){ var nb=g("nb"+x); if(nb) nb.classList.toggle("on",x===v||(x==="p"&&v==="pat")); });
@@ -1312,9 +1317,13 @@ function _exDragStart(el, idx, meta, e){
   ghost.style.cssText='position:fixed;z-index:9999;pointer-events:none;transition:none;left:'+rect.left+'px;top:'+rect.top+'px;width:'+rect.width+'px;opacity:0.82;box-shadow:0 8px 28px rgba(43,108,196,.3);border-radius:10px;transform:scale(1.02);background:#fff;box-sizing:border-box';
   document.body.appendChild(ghost);
   el.style.opacity='0.3';
-  exDrag=Object.assign({el:el,ghost:ghost,fromIdx:idx,ox:e.clientX-rect.left,oy:e.clientY-rect.top},meta);
-  document.addEventListener('mousemove',exOnMove);
-  document.addEventListener('mouseup',exOnUp);
+  var cap=document.createElement('div');
+  cap.style.cssText='position:fixed;inset:0;z-index:9998;cursor:grabbing';
+  document.body.appendChild(cap);
+  exDrag=Object.assign({el:el,ghost:ghost,cap:cap,fromIdx:idx,ox:e.clientX-rect.left,oy:e.clientY-rect.top},meta);
+  cap.addEventListener('mousemove',exOnMove);
+  cap.addEventListener('mouseup',exOnUp);
+  cap.addEventListener('mouseleave',exOnCancel);
 }
 function initDrag(el,idx,planId,phaseIdx,dayId){
   var h=el.querySelector('.ex-drag-handle'); if(!h) return;
@@ -1349,8 +1358,12 @@ function exShowDrop(idx){
 }
 function _exDragEnd(e){
   if(!exDrag) return;
-  document.removeEventListener('mousemove',exOnMove);
-  document.removeEventListener('mouseup',exOnUp);
+  if(exDrag.cap){
+    exDrag.cap.removeEventListener('mousemove',exOnMove);
+    exDrag.cap.removeEventListener('mouseup',exOnUp);
+    exDrag.cap.removeEventListener('mouseleave',exOnCancel);
+    document.body.removeChild(exDrag.cap);
+  }
   exDrag.el.style.opacity='';
   document.body.removeChild(exDrag.ghost);
   var old=document.getElementById('ex-drop-line'); if(old) old.remove();
