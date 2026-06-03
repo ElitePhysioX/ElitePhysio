@@ -741,17 +741,18 @@ function rpd(){
     '<button class="btn btnd" style="font-size:12px" onclick="dp('+p.id+')">'+L().dl+'</button></div></div>'+
     (p.injury?'<div style="margin-top:13px;background:rgba(43,108,196,0.08);border-radius:8px;padding:11px 15px;border-left:3px solid #2B6CC4"><div style="font-size:11px;color:#2B6CC4;font-weight:700;text-transform:uppercase;margin-bottom:3px">'+L().ij+'</div><div style="font-size:14px;color:#1a2535">'+p.injury+'</div></div>':"")+
     (p.notes?'<div style="margin-top:8px;background:rgba(0,168,107,0.07);border-radius:8px;padding:11px 15px;border-left:3px solid #00a86b"><div style="font-size:11px;color:#00a86b;font-weight:700;text-transform:uppercase;margin-bottom:3px">'+(lng==="he"?"המטרה שלי":"My Goal")+'</div><div style="font-size:14px;color:#1a2535">'+p.notes+'</div></div>':"");
-  g("ptbs").innerHTML=[["ex",L().ex,(p.exercises||[]).length],["fu",L().fu,(p.followUps||[]).length],["cl",L().cl,null]].map(function(t){
+  var isHeLng=lng==="he";
+  g("ptbs").innerHTML=[["ex",L().ex,(p.exercises||[]).length],["fu",L().fu,(p.followUps||[]).length],["cl",L().cl,null],["hi",isHeLng?"היסטוריה":"History",(p.workoutHistory||[]).length]].map(function(t){
     return '<button class="nb'+(ctab===t[0]?" on":"")+'" onclick="sct(\''+t[0]+'\')">'+t[1]+(t[2]!==null?' <span style="background:rgba(255,255,255,0.25);border-radius:9px;padding:1px 7px;font-size:11px">'+t[2]+'</span>':"")+' </button>';
   }).join("");
-  rex(); rfu(); rcl();
-  ["ex","fu","cl"].forEach(function(t,i){ g(["pet","pft","pct"][i]).classList.toggle("hid",ctab!==t); });
+  rex(); rfu(); rcl(); rht();
+  ["ex","fu","cl","hi"].forEach(function(t,i){ g(["pet","pft","pct","pht"][i]).classList.toggle("hid",ctab!==t); });
 }
 
 function sct(t){
   ctab=t;
-  document.querySelectorAll("#ptbs .nb").forEach(function(b,i){ b.classList.toggle("on",["ex","fu","cl"][i]===t); });
-  ["ex","fu","cl"].forEach(function(x,i){ g(["pet","pft","pct"][i]).classList.toggle("hid",x!==t); });
+  document.querySelectorAll("#ptbs .nb").forEach(function(b,i){ b.classList.toggle("on",["ex","fu","cl","hi"][i]===t); });
+  ["ex","fu","cl","hi"].forEach(function(x,i){ g(["pet","pft","pct","pht"][i]).classList.toggle("hid",x!==t); });
 }
 
 // ── Workout Plans System ──
@@ -1971,7 +1972,10 @@ function renderPatientView(p){
       '<div style="font-size:14px;font-weight:700;color:#1a3a6e">'+h.date+'</div>'+
       '<div style="font-size:13px;color:#e67e22;font-weight:600">⏱ '+h.time+'</div></div>'+
       exRows+
-      (h.note?'<div style="font-size:12px;color:#4a6a8a;margin-top:8px;font-style:italic">💬 '+h.note+'</div>':'')+
+      (h.note?'<div style="font-size:12px;color:#4a6a8a;margin-top:8px;padding:6px 9px;background:#f0f5ff;border-radius:6px;border-left:3px solid #2B6CC4">'+
+        '<div style="font-size:10px;font-weight:700;color:#2B6CC4;margin-bottom:2px">'+(isHe?"הערה שלי":"My note")+'</div>'+h.note+'</div>':'')+
+      (h.adminReply?'<div style="font-size:12px;color:#1a2535;margin-top:6px;padding:6px 9px;background:#f0fff5;border-radius:6px;border-left:3px solid #00a86b">'+
+        '<div style="font-size:10px;font-weight:700;color:#00a86b;margin-bottom:2px">'+(isHe?"תגובת המטפל":"Therapist reply")+'</div>'+h.adminReply+'</div>':'')+
       '</div>';
   }).join(""):'<div style="color:#4a6a8a;font-size:14px;padding:14px 0;text-align:center">'+(isHe?"אין היסטוריה עדיין — סיים את האימון הראשון שלך!":"No history yet — complete your first workout!")+'</div>';
 
@@ -3287,7 +3291,73 @@ function deleteHistoryEntry(patientId, idx){
   if(!p||!p.workoutHistory) return;
   p.workoutHistory.splice(idx,1);
   pts=pts.map(function(x){ return x.id===patientId?p:x; });
-  sv(); omWorkoutHistory(patientId);
+  sv(); rht(); omWorkoutHistory(patientId);
+}
+
+// ── Admin History Tab ──
+function rht(){
+  var el=g("pht"); if(!el) return;
+  var p=cur; if(!p) return;
+  var isHe=lng==="he";
+  var hist=p.workoutHistory||[];
+  if(!hist.length){
+    el.innerHTML='<div style="color:#4a6a8a;font-size:14px;padding:20px 0;text-align:center">'+(isHe?"אין היסטוריית אימונים עדיין":"No workout history yet")+'</div>';
+    return;
+  }
+  el.innerHTML='<div class="st" style="margin-bottom:14px">'+(isHe?"היסטוריית אימונים":"Workout History")+'</div>'+
+    hist.map(function(h,i){
+      var exRows=(h.exercises||[]).map(function(e){
+        var n=(isHe&&e.nameHe)?e.nameHe:(e.name||"");
+        return '<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0;border-bottom:1px solid #f5f5f5;color:#4a6a8a">'+
+          '<span>'+n+'</span><span style="font-weight:600;color:#2B6CC4">'+e.sets+' × '+e.reps+'</span></div>';
+      }).join("");
+      var noteBlock=h.note?
+        '<div style="margin-top:8px;padding:8px 10px;background:#f0f5ff;border-radius:7px;border-left:3px solid #2B6CC4">'+
+        '<div style="font-size:11px;font-weight:700;color:#2B6CC4;margin-bottom:3px">'+(isHe?"הערת המטופל":"Patient note")+'</div>'+
+        '<div style="font-size:13px;color:#1a2535;line-height:1.6">'+h.note+'</div></div>':'';
+      var replyBlock=h.adminReply?
+        '<div style="margin-top:6px;padding:8px 10px;background:#f0fff5;border-radius:7px;border-left:3px solid #00a86b">'+
+        '<div style="font-size:11px;font-weight:700;color:#00a86b;margin-bottom:3px">'+(isHe?"תגובתך":"Your reply")+'</div>'+
+        '<div style="font-size:13px;color:#1a2535;line-height:1.6">'+h.adminReply+'</div>'+
+        '<button onclick="openHistoryReply('+i+')" style="margin-top:5px;background:#e8f5ee;border:1px solid #b8ddc8;border-radius:6px;padding:2px 9px;font-size:11px;cursor:pointer;color:#00a86b">'+(isHe?"ערוך תגובה":"Edit reply")+'</button></div>':
+        (h.note?'<button onclick="openHistoryReply('+i+')" style="margin-top:8px;background:#f0f5ff;border:1px solid #c8d8ee;border-radius:6px;padding:5px 13px;font-size:12px;cursor:pointer;color:#2B6CC4;font-weight:600">'+
+        '💬 '+(isHe?"השב למטופל":"Reply to patient")+'</button>':'');
+      return '<div class="xcard" style="margin-bottom:10px">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'+
+        '<div style="font-size:14px;font-weight:700;color:#1a3a6e">'+h.date+'</div>'+
+        '<div style="display:flex;gap:8px;align-items:center">'+
+        '<span style="font-size:13px;color:#e67e22;font-weight:600">⏱ '+h.time+'</span>'+
+        '<button onclick="deleteHistoryEntry('+p.id+','+i+')" style="background:#fff0f0;border:1px solid #ffd0d0;border-radius:6px;padding:3px 8px;font-size:12px;cursor:pointer;color:#e74c3c">✕</button>'+
+        '</div></div>'+
+        exRows+noteBlock+replyBlock+'</div>';
+    }).join("");
+}
+
+function openHistoryReply(idx){
+  var p=cur; if(!p||!p.workoutHistory||!p.workoutHistory[idx]) return;
+  var h=p.workoutHistory[idx];
+  var isHe=lng==="he";
+  var iS='style="width:100%;padding:9px 10px;border:1px solid #d1d9e0;border-radius:8px;font-size:14px;background:#f8fafc;box-sizing:border-box"';
+  g("MC").innerHTML=
+    '<div style="font-size:17px;font-weight:800;color:#1a3a6e;margin-bottom:14px">💬 '+(isHe?"השב למטופל":"Reply to patient")+'</div>'+
+    (h.note?'<div style="background:#f0f5ff;border-radius:8px;padding:10px 12px;margin-bottom:14px;border-left:3px solid #2B6CC4">'+
+    '<div style="font-size:11px;font-weight:700;color:#2B6CC4;margin-bottom:3px">'+(isHe?"הערת המטופל · ":"Patient note · ")+h.date+'</div>'+
+    '<div style="font-size:13px;color:#1a2535">'+h.note+'</div></div>':'')+
+    '<textarea id="reply-text" '+iS+' style="height:110px;resize:vertical" placeholder="'+(isHe?"כתוב תגובה...":"Write your reply...")+'">'+
+    (h.adminReply||'')+'</textarea>'+
+    '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">'+
+    '<button class="btn btnd" onclick="cm()">'+(isHe?"ביטול":"Cancel")+'</button>'+
+    '<button class="btn" onclick="saveHistoryReply('+idx+')">'+(isHe?"שמור תגובה":"Save reply")+'</button></div>';
+  g("MB").classList.add("on");
+}
+
+function saveHistoryReply(idx){
+  var text=(g("reply-text")||{}).value; if(text===undefined) return;
+  text=text.trim(); if(!text) return;
+  if(!cur.workoutHistory||!cur.workoutHistory[idx]) return;
+  cur.workoutHistory[idx].adminReply=text;
+  pts=pts.map(function(p){ return p.id===cur.id?cur:p; });
+  sv(); cm(); rht();
 }
 
 function addCustomSport(){
