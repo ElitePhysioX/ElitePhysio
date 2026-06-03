@@ -181,7 +181,8 @@ export default {
       if(path === "/api/appts" && request.method === "POST"){
         const token = (request.headers.get("Authorization")||"").replace("Bearer ","");
         if(token !== ADMIN_PASSWORD) return json({ error:"Unauthorized" }, 401);
-        await sbFetch(SB_KEY, "appointments", "POST", body);
+        const result = await sbFetch(SB_KEY, "appointments", "POST", body);
+        if(result && result.code) return json({ error: result.message||"DB error" }, 500);
         return json({ ok: true });
       }
 

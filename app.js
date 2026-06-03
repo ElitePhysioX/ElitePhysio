@@ -331,9 +331,8 @@ function loadAppts(cb){
 }
 function addAppt(a){
   if(!ADMIN_TOKEN) return;
-  a.id=a.id||Date.now();
   apiCall("appts","POST",a,function(err){
-    if(!err){ appts.push(a); renderCal(); }
+    if(!err){ loadAppts(function(){ renderCal(); }); }
   });
 }
 function deleteAppt(id){
