@@ -65,9 +65,21 @@ function apiCall(path, method, body, cb){
   if(ADMIN_TOKEN) opts.headers["Authorization"] = "Bearer "+ADMIN_TOKEN;
   if(body) opts.body = JSON.stringify(body);
   fetch("/api/"+path, opts)
-    .then(function(r){ return r.json(); })
-    .then(function(d){ if(cb) cb(null,d); })
+    .then(function(r){
+      return r.json().then(function(d){ return {ok:r.ok, status:r.status, d:d}; });
+    })
+    .then(function(res){
+      if(cb) cb(res.ok ? null : new Error((res.d&&res.d.error)||("HTTP "+res.status)), res.d);
+    })
     .catch(function(e){ if(cb) cb(e); });
+}
+
+function showToast(msg, type){
+  var t=document.createElement("div");
+  t.textContent=msg;
+  t.style.cssText="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:"+(type==="error"?"#c0392b":"#2B6CC4")+";color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;z-index:99999;box-shadow:0 4px 16px rgba(0,0,0,.25);max-width:90vw;text-align:center";
+  document.body.appendChild(t);
+  setTimeout(function(){ t.remove(); }, 4000);
 }
 
 function toRow(p){
@@ -331,10 +343,15 @@ function loadAppts(cb){
 }
 function addAppt(a){
   if(!ADMIN_TOKEN) return;
-  if(!a.id) a.id = Math.floor(Date.now() / 1000); // Unix seconds fits in INT4 until 2038
+  if(!a.id) a.id = Math.floor(Date.now() / 1000); // Unix seconds, fits INT4
   appts.push(a); renderCal(); // show immediately
   apiCall("appts","POST",a,function(err,d){
-    loadAppts(function(){ renderCal(); }); // sync real ids from server
+    if(err){
+      console.error("Appointment save error:", err.message, d);
+      showToast((d&&d.error)||err.message||"Save failed — check console", "error");
+    } else {
+      loadAppts(function(){ renderCal(); }); // sync real ids from server
+    }
   });
 }
 function deleteAppt(id){

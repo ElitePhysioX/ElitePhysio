@@ -36,7 +36,6 @@ header{background:linear-gradient(90deg,#1a3a6e 0%,#2B6CC4 45%,#4a8fd4 75%,#2B6C
   border-radius:14px;padding:15px 18px;margin-bottom:10px;
   box-shadow:0 2px 12px rgba(43,108,196,.08);cursor:pointer;transition:all .2s}
 .card:hover{border-color:rgba(43,108,196,0.5);box-shadow:0 5px 20px rgba(43,108,196,.16);transform:translateY(-2px)}
-.cal-card{cursor:default}
 .cal-card:hover{transform:none;box-shadow:0 2px 12px rgba(43,108,196,.08);border-color:rgba(43,108,196,0.18)}
 .panel{background:rgba(255,255,255,0.88);border:1px solid rgba(43,108,196,0.18);
   border-radius:14px;padding:20px 22px;box-shadow:0 2px 12px rgba(43,108,196,.08);margin-bottom:12px}
