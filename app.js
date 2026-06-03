@@ -993,6 +993,13 @@ function omEditPlan(planId){
     '<div style="grid-column:1/-1"><label class="lbl">🎯 Program Goal (EN)</label><textarea class="inp" id="ep_goal_en" rows="2" style="resize:vertical">'+((plan.goal||'').replace(/</g,'&lt;'))+'</textarea></div>'+
     '<div style="grid-column:1/-1"><label class="lbl">🎯 מטרת התוכנית (עברית)</label><textarea class="inp" id="ep_goal_he" dir="rtl" rows="2" style="resize:vertical">'+((plan.goalHe||'').replace(/</g,'&lt;'))+'</textarea></div>'+
     '</div>'+
+    '<div style="margin-bottom:14px">'+
+    '<div style="font-size:12px;font-weight:700;color:#6d28d9;margin-bottom:8px">📅 '+(isHe?"מטרות לפי שבועות":"Timeline Goals")+'</div>'+
+    '<div id="ep_ms_wrap" data-count="'+(plan.milestones||[]).length+'">'+
+    (plan.milestones||[]).map(function(m,i){ return milestoneRow(i,m,isHe); }).join("")+
+    '</div>'+
+    '<button onclick="addMilestone()" style="background:#f5f0ff;border:1px dashed #6d28d9;border-radius:8px;padding:8px;width:100%;cursor:pointer;color:#6d28d9;font-weight:600;font-size:13px;box-sizing:border-box">+ '+(isHe?"הוסף מטרה לציר זמן":"Add Timeline Goal")+'</button>'+
+    '</div>'+
     '<div style="font-size:12px;font-weight:700;color:#1a3a6e;text-transform:uppercase;margin-bottom:8px">'+(isHe?"ימי אימון":"Workout Days")+'</div>'+
     (plan.type==="repeating"?
       '<div id="ep_days_wrap">'+
@@ -1046,6 +1053,34 @@ function removeEditDay(i){
   if(inp_en) inp_en.value="__DELETED__";
 }
 
+function milestoneRow(idx,m,isHe){
+  m=m||{};
+  return '<div id="ep_ms_'+idx+'" style="background:#f5f2ff;border-radius:8px;padding:10px;margin-bottom:7px;border:1px solid rgba(109,40,217,0.18)">'+
+    '<div style="display:flex;align-items:center;gap:6px;margin-bottom:7px;flex-wrap:wrap">'+
+    '<span style="font-size:11px;font-weight:700;color:#6d28d9">'+(isHe?'שבועות:':'Weeks:')+'</span>'+
+    '<input type="number" id="ep_ms_from_'+idx+'" value="'+(m.weekFrom||'')+'" min="1" max="52" placeholder="1" style="width:44px;padding:3px 5px;border:1px solid #c4b5e8;border-radius:6px;font-size:13px;text-align:center">'+
+    '<span style="font-size:13px;color:#6d28d9">–</span>'+
+    '<input type="number" id="ep_ms_to_'+idx+'" value="'+(m.weekTo||'')+'" min="1" max="52" placeholder="4" style="width:44px;padding:3px 5px;border:1px solid #c4b5e8;border-radius:6px;font-size:13px;text-align:center">'+
+    '<button onclick="removeMilestone('+idx+')" style="margin-left:auto;background:#fff0f0;border:1px solid #ffd0d0;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:12px;color:#e74c3c;flex-shrink:0">✕</button>'+
+    '</div>'+
+    '<input class="inp" id="ep_ms_en_'+idx+'" placeholder="Goal (English)" value="'+(m.text||'')+'" style="margin-bottom:5px">'+
+    '<input class="inp" id="ep_ms_he_'+idx+'" dir="rtl" placeholder="מטרה (עברית)" value="'+(m.textHe||'')+'">'+
+    '</div>';
+}
+function addMilestone(){
+  var wrap=g("ep_ms_wrap"); if(!wrap) return;
+  var n=parseInt(wrap.dataset.count)||0;
+  var div=document.createElement("div");
+  div.innerHTML=milestoneRow(n,{},lng==="he");
+  wrap.appendChild(div.firstChild);
+  wrap.dataset.count=n+1;
+}
+function removeMilestone(i){
+  var el=g("ep_ms_"+i); if(!el) return;
+  el.style.display="none";
+  var f=g("ep_ms_from_"+i); if(f) f.value="__DEL__";
+}
+
 function saveEditPlan(planId){
   var plan=(cur.workoutPlans||[]).find(function(p){ return p.id===planId; });
   if(!plan) return;
@@ -1053,6 +1088,15 @@ function saveEditPlan(planId){
   plan.nameHe=g("ep_name_he")?g("ep_name_he").value.trim():plan.nameHe;
   plan.goal=g("ep_goal_en")?g("ep_goal_en").value.trim():(plan.goal||"");
   plan.goalHe=g("ep_goal_he")?g("ep_goal_he").value.trim():(plan.goalHe||"");
+  var msWrap=g("ep_ms_wrap");
+  var msTotal=msWrap?parseInt(msWrap.dataset.count)||0:0;
+  var milestones=[];
+  for(var mi=0;mi<msTotal;mi++){
+    var mf=g("ep_ms_from_"+mi),mt=g("ep_ms_to_"+mi),men=g("ep_ms_en_"+mi),mhe=g("ep_ms_he_"+mi);
+    if(!mf||mf.value==="__DEL__"||!mf.value) continue;
+    milestones.push({weekFrom:parseInt(mf.value)||1,weekTo:parseInt(mt&&mt.value)||parseInt(mf.value)||1,text:men?men.value.trim():"",textHe:mhe?mhe.value.trim():""});
+  }
+  plan.milestones=milestones;
   if(plan.type==="repeating"){
     var wrap=g("ep_days_wrap");
     var total=wrap?parseInt(wrap.dataset.count)||plan.days.length:plan.days.length;
@@ -1094,6 +1138,28 @@ function deletePlan(planId){
   sv(); rplans();
 }
 
+function renderMilestones(plan,isHe){
+  var ms=plan.milestones||[];
+  if(!ms.length) return '';
+  var clrs=['#2B6CC4','#6d28d9','#00a86b','#c8801e','#c0392b'];
+  var bgs=['rgba(43,108,196,0.08)','rgba(109,40,217,0.08)','rgba(0,168,107,0.08)','rgba(200,128,30,0.08)','rgba(192,57,43,0.08)'];
+  var html='<div style="margin-bottom:14px">'+
+    '<div style="font-size:11px;font-weight:700;color:#1a3a6e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📅 '+(isHe?'ציר זמן מטרות':'Goal Timeline')+'</div>';
+  ms.forEach(function(m,i){
+    var clr=clrs[i%clrs.length];
+    var bg=bgs[i%bgs.length];
+    var txt=(isHe&&m.textHe)?m.textHe:(m.text||'');
+    if(!txt) return;
+    var wFrom=m.weekFrom||1,wTo=m.weekTo||wFrom;
+    var wLabel=isHe?('שב\' '+(wFrom===wTo?wFrom:wFrom+'–'+wTo)):('Wk '+(wFrom===wTo?wFrom:wFrom+'–'+wTo));
+    html+='<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:7px">'+
+      '<div style="flex-shrink:0;background:'+clr+';color:#fff;border-radius:6px;padding:4px 7px;font-size:10px;font-weight:700;line-height:1.3;min-width:42px;text-align:center;margin-top:2px">'+wLabel+'</div>'+
+      '<div style="flex:1;background:'+bg+';border-left:3px solid '+clr+';border-radius:0 8px 8px 0;padding:8px 11px;font-size:13px;color:#1a2535;line-height:1.5">'+txt+'</div>'+
+      '</div>';
+  });
+  return html+'</div>';
+}
+
 // Open a specific plan (show goals overview)
 function openPlan(planId){
   curPlanId=planId;
@@ -1120,6 +1186,7 @@ function rplanOverview(planId){
       '<div style="background:#fff8e8;border-radius:10px;padding:9px 13px;border-left:3px solid #e8a020;margin-bottom:14px;font-size:12px;color:#7a5c00">'+
       '💡 '+(isHe?"לחץ \'ערוך תוכנית\' כדי להוסיף מטרות":"Click \'Edit Program\' to add goals")+'</div>'
     )+
+    renderMilestones(plan,isHe)+
     (plan.type==="periodized"?
       (plan.phases||[]).map(function(ph,pi){
         var phName=isHe&&ph.nameHe?ph.nameHe:ph.name;
@@ -2148,12 +2215,13 @@ function renderPatientView(p){
         }).join("")+'</div>';
     }
 
-    // Program goal display
+    // Program goal + timeline display
     if(selPlan.goal||selPlan.goalHe){
       exHtml += '<div style="background:rgba(43,108,196,0.07);border-radius:8px;padding:10px 14px;border-left:3px solid #2B6CC4;margin-bottom:10px">'+
         '<div style="font-size:11px;font-weight:700;color:#2B6CC4;text-transform:uppercase;margin-bottom:3px">🎯 '+(isHe?"מטרת התוכנית":"Program Goal")+'</div>'+
         '<div style="font-size:13px;color:#1a2535;line-height:1.6">'+(isHe&&selPlan.goalHe?selPlan.goalHe:(selPlan.goal||''))+'</div></div>';
     }
+    exHtml += renderMilestones(selPlan,isHe);
 
     // Day tabs
     var dayTabs = '';
