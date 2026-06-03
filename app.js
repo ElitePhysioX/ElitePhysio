@@ -168,6 +168,34 @@ function sbDelete(id){
 function lsave(){ try{ localStorage.setItem(SK, JSON.stringify(pts)); }catch(e){} }
 function lload(){ try{ var d=localStorage.getItem(SK); if(d) return JSON.parse(d); }catch(e){} return null; }
 
+// ── Bilingual field helpers ──
+// injury/notes are stored as plain text OR as JSON {en,he}.
+// Existing plain-text entries are shown as-is in both languages.
+function getBilingual(raw,isHe){
+  if(!raw) return "";
+  try{
+    var o=JSON.parse(raw);
+    if(o&&typeof o==="object"&&(o.en!==undefined||o.he!==undefined))
+      return isHe?(o.he||o.en||""):(o.en||o.he||"");
+  }catch(e){}
+  return raw;
+}
+function setBilingual(en,he){
+  en=(en||"").trim(); he=(he||"").trim();
+  if(!en&&!he) return "";
+  if(!en) return he;
+  if(!he) return en;
+  return JSON.stringify({en:en,he:he});
+}
+function parseBilingual(raw){
+  var r={en:raw||"",he:raw||""};
+  try{
+    var o=JSON.parse(raw);
+    if(o&&typeof o==="object"&&(o.en!==undefined||o.he!==undefined)){r.en=o.en||"";r.he=o.he||"";}
+  }catch(e){}
+  return r;
+}
+
 var sbSaveTimer = null;
 function sv(){
   clearTimeout(stmr);
@@ -643,7 +671,7 @@ function rd(){
       var dn=pn(p);
       return '<div class="card" onclick="op('+p.id+')"><div style="display:flex;align-items:center;justify-content:space-between">'+
         '<div style="display:flex;align-items:center;gap:13px">'+av(dn)+
-        '<div><div class="pat-name">'+dn+'</div><div class="pat-sub">'+(p.injury||"—")+'</div></div></div>'+
+        '<div><div class="pat-name">'+dn+'</div><div class="pat-sub">'+(getBilingual(p.injury,lng==="he")||"—")+'</div></div></div>'+
         '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">'+bdg(p.sport)+' '+sbdg(p.status)+'</div></div></div>';
     }).join("");
   loadAppts(renderCal);
@@ -682,7 +710,7 @@ function rpl(){
     var dotHtml = hasNewNote(p) ? '<div style="width:10px;height:10px;border-radius:50%;background:#f97316;flex-shrink:0;box-shadow:0 0 0 2px #fff,0 0 0 3px #f97316" title="New note"></div>' : '';
     return '<div class="card" onclick="op('+p.id+')"><div style="display:flex;align-items:center;justify-content:space-between">'+
       '<div style="display:flex;align-items:center;gap:13px">'+avHtml+
-      '<div><div class="pat-name" style="display:flex;align-items:center;gap:7px">'+dn+dotHtml+'</div><div class="pat-sub">'+(p.injury||"—")+' &middot; '+(p.age||"—")+'</div></div></div>'+
+      '<div><div class="pat-name" style="display:flex;align-items:center;gap:7px">'+dn+dotHtml+'</div><div class="pat-sub">'+(getBilingual(p.injury,lng==="he")||"—")+' &middot; '+(p.age||"—")+'</div></div></div>'+
       '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">'+bdg(spName(p.sport))+' '+sbdg(p.status)+'</div></div></div>';
   }).join(""):'<div style="color:#4a6a8a;text-align:center;padding:32px 0;font-size:14px">No patients found</div>';
 }
@@ -760,8 +788,8 @@ function rpd(){
     '<button class="btn" style="font-size:12px" onclick="dprint('+p.id+')">'+L().pdf+'</button>'+
     '<button class="btn" style="font-size:12px" onclick="om(\'ep\')">'+L().ed+'</button>'+
     '<button class="btn btnd" style="font-size:12px" onclick="dp('+p.id+')">'+L().dl+'</button></div></div>'+
-    (p.injury?'<div style="margin-top:13px;background:rgba(43,108,196,0.08);border-radius:8px;padding:11px 15px;border-left:3px solid #2B6CC4"><div style="font-size:11px;color:#2B6CC4;font-weight:700;text-transform:uppercase;margin-bottom:3px">'+L().ij+'</div><div style="font-size:14px;color:#1a2535">'+p.injury+'</div></div>':"")+
-    (p.notes?'<div style="margin-top:8px;background:rgba(0,168,107,0.07);border-radius:8px;padding:11px 15px;border-left:3px solid #00a86b"><div style="font-size:11px;color:#00a86b;font-weight:700;text-transform:uppercase;margin-bottom:3px">'+(lng==="he"?"המטרה שלי":"My Goal")+'</div><div style="font-size:14px;color:#1a2535">'+p.notes+'</div></div>':"");
+    (getBilingual(p.injury,lng==="he")?'<div style="margin-top:13px;background:rgba(43,108,196,0.08);border-radius:8px;padding:11px 15px;border-left:3px solid #2B6CC4"><div style="font-size:11px;color:#2B6CC4;font-weight:700;text-transform:uppercase;margin-bottom:3px">'+L().ij+'</div><div style="font-size:14px;color:#1a2535">'+getBilingual(p.injury,lng==="he")+'</div></div>':"")+
+    (getBilingual(p.notes,lng==="he")?'<div style="margin-top:8px;background:rgba(0,168,107,0.07);border-radius:8px;padding:11px 15px;border-left:3px solid #00a86b"><div style="font-size:11px;color:#00a86b;font-weight:700;text-transform:uppercase;margin-bottom:3px">'+(lng==="he"?"המטרה שלי":"My Goal")+'</div><div style="font-size:14px;color:#1a2535">'+getBilingual(p.notes,lng==="he")+'</div></div>':"");
   var isHeLng=lng==="he";
   g("ptbs").innerHTML=[["ex",L().ex,(p.exercises||[]).length],["fu",L().fu,(p.followUps||[]).length],["cl",L().cl,null]].map(function(t){
     return '<button class="nb'+(ctab===t[0]?" on":"")+'" onclick="sct(\''+t[0]+'\')">'+t[1]+(t[2]!==null?' <span style="background:rgba(255,255,255,0.25);border-radius:9px;padding:1px 7px;font-size:11px">'+t[2]+'</span>':"")+' </button>';
@@ -1647,8 +1675,8 @@ function saveWelcome(){
   cur.age=g("w_age")?g("w_age").value:"";
   var wSportSel=g("w_sport_sel"); var wSportOther=g("w_sport_other");
   cur.sport = (wSportSel&&wSportSel.value&&wSportSel.value!=="__other__") ? wSportSel.value : (wSportOther?wSportOther.value.trim():"");
-  cur.injury=g("w_injury")?g("w_injury").value.trim():"";
-  cur.notes=g("w_goal")?g("w_goal").value.trim():"";
+  cur.injury=setBilingual(g("w_injury_en")?g("w_injury_en").value.trim():"",g("w_injury_he")?g("w_injury_he").value.trim():"");
+  cur.notes=setBilingual(g("w_goal_en")?g("w_goal_en").value.trim():"",g("w_goal_he")?g("w_goal_he").value.trim():"");
   cur.firstLoginDone=true;
   pts=pts.map(function(p){return p.id===cur.id?cur:p;});
   // Persist in session so avatar survives refresh
@@ -1995,8 +2023,11 @@ function showFirstTimeWelcome(p){
     '<option value="__other__">'+(isHe?"אחר (הכנס ידנית)":"Other (type manually)")+'</option>'+
     '</select>'+
     '<input class="inp" id="w_sport_other" placeholder="'+(isHe?"כתוב ספורט...":"Type sport...")+'" value="'+(getAllSports().indexOf(p.sport)<0?p.sport:'')+'" style="margin-top:5px;display:'+(getAllSports().indexOf(p.sport)<0&&p.sport?'block':'none')+'"></div>'+
-    '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"פציעות/מצב":"Injuries/Condition")+'</label><input class="inp" id="w_injury" value="'+(p.injury||'')+'"></div>'+
-    '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"המטרה שלי":"My Goal")+'</label><input class="inp" id="w_goal" value="'+(p.notes||'')+'"></div>'+
+    (function(){ var wiB=parseBilingual(p.injury||""),wgB=parseBilingual(p.notes||"");
+    return '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"פציעה/מצב":"Injury/Condition")+' (EN)</label><input class="inp" id="w_injury_en" value="'+wiB.en+'"></div>'+
+    '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"פציעה/מצב":"Injury/Condition")+' (עברית)</label><input class="inp" id="w_injury_he" dir="rtl" value="'+wiB.he+'"></div>'+
+    '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"המטרה שלי":"My Goal")+' (EN)</label><input class="inp" id="w_goal_en" value="'+wgB.en+'"></div>'+
+    '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"המטרה שלי":"My Goal")+' (עברית)</label><input class="inp" id="w_goal_he" dir="rtl" value="'+wgB.he+'"></div>'; })())+
     '</div>'+
     '<button class="btn" style="width:100%;padding:12px;font-size:15px;font-weight:700" onclick="saveWelcome()">'+
     (isHe?"כניסה לתוכנית שלי ➜":"Enter My Program ➜")+'</button>';
@@ -2092,10 +2123,15 @@ function showPatientProfile(){
     '<option value="__other__">'+(isHe?"אחר (כתוב)":"Other (type)")+'</option>'+
     '</select>'+
     '<input class="inp" id="pp_sport" placeholder="'+(isHe?"כתוב ספורט":"Type sport")+'" value="'+(getAllSports().indexOf(p.sport)<0&&p.sport?p.sport:'')+'" style="margin-top:5px;display:'+(getAllSports().indexOf(p.sport)<0&&p.sport?'block':'none')+'" id="pp_sport_other"></div>'+
-    '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"פציעה/מצב":"Injury/Condition")+'</label>'+
-    '<input class="inp" id="pp_injury" value="'+(p.injury||'')+'"></div>'+
-    '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"המטרה שלי":"My Goal")+'</label>'+
-    '<input class="inp" id="pp_goal" value="'+(p.notes||'')+'"></div>'+
+    (function(){ var iB=parseBilingual(p.injury||""),nB=parseBilingual(p.notes||"");
+    return '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"פציעה/מצב":"Injury/Condition")+' (EN)</label>'+
+    '<input class="inp" id="pp_injury_en" value="'+iB.en+'"></div>'+
+    '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"פציעה/מצב":"Injury/Condition")+' (עברית)</label>'+
+    '<input class="inp" id="pp_injury_he" dir="rtl" value="'+iB.he+'"></div>'+
+    '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"המטרה שלי":"My Goal")+' (EN)</label>'+
+    '<input class="inp" id="pp_goal_en" value="'+nB.en+'"></div>'+
+    '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"המטרה שלי":"My Goal")+' (עברית)</label>'+
+    '<input class="inp" id="pp_goal_he" dir="rtl" value="'+nB.he+'"></div>'; })())+
     '</div>'+
     '<div style="display:flex;gap:8px">'+
     '<button class="btn btnd" onclick="cm()" style="flex:1">'+(isHe?"ביטול":"Cancel")+'</button>'+
@@ -2121,8 +2157,8 @@ function savePatientProfile(){
   cur.age=g("pp_age")?g("pp_age").value:"";
   var sportSel=g("pp_sport_sel"); var sportOther=g("pp_sport_other")||g("pp_sport");
   cur.sport = (sportSel&&sportSel.value&&sportSel.value!=="__other__") ? sportSel.value : (sportOther?sportOther.value.trim():"");
-  cur.injury=g("pp_injury")?g("pp_injury").value.trim():"";
-  cur.notes=g("pp_goal")?g("pp_goal").value.trim():"";
+  cur.injury=setBilingual(g("pp_injury_en")?g("pp_injury_en").value.trim():"",g("pp_injury_he")?g("pp_injury_he").value.trim():"");
+  cur.notes=setBilingual(g("pp_goal_en")?g("pp_goal_en").value.trim():"",g("pp_goal_he")?g("pp_goal_he").value.trim():"");
   pts=pts.map(function(p){return p.id===cur.id?cur:p;});
   lsave();
   apiCall("patient-save-profile","POST",{
@@ -2228,12 +2264,12 @@ function renderPatientView(p){
     bdg(spName(p.sport))+
     (p.age?'<span style="background:#f0f5ff;color:#2B6CC4;border-radius:5px;padding:2px 8px;font-size:12px;font-weight:600;border:1px solid rgba(43,108,196,0.2)">'+(lng==="he"?"גיל":"Age")+' '+p.age+'</span>':"")+
     '</div></div></div>'+
-    (p.injury?'<div style="background:rgba(43,108,196,0.08);border-radius:8px;padding:11px 15px;border-left:3px solid #2B6CC4;margin-bottom:8px">'+
+    (getBilingual(p.injury,lng==="he")?'<div style="background:rgba(43,108,196,0.08);border-radius:8px;padding:11px 15px;border-left:3px solid #2B6CC4;margin-bottom:8px">'+
     '<div style="font-size:11px;color:#2B6CC4;font-weight:700;text-transform:uppercase;margin-bottom:3px">'+L().ij+'</div>'+
-    '<div style="font-size:14px;color:#1a2535">'+p.injury+'</div></div>':"")+
-    (p.notes?'<div style="background:rgba(0,168,107,0.07);border-radius:8px;padding:11px 15px;border-left:3px solid #00a86b">'+
+    '<div style="font-size:14px;color:#1a2535">'+getBilingual(p.injury,lng==="he")+'</div></div>':"")+
+    (getBilingual(p.notes,lng==="he")?'<div style="background:rgba(0,168,107,0.07);border-radius:8px;padding:11px 15px;border-left:3px solid #00a86b">'+
     '<div style="font-size:11px;color:#00a86b;font-weight:700;text-transform:uppercase;margin-bottom:3px">'+(lng==="he"?"המטרה שלי":"My Goal")+'</div>'+
-    '<div style="font-size:14px;color:#1a2535">'+p.notes+'</div></div>':"");
+    '<div style="font-size:14px;color:#1a2535">'+getBilingual(p.notes,lng==="he")+'</div></div>':"");
   var isHe = lng==="he";
   var plans = p.workoutPlans||[];
   var totalPrograms = plans.length;
@@ -2603,18 +2639,21 @@ function om(m, editId){
   mmode=m; var c=g("MC"); var Lx=L();
   if(m==="ap"||m==="ep"){
     var p=m==="ep"?cur:{};
+    var _iB=parseBilingual(p.injury||""), _nB=parseBilingual(p.notes||"");
     c.innerHTML='<div style="font-size:17px;font-weight:800;margin-bottom:18px;color:#1a3a6e">'+(m==="ap"?Lx.npt:Lx.ept)+'</div>'+
       '<div class="g2" style="gap:11px;margin-bottom:11px">'+
       '<div style="grid-column:1/-1"><label class="lbl">'+Lx.nm+'</label><input class="inp" id="fn" value="'+(p.name||"")+'"></div>'+
       '<div style="grid-column:1/-1"><label class="lbl">'+Lx.nmhe+'</label><input class="inp" id="fnhe" value="'+(p.nameHe||"")+'" dir="rtl" placeholder="\u05e9\u05dd \u05d1\u05e2\u05d1\u05e8\u05d9\u05ea"></div>'+
       '<div><label class="lbl">'+Lx.ag+'</label><input class="inp" id="fa" type="number" value="'+(p.age||"")+'"></div>'+
       '<div><label class="lbl">'+Lx.ph+'</label><input class="inp" id="fph" value="'+(p.phone||"")+'"></div>'+
-      '<div style="grid-column:1/-1"><label class="lbl">'+Lx.ij+'</label><input class="inp" id="fij" value="'+(p.injury||"")+'"></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">'+Lx.ij+' (EN)</label><input class="inp" id="fij_en" value="'+_iB.en+'"></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">'+Lx.ij+' (עברית)</label><input class="inp" id="fij_he" dir="rtl" value="'+_iB.he+'"></div>'+
       '<div><label class="lbl">'+Lx.pi+'</label><input class="inp" id="fpi" maxlength="4" value="'+(p.pin||"")+'" placeholder="1234"></div>'+
       '<div><label class="lbl">'+Lx.st+'</label><select class="inp" id="fst">'+ST.map(function(s){ return '<option'+(p.status===s?" selected":"")+'>'+s+'</option>'; }).join("")+'</select></div>'+
       '<div style="grid-column:1/-1"><label class="lbl">'+Lx.sp+'</label><select class="inp" id="fsp"><option value="">'+Lx.ss+'</option>'+getAllSports().map(function(s,i){ var allHe=getAllSportsHe(); var label=lng==="he"&&allHe[i]?allHe[i]:s; return '<option value="'+s+'"'+(p.sport===s?" selected":"")+'>'+label+'</option>'; }).join("")+'</select>'+
       '<div style="margin-top:5px"><button type="button" onclick="omManageSports()" style="font-size:11px;color:#2B6CC4;background:none;border:none;cursor:pointer;text-decoration:underline">⚙️ '+(lng==="he"?"נהל רשימת ספורט":"Manage sports list")+'</button></div></div>'+
-      '<div style="grid-column:1/-1"><label class="lbl">'+(lng==="he"?"המטרה שלי / My Goal":"My Goal / המטרה שלי")+'</label><textarea class="inp" id="fno" style="height:68px">'+(p.notes||"")+'</textarea></div></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">'+(lng==="he"?"המטרה שלי":"My Goal")+' (EN)</label><textarea class="inp" id="fno_en" style="height:54px">'+_nB.en+'</textarea></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">'+(lng==="he"?"המטרה שלי":"My Goal")+' (עברית)</label><textarea class="inp" id="fno_he" dir="rtl" style="height:54px">'+_nB.he+'</textarea></div></div>'+
       '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btnd" onclick="cm()">'+Lx.ca+'</button><button class="btn" onclick="sp2()">'+Lx.sa+'</button></div>';
   } else if(m==="ae"){
     // Find exercise in plan day first, then flat exercises
@@ -3825,7 +3864,7 @@ function sp2(){
     return;
   }
   var sp=g("fsp")?g("fsp").value||"General":"General";
-  var d={name:nm||(nhe),nameHe:nhe||(nm),sport:sp,age:g("fa")?g("fa").value:"",phone:g("fph")?g("fph").value:"",injury:g("fij")?g("fij").value:"",pin:g("fpi")?g("fpi").value||"0000":"0000",status:g("fst")?g("fst").value:"Active",notes:g("fno")?g("fno").value:""};
+  var d={name:nm||(nhe),nameHe:nhe||(nm),sport:sp,age:g("fa")?g("fa").value:"",phone:g("fph")?g("fph").value:"",injury:setBilingual(g("fij_en")?g("fij_en").value:"",g("fij_he")?g("fij_he").value:""),pin:g("fpi")?g("fpi").value||"0000":"0000",status:g("fst")?g("fst").value:"Active",notes:setBilingual(g("fno_en")?g("fno_en").value:"",g("fno_he")?g("fno_he").value:"")};
   if(mmode==="ep"&&cur){ Object.assign(cur,d); pts=pts.map(function(p){ return p.id===cur.id?cur:p; }); }
   else{ pts.push(Object.assign({},d,{id:Date.now(),sessions:0,startDate:new Date().toISOString().split("T")[0],exercises:[],followUps:[],files:[],eval:""})); }
   sv(); cm(); rpl(); if(mmode==="ep") rpd();
@@ -3930,16 +3969,16 @@ function ais(){
     g("MB").classList.add("on"); return;
   }
   g("MC").innerHTML='<div style="font-size:16px;font-weight:700;margin-bottom:4px;color:#1a3a6e">'+L().ai+'</div>'+
-    '<div style="font-size:13px;color:#4a6a8a;margin-bottom:18px">'+cur.sport+' &middot; '+(cur.injury||"general")+'</div>'+
+    '<div style="font-size:13px;color:#4a6a8a;margin-bottom:18px">'+cur.sport+' &middot; '+(getBilingual(cur.injury,false)||"general")+'</div>'+
     '<div style="display:flex;align-items:center;justify-content:center;padding:32px;color:#4a6a8a;font-size:14px"><span class="spb"></span>'+L().gn+'</div>';
   g("MB").classList.add("on");
-  callClaude("Sports physio expert. Patient sport:"+cur.sport+", injury:"+(cur.injury||"general")+", notes:"+(cur.notes||"none")+", current exercises:"+(cur.exercises||[]).map(function(e){ return e.name; }).join(",")||"none"+". Suggest 3 rehab exercises. ONLY JSON array no markdown: [{\"name\":\"\",\"sets\":3,\"reps\":\"\",\"desc\":\"\",\"tips\":\"\"}]",800,function(err,txt){
+  callClaude("Sports physio expert. Patient sport:"+cur.sport+", injury:"+(getBilingual(cur.injury,false)||"general")+", notes:"+(getBilingual(cur.notes,false)||"none")+", current exercises:"+(cur.exercises||[]).map(function(e){ return e.name; }).join(",")||"none"+". Suggest 3 rehab exercises. ONLY JSON array no markdown: [{\"name\":\"\",\"sets\":3,\"reps\":\"\",\"desc\":\"\",\"tips\":\"\"}]",800,function(err,txt){
     if(err){ g("MC").innerHTML='<div style="color:#c0392b;padding:16px;font-size:14px;text-align:center">Could not generate. Check API key.</div><div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="btn" onclick="cm()">OK</button></div>'; return; }
     try{
       var list=JSON.parse(txt.replace(/```json|```/g,"").trim());
       window._ail=list;
       g("MC").innerHTML='<div style="font-size:16px;font-weight:700;margin-bottom:4px;color:#1a3a6e">'+L().ai+'</div>'+
-        '<div style="font-size:13px;color:#4a6a8a;margin-bottom:14px">'+cur.sport+' &middot; '+(cur.injury||"general")+'</div>'+
+        '<div style="font-size:13px;color:#4a6a8a;margin-bottom:14px">'+cur.sport+' &middot; '+(getBilingual(cur.injury,false)||"general")+'</div>'+
         list.map(function(e){ return '<div class="xcard" style="border-color:rgba(43,108,196,0.3)"><div style="font-weight:700;font-size:15px;color:#1a3a6e;margin-bottom:3px">'+e.name+'</div>'+
           '<div style="font-size:13px;color:#4a6a8a;margin-bottom:2px">'+e.sets+' sets &times; '+e.reps+'</div>'+
           (e.desc?'<div style="font-size:13px;color:#1a2535;margin-bottom:2px">'+e.desc+'</div>':"")+
@@ -3962,7 +4001,7 @@ function aiev(){
   var btn=g("evb"); if(!cur) return;
   if(!AI_KEY){ if(btn) btn.textContent="Add API key first"; return; }
   if(btn){ btn.disabled=true; btn.innerHTML='<span class="spb"></span>'+L().gn; }
-  callClaude("Expert sports physiotherapist. Clinical evaluation:\nName:"+cur.name+", Sport:"+cur.sport+", Age:"+(cur.age||"?")+", Injury:"+(cur.injury||"none")+", Notes:"+(cur.notes||"none")+", Sessions:"+(cur.sessions||0)+"\nProvide:\n1. CLINICAL ASSESSMENT\n2. DIFFERENTIAL DIAGNOSIS\n3. REHAB PROTOCOL (Phase 1 Acute / Phase 2 Sub-acute / Phase 3 Functional / Phase 4 Return to Sport)\n4. MANUAL THERAPY\n5. RED FLAGS\n6. PROGNOSIS\n7. SPORT-SPECIFIC for "+cur.sport+"\nEvidence-based. Clear headers.",2000,function(err,txt){
+  callClaude("Expert sports physiotherapist. Clinical evaluation:\nName:"+cur.name+", Sport:"+cur.sport+", Age:"+(cur.age||"?")+", Injury:"+(getBilingual(cur.injury,false)||"none")+", Notes:"+(getBilingual(cur.notes,false)||"none")+", Sessions:"+(cur.sessions||0)+"\nProvide:\n1. CLINICAL ASSESSMENT\n2. DIFFERENTIAL DIAGNOSIS\n3. REHAB PROTOCOL (Phase 1 Acute / Phase 2 Sub-acute / Phase 3 Functional / Phase 4 Return to Sport)\n4. MANUAL THERAPY\n5. RED FLAGS\n6. PROGNOSIS\n7. SPORT-SPECIFIC for "+cur.sport+"\nEvidence-based. Clear headers.",2000,function(err,txt){
     if(!err){ cur.eval=txt; pts=pts.map(function(p){ return p.id===cur.id?cur:p; }); sv(); rcl(); }
     else if(btn){ btn.disabled=false; btn.textContent=L().aie; }
   });
@@ -4047,7 +4086,7 @@ function dprint(id){
     '.info-item span{font-size:13px;font-weight:600;color:#1a2535}'+
     '.patient-name{grid-column:1/-1;border-bottom:1px solid #d0dae8;padding-bottom:12px;margin-bottom:4px}'+
     '.patient-name span{font-size:20px;font-weight:700;color:#1a3a6e}'+
-    (p.notes?'.notes{background:#fff8e8;border-radius:8px;padding:12px 16px;margin-bottom:22px;font-size:12px;border-left:3px solid #e67e22;color:#1a2535}':'')+ 
+    (getBilingual(p.notes,false)?'.notes{background:#fff8e8;border-radius:8px;padding:12px 16px;margin-bottom:22px;font-size:12px;border-left:3px solid #e67e22;color:#1a2535}':'')+ 
     // Plan sections
     '.plan-section{margin-bottom:26px}'+
     '.plan-header{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#2B6CC4;background:#eef4ff;border-radius:6px;padding:6px 12px;margin-bottom:10px}'+
@@ -4087,10 +4126,10 @@ function dprint(id){
     '<div class="info-item"><label>Sport / Activity</label><span>'+(p.sport||"—")+'</span></div>'+
     '<div class="info-item"><label>Age</label><span>'+(p.age||"—")+'</span></div>'+
     '<div class="info-item"><label>Status</label><span>'+(p.status||"Active")+'</span></div>'+
-    '<div class="info-item"><label>Condition</label><span>'+(p.injury||"—")+'</span></div>'+
+    '<div class="info-item"><label>Condition</label><span>'+(getBilingual(p.injury,false)||"—")+'</span></div>'+
     '<div class="info-item"><label>Sessions</label><span>'+(p.sessions||0)+'</span></div>'+
     '</div>'+
-    (p.notes?'<div class="notes"><strong>Clinical Notes:</strong> '+p.notes+'</div>':"")+
+    (getBilingual(p.notes,false)?'<div class="notes"><strong>Clinical Notes:</strong> '+getBilingual(p.notes,false)+'</div>':"")+
     // Exercise plans
     planSections+
     // Follow-ups
