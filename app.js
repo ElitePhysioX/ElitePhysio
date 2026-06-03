@@ -979,7 +979,10 @@ function omEditPlan(planId){
     '<button onclick="cm()" style="background:rgba(0,0,0,0.08);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:16px">✕</button></div>'+
     '<div class="g2" style="gap:10px;margin-bottom:14px">'+
     '<div style="grid-column:1/-1"><label class="lbl">Program Name (EN)</label><input class="inp" id="ep_name_en" value="'+plan.name+'"></div>'+
-    '<div style="grid-column:1/-1"><label class="lbl">שם (עברית)</label><input class="inp" id="ep_name_he" dir="rtl" value="'+(plan.nameHe||'')+'"></div></div>'+
+    '<div style="grid-column:1/-1"><label class="lbl">שם (עברית)</label><input class="inp" id="ep_name_he" dir="rtl" value="'+(plan.nameHe||'')+'"></div>'+
+    '<div style="grid-column:1/-1"><label class="lbl">🎯 Program Goal (EN)</label><textarea class="inp" id="ep_goal_en" rows="2" style="resize:vertical">'+((plan.goal||'').replace(/</g,'&lt;'))+'</textarea></div>'+
+    '<div style="grid-column:1/-1"><label class="lbl">🎯 מטרת התוכנית (עברית)</label><textarea class="inp" id="ep_goal_he" dir="rtl" rows="2" style="resize:vertical">'+((plan.goalHe||'').replace(/</g,'&lt;'))+'</textarea></div>'+
+    '</div>'+
     '<div style="font-size:12px;font-weight:700;color:#1a3a6e;text-transform:uppercase;margin-bottom:8px">'+(isHe?"ימי אימון":"Workout Days")+'</div>'+
     (plan.type==="repeating"?
       '<div id="ep_days_wrap">'+
@@ -995,6 +998,10 @@ function omEditPlan(planId){
     (plan.phases||[]).map(function(ph,pi){
       return '<div style="background:#f8fbff;border-radius:8px;padding:8px;margin-bottom:8px">'+
         '<div style="font-size:11px;font-weight:700;color:#2B6CC4;margin-bottom:5px">'+(isHe&&ph.nameHe?ph.nameHe:ph.name)+(ph.weeks?' ('+ph.weeks+' '+(isHe?"שבועות":"weeks")+')':'')+'</div>'+
+        '<div style="display:flex;gap:6px;margin-bottom:6px">'+
+        '<input class="inp" id="ep_phg_en_'+pi+'" placeholder="Phase goal (EN)" value="'+(ph.goal||'')+'" style="flex:1">'+
+        '<input class="inp" id="ep_phg_he_'+pi+'" dir="rtl" placeholder="מטרת השלב" value="'+(ph.goalHe||'')+'" style="flex:1">'+
+        '</div>'+
         (ph.days||[]).map(function(d,di){
           return '<div style="display:flex;gap:8px;margin-bottom:5px">'+
             '<input class="inp" id="ep_pd_en_'+pi+'_'+di+'" value="'+d.name+'" style="flex:1">'+
@@ -1034,6 +1041,8 @@ function saveEditPlan(planId){
   if(!plan) return;
   plan.name=g("ep_name_en")?g("ep_name_en").value.trim():plan.name;
   plan.nameHe=g("ep_name_he")?g("ep_name_he").value.trim():plan.nameHe;
+  plan.goal=g("ep_goal_en")?g("ep_goal_en").value.trim():(plan.goal||"");
+  plan.goalHe=g("ep_goal_he")?g("ep_goal_he").value.trim():(plan.goalHe||"");
   if(plan.type==="repeating"){
     var wrap=g("ep_days_wrap");
     var total=wrap?parseInt(wrap.dataset.count)||plan.days.length:plan.days.length;
@@ -1053,6 +1062,8 @@ function saveEditPlan(planId){
     if(newDays.length>0) plan.days=newDays;
   } else {
     (plan.phases||[]).forEach(function(ph,pi){
+      if(g("ep_phg_en_"+pi)) ph.goal=g("ep_phg_en_"+pi).value.trim();
+      if(g("ep_phg_he_"+pi)) ph.goalHe=g("ep_phg_he_"+pi).value.trim();
       (ph.days||[]).forEach(function(d,di){
         if(g("ep_pd_en_"+pi+"_"+di)) d.name=g("ep_pd_en_"+pi+"_"+di).value.trim();
         if(g("ep_pd_he_"+pi+"_"+di)) d.nameHe=g("ep_pd_he_"+pi+"_"+di).value.trim();
@@ -1060,7 +1071,7 @@ function saveEditPlan(planId){
     });
   }
   pts=pts.map(function(p){ return p.id===cur.id?cur:p; });
-  sv(); cm(); rplans();
+  sv(); cm(); rplanOverview(planId);
 }
 
 function deletePlan(planId){
@@ -1073,17 +1084,58 @@ function deletePlan(planId){
   sv(); rplans();
 }
 
-// Open a specific plan (show its days/phases)
+// Open a specific plan (show goals overview)
 function openPlan(planId){
   curPlanId=planId;
+  cur._editingDay=null;
+  rplanOverview(planId);
+}
+
+function rplanOverview(planId){
   var plan=(cur.workoutPlans||[]).find(function(p){ return p.id===planId; });
   if(!plan) return;
-  var days=plan.type==="periodized"?null:(plan.days||[]);
-  // Auto-open first day
-  if(days&&days.length>0){ openPlanDay(planId,0,days[0].id); }
-  else if(plan.phases&&plan.phases[0]&&plan.phases[0].days&&plan.phases[0].days[0]){
-    openPlanDay(planId,0,plan.phases[0].days[0].id);
-  }
+  var isHe=lng==="he";
+  var planName=isHe&&plan.nameHe?plan.nameHe:plan.name;
+  var goal=isHe&&plan.goalHe?plan.goalHe:(plan.goal||"");
+  var html=
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">'+
+    '<button onclick="cur._editingDay=null;rplans()" style="background:#f0f5ff;color:#2B6CC4;border:1px solid rgba(43,108,196,0.3);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">← '+(isHe?"תוכניות":"Programs")+'</button>'+
+    '<span style="color:#4a6a8a;font-size:13px">›</span>'+
+    '<span style="font-size:14px;font-weight:800;color:#1a3a6e">'+planName+'</span>'+
+    '</div>'+
+    (goal?
+      '<div style="background:rgba(43,108,196,0.07);border-radius:10px;padding:12px 16px;border-left:3px solid #2B6CC4;margin-bottom:14px">'+
+      '<div style="font-size:11px;font-weight:700;color:#2B6CC4;text-transform:uppercase;margin-bottom:5px">🎯 '+(isHe?"מטרת התוכנית":"Program Goal")+'</div>'+
+      '<div style="font-size:14px;color:#1a2535;line-height:1.6">'+goal+'</div></div>':
+      '<div style="background:#fff8e8;border-radius:10px;padding:9px 13px;border-left:3px solid #e8a020;margin-bottom:14px;font-size:12px;color:#7a5c00">'+
+      '💡 '+(isHe?"לחץ \'ערוך תוכנית\' כדי להוסיף מטרות":"Click \'Edit Program\' to add goals")+'</div>'
+    )+
+    (plan.type==="periodized"?
+      (plan.phases||[]).map(function(ph,pi){
+        var phName=isHe&&ph.nameHe?ph.nameHe:ph.name;
+        var phGoal=isHe&&ph.goalHe?ph.goalHe:(ph.goal||"");
+        return '<div style="background:#f8fbff;border-radius:10px;padding:12px 14px;margin-bottom:10px;border:1px solid rgba(43,108,196,0.15)">'+
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'+
+          '<span style="font-size:13px;font-weight:800;color:#2B6CC4">'+phName+'</span>'+
+          (ph.weeks?'<span style="font-size:11px;color:#4a6a8a;background:#e8f0fb;border-radius:5px;padding:1px 7px">'+ph.weeks+' '+(isHe?"שב'":"wk")+'</span>':'')+
+          '</div>'+
+          (phGoal?'<div style="font-size:13px;color:#1a2535;margin-bottom:8px;padding:7px 10px;background:rgba(43,108,196,0.06);border-radius:7px;line-height:1.5">'+phGoal+'</div>':'')+
+          '<div style="display:flex;gap:5px;flex-wrap:wrap">'+
+          (ph.days||[]).map(function(d){
+            return '<button onclick="openPlanDay('+planId+','+pi+','+d.id+')" style="padding:5px 12px;border-radius:7px;border:2px solid #2B6CC4;background:#fff;color:#2B6CC4;font-size:12px;font-weight:700;cursor:pointer" onmouseover="this.style.background=\'#2B6CC4\';this.style.color=\'#fff\'" onmouseout="this.style.background=\'#fff\';this.style.color=\'#2B6CC4\'">'+(isHe&&d.nameHe?d.nameHe:d.name)+'</button>';
+          }).join("")+'</div></div>';
+      }).join("")
+    :
+      '<div style="background:#f8fbff;border-radius:10px;padding:12px 14px;margin-bottom:10px;border:1px solid rgba(43,108,196,0.15)">'+
+      '<div style="font-size:12px;font-weight:700;color:#2B6CC4;margin-bottom:8px">'+(isHe?"ימי אימון":"Workout Days")+'</div>'+
+      '<div style="display:flex;gap:5px;flex-wrap:wrap">'+
+      (plan.days||[]).map(function(d){
+        return '<button onclick="openPlanDay('+planId+',0,'+d.id+')" style="padding:6px 14px;border-radius:8px;border:2px solid #2B6CC4;background:#fff;color:#2B6CC4;font-size:13px;font-weight:700;cursor:pointer" onmouseover="this.style.background=\'#2B6CC4\';this.style.color=\'#fff\'" onmouseout="this.style.background=\'#fff\';this.style.color=\'#2B6CC4\'">'+(isHe&&d.nameHe?d.nameHe:d.name)+'</button>';
+      }).join("")+'</div></div>'
+    )+
+    '<div style="display:flex;justify-content:flex-end;margin-top:10px">'+
+    '<button class="btn" style="font-size:12px" onclick="omEditPlan('+planId+')">✏️ '+(isHe?"ערוך תוכנית":"Edit Program")+'</button></div>';
+  g("pet").innerHTML=html;
 }
 
 // ── Exercises (overridden to use workout plans) ──
@@ -1111,7 +1163,7 @@ function rex(){
     '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">'+
     '<button onclick="cur._editingDay=null;rplans()" style="background:#f0f5ff;color:#2B6CC4;border:1px solid rgba(43,108,196,0.3);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">← '+(isHe?"תוכניות":"Programs")+'</button>'+
     '<span style="color:#4a6a8a;font-size:13px">›</span>'+
-    '<span style="font-size:13px;color:#2B6CC4;font-weight:600">'+planName+'</span>'+
+    '<button onclick="cur._editingDay=null;rplanOverview('+plan.id+')" style="background:none;border:none;font-size:13px;color:#2B6CC4;font-weight:600;cursor:pointer;padding:0">'+planName+'</button>'+
     '<span style="color:#4a6a8a;font-size:13px">›</span>'+
     '<span style="font-size:13px;font-weight:700;color:#1a3a6e">'+dayName+'</span>'+
     '</div>'+
@@ -2023,12 +2075,22 @@ function renderPatientView(p){
         }).join("")+'</div>';
     }
 
+    // Program goal display
+    if(selPlan.goal||selPlan.goalHe){
+      exHtml += '<div style="background:rgba(43,108,196,0.07);border-radius:8px;padding:10px 14px;border-left:3px solid #2B6CC4;margin-bottom:10px">'+
+        '<div style="font-size:11px;font-weight:700;color:#2B6CC4;text-transform:uppercase;margin-bottom:3px">🎯 '+(isHe?"מטרת התוכנית":"Program Goal")+'</div>'+
+        '<div style="font-size:13px;color:#1a2535;line-height:1.6">'+(isHe&&selPlan.goalHe?selPlan.goalHe:(selPlan.goal||''))+'</div></div>';
+    }
+
     // Day tabs
     var dayTabs = '';
     if(selPlan.type==="periodized"){
       (selPlan.phases||[]).forEach(function(ph,pi){
         var phName=isHe&&ph.nameHe?ph.nameHe:ph.name;
-        dayTabs += '<div style="margin-bottom:6px"><div style="font-size:10px;color:#4a6a8a;font-weight:600;margin-bottom:3px">'+phName+(ph.weeks?' · '+ph.weeks+(isHe?"שב'":"wk"):'')+'</div>'+
+        var phGoal=isHe&&ph.goalHe?ph.goalHe:(ph.goal||"");
+        dayTabs += '<div style="margin-bottom:8px">'+
+          '<div style="font-size:10px;color:#4a6a8a;font-weight:600;margin-bottom:3px">'+phName+(ph.weeks?' · '+ph.weeks+(isHe?"שב'":"wk"):'')+'</div>'+
+          (phGoal?'<div style="font-size:12px;color:#1a2535;margin-bottom:5px;padding:5px 8px;background:rgba(43,108,196,0.06);border-radius:6px;line-height:1.4">'+phGoal+'</div>':'')+
           (ph.days||[]).map(function(d){
             var active=selDay&&d.id===selDay.id;
             return '<button onclick="patientSelectDay('+selPlan.id+','+pi+','+d.id+')" style="padding:5px 11px;border-radius:7px;border:2px solid '+(active?'#2B6CC4':'#ddd')+';background:'+(active?'#2B6CC4':'#fff')+';color:'+(active?'#fff':'#1a3a6e')+';font-size:12px;font-weight:700;cursor:pointer;margin-right:4px;margin-bottom:4px">'+(isHe&&d.nameHe?d.nameHe:d.name)+'</button>';
