@@ -14,6 +14,20 @@ var appts = [];
 var calWeekOffset = 0;
 var calDrag = null;
 var calSH = 28; // slot height px, updated on each render
+var fuReadMap = {}; // {patientId: latestSeenNoteId} — tracks which follow-up notes admin has read
+
+function loadFuRead(){ try{ fuReadMap=JSON.parse(localStorage.getItem("ep_furead")||"{}"); }catch(e){ fuReadMap={}; } }
+function saveFuRead(){ try{ localStorage.setItem("ep_furead",JSON.stringify(fuReadMap)); }catch(e){} }
+function hasNewNote(p){
+  var fus=p.followUps||[]; if(!fus.length) return false;
+  var latest=fus[0].id; // followUps are stored newest-first
+  return fuReadMap[p.id] !== latest;
+}
+function markNotesRead(id){
+  var p=pts.find(function(x){ return x.id===id; }); if(!p) return;
+  var fus=p.followUps||[]; if(!fus.length) return;
+  fuReadMap[id]=fus[0].id; saveFuRead();
+}
 
 function loadRecycleBin(){
   try{
@@ -240,6 +254,7 @@ function alog(){
       auth="admin"; g("apw").value="";
       setL("he");
       sessionStorage.setItem("ep_session", JSON.stringify({auth:"admin", token:pw, sbKey:SB_KEY, lng:"he"}));
+      loadFuRead();
       syncCustomLib();
       ss2("a");
       sbLoad(function(){
@@ -324,7 +339,7 @@ function addAppt(a){
 function deleteAppt(id){
   if(!ADMIN_TOKEN) return;
   var a=appts.find(function(x){return x.id==id;});
-  var p=a?pts.find(function(x){return x.id==a.patientId;}):null;
+  var p=a?pts.find(function(x){return x.id==(a.patient_id||a.patientId);}):null;
   var nm=p?pn(p):(a&&a.patientName||"?");
   var info=a?(nm+' &mdash; '+a.date+' '+a.time+(a.end_time?' – '+a.end_time:'')):'';
   g("MC").innerHTML=
@@ -388,7 +403,7 @@ function buildCalHTML(){
     for(var i=0;i<N;i++){ H+='<div style="position:absolute;top:'+(i*SH)+'px;left:0;right:0;height:'+SH+'px;border-bottom:'+(i%2===1?'1px solid #b8c8da':'1px dashed #e8ecf2')+'"></div>'; }
     // Appointment blocks
     da.forEach(function(a){
-      var p=pts.find(function(x){ return x.id==a.patientId; });
+      var p=pts.find(function(x){ return x.id==(a.patient_id||a.patientId); });
       var nm=p?pn(p):(a.patientName||"?");
       var si=Math.max(0,Math.min(timeToSlotIdx(a.time),N-1));
       var ei=a.end_time?Math.max(si+1,Math.min(timeToSlotIdx(a.end_time),N)):si+2;
@@ -398,7 +413,8 @@ function buildCalHTML(){
       H+='onclick="event.stopPropagation();'+(p?'op('+p.id+')':'')+'" ';
       H+='onpointerdown="calDragStart(event,'+a.id+')" ';
       H+='title="'+nm+(a.notes?' — '+a.notes:'')+'">';
-      H+='<div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3">'+nm+'</div>';
+      var calDot=(auth==="admin"&&p&&hasNewNote(p))?'<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#f97316;vertical-align:middle;margin-right:3px;flex-shrink:0"></span>':'';
+      H+='<div style="display:flex;align-items:center;gap:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3">'+calDot+'<span style="overflow:hidden;text-overflow:ellipsis">'+nm+'</span></div>';
       H+='<div style="font-size:9px;opacity:.6;margin-top:1px">'+a.time+' – '+endLabel+'</div>';
       H+='<span style="position:absolute;right:3px;top:3px;font-size:9px;opacity:.4;cursor:pointer;touch-action:none" onclick="event.stopPropagation();deleteAppt('+a.id+')">&#x2715;</span>';
       H+='</div>';
@@ -415,7 +431,7 @@ function calDragStart(e,apptId){
   if(e.button!==undefined&&e.button!==0) return;
   e.preventDefault(); e.stopPropagation();
   var a=appts.find(function(x){return x.id==apptId;}); if(!a) return;
-  var p=pts.find(function(x){return x.id==a.patientId;});
+  var p=pts.find(function(x){return x.id==(a.patient_id||a.patientId);});
   var nm=p?pn(p):(a.patientName||"?");
   var el=e.currentTarget, rect=el.getBoundingClientRect();
   var ghost=document.createElement('div');
@@ -521,7 +537,7 @@ function saveNewAppt(){
   var ep=g("ca-pat"),ed=g("ca-date"),et=g("ca-time"),ee=g("ca-etime"),en=g("ca-notes");
   if(!ep||!ed||!et||!ep.value||!ed.value||!et.value) return;
   var endT=ee&&ee.value&&ee.value>et.value?ee.value:addMinutes(et.value,60);
-  addAppt({patientId:parseInt(ep.value),date:ed.value,time:et.value,end_time:endT,notes:en?en.value:""});
+  addAppt({patient_id:parseInt(ep.value),date:ed.value,time:et.value,end_time:endT,notes:en?en.value:""});
   cm();
 }
 function openQuickNewPatient(d64,t64){
@@ -622,9 +638,10 @@ function rpl(){
   g("pls").innerHTML=list.length?list.map(function(p){
     var dn=pn(p);
     var avHtml = p.avatarId ? '<div style="width:38px;height:50px;flex-shrink:0">'+legoSVG(AVATARS.find(function(a){return a.id===p.avatarId;})||AVATARS[0],38)+'</div>' : av(dn);
+    var dotHtml = hasNewNote(p) ? '<div style="width:10px;height:10px;border-radius:50%;background:#f97316;flex-shrink:0;box-shadow:0 0 0 2px #fff,0 0 0 3px #f97316" title="New note"></div>' : '';
     return '<div class="card" onclick="op('+p.id+')"><div style="display:flex;align-items:center;justify-content:space-between">'+
       '<div style="display:flex;align-items:center;gap:13px">'+avHtml+
-      '<div><div class="pat-name">'+dn+'</div><div class="pat-sub">'+(p.injury||"—")+' &middot; '+(p.age||"—")+'</div></div></div>'+
+      '<div><div class="pat-name" style="display:flex;align-items:center;gap:7px">'+dn+dotHtml+'</div><div class="pat-sub">'+(p.injury||"—")+' &middot; '+(p.age||"—")+'</div></div></div>'+
       '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">'+bdg(spName(p.sport))+' '+sbdg(p.status)+'</div></div></div>';
   }).join(""):'<div style="color:#4a6a8a;text-align:center;padding:32px 0;font-size:14px">No patients found</div>';
 }
@@ -673,12 +690,14 @@ function rs(){
 // ── Open Patient ──
 function op(id){
   cur=pts.find(function(p){ return p.id===id; }); ctab="ex"; gv("pat"); rpd();
+  if(auth==="admin"){ markNotesRead(id); rpl(); }
   // Fetch fresh data from Supabase in background to get latest workout history
   apiCall("patient-login-by-id","POST",{id:id},function(err,d){
     if(!err && d && d.ok && d.patient){
       var fresh=fromRow(d.patient);
       pts=pts.map(function(p){ return p.id===id?fresh:p; });
       cur=fresh; lsave(); rpd();
+      if(auth==="admin"){ markNotesRead(id); rpl(); }
     }
   });
 }
