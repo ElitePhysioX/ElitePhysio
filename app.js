@@ -1057,8 +1057,11 @@ function removeEditDay(i){
 
 function milestoneRow(idx,m,isHe){
   m=m||{};
+  var btnStyle='background:#f0f4ff;border:1px solid #c4cfe8;border-radius:5px;padding:2px 7px;cursor:pointer;font-size:13px;color:#2B6CC4;line-height:1';
   return '<div id="ep_ms_'+idx+'" style="background:#f5f2ff;border-radius:8px;padding:10px;margin-bottom:7px;border:1px solid rgba(109,40,217,0.18)">'+
     '<div style="display:flex;align-items:center;gap:6px;margin-bottom:7px;flex-wrap:wrap">'+
+    '<button onclick="msEditMove('+idx+',-1)" style="'+btnStyle+'">↑</button>'+
+    '<button onclick="msEditMove('+idx+',1)" style="'+btnStyle+'">↓</button>'+
     '<span style="font-size:11px;font-weight:700;color:#6d28d9">'+(isHe?'שבועות:':'Weeks:')+'</span>'+
     '<input type="number" id="ep_ms_from_'+idx+'" value="'+(m.weekFrom||'')+'" min="1" max="52" placeholder="1" style="width:44px;padding:3px 5px;border:1px solid #c4b5e8;border-radius:6px;font-size:13px;text-align:center">'+
     '<span style="font-size:13px;color:#6d28d9">–</span>'+
@@ -1068,6 +1071,26 @@ function milestoneRow(idx,m,isHe){
     '<input class="inp" id="ep_ms_en_'+idx+'" placeholder="Goal (English)" value="'+(m.text||'')+'" style="margin-bottom:5px">'+
     '<input class="inp" id="ep_ms_he_'+idx+'" dir="rtl" placeholder="מטרה (עברית)" value="'+(m.textHe||'')+'">'+
     '</div>';
+}
+function msEditMove(idx,dir){
+  var wrap=g("ep_ms_wrap"); if(!wrap) return;
+  var count=parseInt(wrap.dataset.count)||0;
+  // Find the nearest visible neighbour in the given direction
+  var other=-1;
+  for(var i=idx+dir;i>=0&&i<count;i+=dir){
+    var el=g("ep_ms_"+i);
+    if(el&&el.style.display!=="none"){other=i;break;}
+  }
+  if(other<0) return;
+  // Swap field values between the two rows
+  ['from','to','en','he'].forEach(function(f){
+    var a=g("ep_ms_"+f+"_"+idx),b=g("ep_ms_"+f+"_"+other);
+    if(!a||!b) return;
+    var tmp=a.value; a.value=b.value; b.value=tmp;
+  });
+  // Give the moved-to row a brief flash so the user can follow it
+  var dest=g("ep_ms_"+other);
+  if(dest){ dest.style.outline="2px solid #6d28d9"; setTimeout(function(){dest.style.outline="";},400); }
 }
 function addMilestone(){
   var wrap=g("ep_ms_wrap"); if(!wrap) return;
