@@ -14,6 +14,7 @@ var appts = [];
 var calWeekOffset = 0;
 var calDrag = null;
 var calSH = 28; // slot height px, updated on each render
+var exDrag = null;
 var fuReadMap = {}; // {patientId: latestSeenNoteId} — tracks which follow-up notes admin has read
 
 function loadFuRead(){ try{ fuReadMap=JSON.parse(localStorage.getItem("ep_furead")||"{}"); }catch(e){ fuReadMap={}; } }
@@ -1152,7 +1153,7 @@ function rex(){
         '<div style="flex:1">'+
         '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">'+bdg("#"+(i+1))+
         '<span style="font-weight:700;font-size:15px;color:#1a3a6e">'+eName+'</span>'+lngBadge+
-        '<span style="font-size:11px;color:#c8d8ee;margin-left:4px;cursor:grab" title="Hold to drag">⠿</span></div>'+
+        '<span class="ex-drag-handle" style="font-size:15px;color:#a0b8d0;margin-left:6px;cursor:grab;touch-action:none;padding:2px 4px;border-radius:3px;user-select:none" title="Hold to drag">⠿</span></div>'+
         '<div style="font-size:13px;color:#4a6a8a;margin-bottom:4px">'+setsReps+' reps</div>'+
         (eDesc?'<div style="font-size:13px;color:#1a2535;margin-bottom:3px">'+eDesc+'</div>':"")+
         (eTips?'<div style="font-size:13px;color:#00a86b;margin-bottom:6px">&#128161; '+eTips+'</div>':"")+
@@ -1216,11 +1217,12 @@ function rexFlat(){
       var lngBadge = isHe ? '<span style="font-size:10px;background:#e8f0ff;color:#2B6CC4;border-radius:4px;padding:1px 5px;margin-left:4px">🇮🇱 HE</span>' :
                             '<span style="font-size:10px;background:#f0f5e8;color:#2a7a3a;border-radius:4px;padding:1px 5px;margin-left:4px">🇺🇸 EN</span>';
       var setsReps = '<span style="font-weight:600;color:#2B6CC4">'+e.sets+'</span> &times; <span style="font-weight:600;color:#2B6CC4">'+e.reps+'</span>';
-      return '<div class="xcard" style="direction:'+(isHe?"rtl":"ltr")+'">'+
+      return '<div class="xcard" data-ex-idx="'+i+'" id="excard_'+i+'" style="direction:'+(isHe?"rtl":"ltr")+';transition:all 0.2s">'+
         '<div style="display:flex;justify-content:space-between;align-items:flex-start">'+
         '<div style="flex:1">'+
         '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;flex-wrap:wrap">'+bdg("#"+(i+1))+
-        '<span style="font-weight:700;font-size:15px;color:#1a3a6e">'+eName+'</span>'+lngBadge+'</div>'+
+        '<span style="font-weight:700;font-size:15px;color:#1a3a6e">'+eName+'</span>'+lngBadge+
+        '<span class="ex-drag-handle" style="font-size:15px;color:#a0b8d0;margin-left:6px;cursor:grab;touch-action:none;padding:2px 4px;border-radius:3px;user-select:none" title="Hold to drag">⠿</span></div>'+
         '<div style="font-size:13px;color:#4a6a8a;margin-bottom:6px">'+setsReps+' reps</div>'+
         (eDesc?'<div style="font-size:13px;color:#1a2535;margin-bottom:6px;line-height:1.5">'+eDesc+'</div>':"")+
         (eTips?'<div style="font-size:13px;color:#00a86b;margin-bottom:8px;line-height:1.5">&#128161; '+eTips+'</div>':"")+
@@ -1230,6 +1232,98 @@ function rexFlat(){
         '<button class="btn" style="padding:4px 9px;font-size:12px;background:#f0f5ff" onclick="om(\'ae\','+e.id+')">✏️</button>'+
         '</div></div></div>';
     }).join("");
+  setTimeout(function(){
+    (p.exercises||[]).forEach(function(_,i){
+      var el=document.getElementById("excard_"+i);
+      if(el) initDragFlat(el,i);
+    });
+  },100);
+}
+
+// ── Exercise Drag-to-Reorder ──
+function _exDragStart(el, idx, meta, e){
+  if(e.button!==undefined&&e.button!==0) return;
+  e.preventDefault(); e.stopPropagation();
+  var rect=el.getBoundingClientRect();
+  var ghost=el.cloneNode(true);
+  ghost.style.cssText='position:fixed;z-index:9999;pointer-events:none;left:'+rect.left+'px;top:'+rect.top+'px;width:'+rect.width+'px;opacity:0.82;box-shadow:0 8px 28px rgba(43,108,196,.3);border-radius:10px;transform:scale(1.02);background:#fff;box-sizing:border-box';
+  document.body.appendChild(ghost);
+  el.style.opacity='0.3';
+  var handle=e.currentTarget;
+  handle.setPointerCapture(e.pointerId);
+  exDrag=Object.assign({el:el,ghost:ghost,handle:handle,pid:e.pointerId,fromIdx:idx,ox:e.clientX-rect.left,oy:e.clientY-rect.top},meta);
+  handle.addEventListener('pointermove',exOnMove);
+  handle.addEventListener('pointerup',exOnUp);
+  handle.addEventListener('pointercancel',exOnCancel);
+}
+function initDrag(el,idx,planId,phaseIdx,dayId){
+  var h=el.querySelector('.ex-drag-handle'); if(!h) return;
+  h.addEventListener('pointerdown',function(e){ _exDragStart(el,idx,{flat:false,planId:planId,phaseIdx:phaseIdx,dayId:dayId},e); });
+}
+function initDragFlat(el,idx){
+  var h=el.querySelector('.ex-drag-handle'); if(!h) return;
+  h.addEventListener('pointerdown',function(e){ _exDragStart(el,idx,{flat:true},e); });
+}
+function exOnMove(e){
+  if(!exDrag) return;
+  exDrag.ghost.style.left=(e.clientX-exDrag.ox)+'px';
+  exDrag.ghost.style.top=(e.clientY-exDrag.oy)+'px';
+  exShowDrop(exGetDropIdx(e.clientY));
+}
+function exGetDropIdx(clientY){
+  var cards=document.querySelectorAll('[id^="excard_"]');
+  for(var i=0;i<cards.length;i++){
+    var r=cards[i].getBoundingClientRect();
+    if(clientY<r.top+r.height*0.5) return i;
+  }
+  return cards.length;
+}
+function exShowDrop(idx){
+  var old=document.getElementById('ex-drop-line'); if(old) old.remove();
+  var cards=document.querySelectorAll('[id^="excard_"]'); if(!cards.length) return;
+  var line=document.createElement('div');
+  line.id='ex-drop-line';
+  line.style.cssText='height:3px;background:#2B6CC4;border-radius:3px;margin:2px 0;box-shadow:0 0 6px rgba(43,108,196,.45);position:relative;z-index:10';
+  if(idx>=cards.length) cards[cards.length-1].parentNode.appendChild(line);
+  else cards[idx].parentNode.insertBefore(line,cards[idx]);
+}
+function _exDragEnd(e){
+  if(!exDrag) return;
+  exDrag.handle.removeEventListener('pointermove',exOnMove);
+  exDrag.handle.removeEventListener('pointerup',exOnUp);
+  exDrag.handle.removeEventListener('pointercancel',exOnCancel);
+  try{ exDrag.handle.releasePointerCapture(exDrag.pid); }catch(err){}
+  exDrag.el.style.opacity='';
+  document.body.removeChild(exDrag.ghost);
+  var old=document.getElementById('ex-drop-line'); if(old) old.remove();
+  return exDrag;
+}
+function exOnUp(e){
+  var drag=_exDragEnd(e); if(!drag) return;
+  var toIdx=exGetDropIdx(e.clientY);
+  exDrag=null;
+  if(toIdx===drag.fromIdx||toIdx===drag.fromIdx+1){ drag.flat?rexFlat():rex(); return; }
+  drag.flat?reorderExFlat(drag.fromIdx,toIdx):reorderExPlan(drag.planId,drag.phaseIdx,drag.dayId,drag.fromIdx,toIdx);
+}
+function exOnCancel(e){
+  _exDragEnd(e); exDrag=null; rex();
+}
+function reorderExPlan(planId,phaseIdx,dayId,from,to){
+  var plan=(cur.workoutPlans||[]).find(function(p){ return p.id===planId; }); if(!plan) return;
+  var days=plan.type==="periodized"?((plan.phases||[])[phaseIdx]||{}).days||[]:plan.days||[];
+  var day=days.find(function(d){ return d.id===dayId; }); if(!day||!day.exercises) return;
+  var arr=day.exercises.slice();
+  var item=arr.splice(from,1)[0];
+  arr.splice(to>from?to-1:to,0,item);
+  day.exercises=arr;
+  pts=pts.map(function(p){ return p.id===cur.id?cur:p; }); sv(); rex();
+}
+function reorderExFlat(from,to){
+  var arr=(cur.exercises||[]).slice();
+  var item=arr.splice(from,1)[0];
+  arr.splice(to>from?to-1:to,0,item);
+  cur.exercises=arr;
+  pts=pts.map(function(p){ return p.id===cur.id?cur:p; }); sv(); rexFlat();
 }
 
 // ── Follow-ups ──
