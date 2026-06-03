@@ -1230,7 +1230,7 @@ function rplanOverview(planId){
     (goal?
       '<div style="background:rgba(43,108,196,0.07);border-radius:10px;padding:12px 16px;border-left:3px solid #2B6CC4;margin-bottom:14px">'+
       '<div style="font-size:11px;font-weight:700;color:#2B6CC4;text-transform:uppercase;margin-bottom:5px">🎯 '+(isHe?"מטרת התוכנית":"Program Goal")+'</div>'+
-      '<div style="font-size:14px;color:#1a2535;line-height:1.6">'+goal+'</div></div>':
+      '<div style="font-size:14px;color:#1a2535;line-height:1.6;white-space:pre-wrap">'+goal+'</div></div>':
       '<div style="background:#fff8e8;border-radius:10px;padding:9px 13px;border-left:3px solid #e8a020;margin-bottom:14px;font-size:12px;color:#7a5c00">'+
       '💡 '+(isHe?"לחץ \'ערוך תוכנית\' כדי להוסיף מטרות":"Click \'Edit Program\' to add goals")+'</div>'
     )+
@@ -2267,7 +2267,7 @@ function renderPatientView(p){
     if(selPlan.goal||selPlan.goalHe){
       exHtml += '<div style="background:rgba(43,108,196,0.07);border-radius:8px;padding:10px 14px;border-left:3px solid #2B6CC4;margin-bottom:10px">'+
         '<div style="font-size:11px;font-weight:700;color:#2B6CC4;text-transform:uppercase;margin-bottom:3px">🎯 '+(isHe?"מטרת התוכנית":"Program Goal")+'</div>'+
-        '<div style="font-size:13px;color:#1a2535;line-height:1.6">'+(isHe&&selPlan.goalHe?selPlan.goalHe:(selPlan.goal||''))+'</div></div>';
+        '<div style="font-size:13px;color:#1a2535;line-height:1.6;white-space:pre-wrap">'+(isHe&&selPlan.goalHe?selPlan.goalHe:(selPlan.goal||''))+'</div></div>';
     }
     exHtml += renderMilestones(selPlan,isHe);
 
