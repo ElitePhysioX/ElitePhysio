@@ -66,7 +66,9 @@ function apiCall(path, method, body, cb){
   if(body) opts.body = JSON.stringify(body);
   fetch("/api/"+path, opts)
     .then(function(r){
-      return r.json().then(function(d){ return {ok:r.ok, status:r.status, d:d}; });
+      return r.json()
+        .then(function(d){ return {ok:r.ok, status:r.status, d:d}; })
+        .catch(function(){ return {ok:false, status:r.status, d:{error:"Server error ("+r.status+")"}}; });
     })
     .then(function(res){
       if(cb) cb(res.ok ? null : new Error((res.d&&res.d.error)||("HTTP "+res.status)), res.d);
@@ -338,7 +340,7 @@ function loadAppts(cb){
   if(!ADMIN_TOKEN){ appts=[]; cb(); return; }
   apiCall("appts","GET",null,function(err,data){
     if(!err&&Array.isArray(data)){ appts=data; }
-    else{ appts=[]; }
+    // on error keep existing appts to avoid wiping the calendar
     cb();
   });
 }
@@ -491,7 +493,14 @@ function calOnUp(e){
   var drag=calDrag; calDrag=null;
   if(newDate&&newTime&&(newDate!==drag.origDate||newTime!==drag.origTime)){
     updateApptDateTime(drag.id,newDate,newTime);
-  } else { renderCal(); }
+  } else {
+    // Tap (no drag movement) — navigate to patient profile
+    if(auth==="admin"){
+      var a=appts.find(function(x){ return x.id==drag.id; });
+      if(a){ var pid=a.patient_id||a.patientId; var p=pts.find(function(x){ return x.id==pid; }); if(p){ op(p.id); return; } }
+    }
+    renderCal();
+  }
 }
 function calOnCancel(e){
   if(!calDrag) return;
