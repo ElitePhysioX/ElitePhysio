@@ -390,19 +390,20 @@ function confirmDeleteAppt(id){
 function timeToSlotIdx(t){ var p=(t||"07:00").split(':'),h=parseInt(p[0]),m=parseInt(p[1]||0); return (h-7)*2+(m>=30?1:0); }
 function slotIdxToTime(i){ var h=7+Math.floor(i/2),m=i%2===0?'00':'30'; return String(h).padStart(2,'0')+':'+m; }
 function addMinutes(t,mins){ var p=(t||"00:00").split(':'),h=parseInt(p[0]),m=parseInt(p[1]||0)+mins; h+=Math.floor(m/60); m=m%60; return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0'); }
-function calBodyClick(e,date){ if(calDrag) return; var r=e.currentTarget.getBoundingClientRect(); var idx=Math.max(0,Math.min(Math.floor((e.clientY-r.top)/calSH),24)); openNewApptAt(date,slotIdxToTime(idx)); }
+function calBodyClick(e,date){ if(calDrag) return; var r=e.currentTarget.getBoundingClientRect(); var idx=Math.max(0,Math.min(Math.floor((e.clientY-r.top)/calSH),28)); openNewApptAt(date,slotIdxToTime(idx)); }
 
 function buildCalHTML(){
   var mob=window.innerWidth<700;
-  var SH=mob?16:28; calSH=SH;
-  var N=26, HDR=mob?36:44, TCOL=mob?28:38, gridH=N*SH;
+  var N=30; // 07:00–22:00 in 30-min slots
+  var SH=Math.max(12,Math.min(22,Math.floor((window.innerHeight*0.62)/N))); calSH=SH;
+  var HDR=mob?36:44, TCOL=mob?28:38, gridH=N*SH;
   var days=calDays(calWeekOffset);
   var todayStr=fmtDate(new Date());
   var ws=days[0],we=days[6];
   var lo=lng==="he"?"he-IL":"en-US";
   var wLabel=ws.toLocaleDateString(lo,{month:"short",day:"numeric"})+" – "+we.toLocaleDateString(lo,{month:"short",day:"numeric",year:"numeric"});
   // Time labels (hours only)
-  var tL=""; for(var i=0;i<N;i+=2){ tL+='<div style="position:absolute;top:'+(i*SH-5)+'px;right:3px;font-size:9px;color:#9aabcf;line-height:1">'+String(7+i/2).padStart(2,'0')+':00</div>'; }
+  var tL=""; for(var i=0;i<=N;i+=2){ tL+='<div style="position:absolute;top:'+(i*SH-5)+'px;right:3px;font-size:9px;color:#9aabcf;line-height:1">'+String(7+i/2).padStart(2,'0')+':00</div>'; }
   var H='<div class="card cal-card" style="padding:0;overflow:hidden;margin-bottom:24px">';
   // Header bar
   H+='<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid #e2e8f0;background:#f8fafc;flex-wrap:wrap;gap:6px">';
@@ -495,7 +496,7 @@ function calOnUp(e){
     var r=bodies[i].getBoundingClientRect();
     if(e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom){
       newDate=bodies[i].dataset.date;
-      newTime=slotIdxToTime(Math.max(0,Math.min(Math.floor((e.clientY-r.top)/calSH),24)));
+      newTime=slotIdxToTime(Math.max(0,Math.min(Math.floor((e.clientY-r.top)/calSH),28)));
       break;
     }
   }
@@ -534,17 +535,17 @@ function updateApptDateTime(id,date,time){
   renderCal();
 }
 function caTimeChanged(){
-  var st=g("ca-time"),et=g("ca-etime"); if(!st||!et) return;
-  var opts=et.options;
-  for(var i=0;i<opts.length;i++){ if(opts[i].value===st.value){ et.selectedIndex=Math.min(i+2,opts.length-1); break; } }
+  var st=g("ca-time"),et=g("ca-etime"); if(!st||!et||!st.value) return;
+  et.value=addMinutes(st.value,60);
 }
 function openNewAppt(){ openNewApptAt("",""); }
 function openNewApptAt(date,time,preselectId){
   var td=fmtDate(new Date());
   var pO=pts.map(function(p){ return '<option value="'+p.id+'"'+(p.id===preselectId?' selected':'')+'>'+pn(p)+'</option>'; }).join("");
   if(!pO) pO='<option value="">'+( lng==="he"?"אין מטופלים":"No patients")+'</option>';
-  var tO=""; for(var h=7;h<20;h++){ var hs=String(h).padStart(2,"0"); tO+='<option value="'+hs+':00">'+hs+':00</option><option value="'+hs+':30">'+hs+':30</option>'; }
   var iS='style="width:100%;padding:9px 10px;border:1px solid #d1d9e0;border-radius:8px;font-size:14px;margin-bottom:14px;background:#f8fafc;box-sizing:border-box"';
+  var tS='style="width:100%;padding:8px 6px;border:1px solid #d1d9e0;border-radius:8px;font-size:14px;background:#f8fafc;box-sizing:border-box"';
+  var defStart=time||"08:00", defEnd=addMinutes(defStart,60);
   var d64=encodeURIComponent(date||""), t64=encodeURIComponent(time||"");
   g("MC").innerHTML=
     '<div style="padding:4px 0">'+
@@ -559,9 +560,9 @@ function openNewApptAt(date,time,preselectId){
     '<label style="font-size:12px;color:#4a6a8a;font-weight:600;display:block;margin-bottom:6px">'+(lng==="he"?"שעת התחלה וסיום":"Start &amp; end time")+'</label>'+
     '<div style="display:flex;gap:8px;margin-bottom:14px">'+
     '<div style="flex:1"><div style="font-size:10px;color:#6a8aaa;margin-bottom:3px">'+(lng==="he"?"התחלה":"Start")+'</div>'+
-    '<select id="ca-time" style="width:100%;padding:8px 6px;border:1px solid #d1d9e0;border-radius:8px;font-size:13px;background:#f8fafc;box-sizing:border-box" onchange="caTimeChanged()">'+tO+'</select></div>'+
+    '<input id="ca-time" type="time" value="'+defStart+'" min="07:00" max="22:00" '+tS+' onchange="caTimeChanged()"></div>'+
     '<div style="flex:1"><div style="font-size:10px;color:#6a8aaa;margin-bottom:3px">'+(lng==="he"?"סיום":"End")+'</div>'+
-    '<select id="ca-etime" style="width:100%;padding:8px 6px;border:1px solid #d1d9e0;border-radius:8px;font-size:13px;background:#f8fafc;box-sizing:border-box">'+tO+'</select></div>'+
+    '<input id="ca-etime" type="time" value="'+defEnd+'" min="07:00" max="23:00" '+tS+'></div>'+
     '</div>'+
     '<label style="font-size:12px;color:#4a6a8a;font-weight:600;display:block;margin-bottom:5px">'+(lng==="he"?"הערות":"Notes")+'</label>'+
     '<input id="ca-notes" type="text" placeholder="'+(lng==="he"?"הערות...":"Notes...")+'" '+iS+'>'+
@@ -569,10 +570,6 @@ function openNewApptAt(date,time,preselectId){
     '<button class="btn" style="flex:1;background:#2B6CC4;color:#fff;padding:11px;font-size:14px" onclick="saveNewAppt()">'+(lng==="he"?"שמור":"Save")+'</button>'+
     '<button class="btn" style="flex:1;background:#f1f5f9;color:#1a3a6e;padding:11px;font-size:14px" onclick="cm()">'+(lng==="he"?"ביטול":"Cancel")+'</button>'+
     '</div></div>';
-  if(!preselectId){
-    var ts=g("ca-time"); if(ts&&time){ ts.value=time; }
-    var te=g("ca-etime"); if(te){ te.value=addMinutes(time||"08:00",60); }
-  }
   g("MB").classList.add("on");
 }
 function saveNewAppt(){
