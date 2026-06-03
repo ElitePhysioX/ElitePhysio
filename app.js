@@ -372,11 +372,11 @@ function buildCalHTML(){
   H+='</div>';
   H+='<button class="btn" style="font-size:12px;padding:4px 12px;background:#2B6CC4;color:#fff" onclick="openNewAppt()">'+(lng==="he"?"+ תור חדש":"+ New Appt")+'</button>';
   H+='</div>';
-  // Grid container (always LTR for calendar layout)
-  H+='<div style="overflow-x:auto"><div style="display:flex;min-width:480px;direction:ltr">';
+  // Grid container — always RTL so Sunday is on the right (Israeli layout)
+  H+='<div style="overflow-x:auto"><div style="display:flex;min-width:480px;direction:rtl">';
   // Time column
-  H+='<div style="width:'+TCOL+'px;flex-shrink:0"><div style="height:'+HDR+'px;background:#f8fafc;border-bottom:2px solid #e2e8f0;border-right:1px solid #e2e8f0"></div>';
-  H+='<div style="position:relative;height:'+gridH+'px;background:#fafbfd;border-right:1px solid #e2e8f0">'+tL+'</div></div>';
+  H+='<div style="width:'+TCOL+'px;flex-shrink:0;direction:ltr"><div style="height:'+HDR+'px;background:#f8fafc;border-bottom:2px solid #e2e8f0;border-left:1px solid #e2e8f0"></div>';
+  H+='<div style="position:relative;height:'+gridH+'px;background:#fafbfd;border-left:1px solid #e2e8f0">'+tL+'</div></div>';
   // Day columns
   days.forEach(function(d){
     var ds=fmtDate(d); var it=ds===todayStr;
@@ -1837,10 +1837,12 @@ function renderPatientView(p){
   g("pstb").innerHTML=[
     ["ex", isHe?"תוכניות":"Programs", totalPrograms||(hasFlat?1:0)],
     ["fu",L().mn,(p.followUps||[]).length],
-    ["hi",isHe?"היסטוריה":"History",(p.workoutHistory||[]).length]
+    ["hi",isHe?"היסטוריה":"History",(p.workoutHistory||[]).length],
+    ["ap",isHe?"תורים":"Sessions",""]
   ].map(function(t){
     return '<button class="nb'+(ptab===t[0]?" on":"")+'" onclick="spt(\''+t[0]+'\')">'+t[1]+
-      ' <span style="background:rgba(255,255,255,0.25);border-radius:9px;padding:1px 7px;font-size:11px">'+t[2]+'</span></button>';
+      (t[2]!==''?' <span style="background:rgba(255,255,255,0.25);border-radius:9px;padding:1px 7px;font-size:11px">'+t[2]+'</span>':'')+
+      '</button>';
   }).join("");
 
   // Build exercise/program HTML
@@ -2116,7 +2118,65 @@ function startTimer(idx, secs, exIdx){
   tick(); activeTimer=setInterval(tick,1000);
 }
 
-function spt(t){ ptab=t; document.querySelectorAll("#pstb .nb").forEach(function(b,i){ b.classList.toggle("on",["ex","fu","hi"][i]===t); }); g("psex").classList.toggle("hid",t!=="ex"); g("psfu").classList.toggle("hid",t!=="fu"); g("pshi").classList.toggle("hid",t!=="hi"); }
+function spt(t){
+  ptab=t;
+  document.querySelectorAll("#pstb .nb").forEach(function(b,i){ b.classList.toggle("on",["ex","fu","hi","ap"][i]===t); });
+  g("psex").classList.toggle("hid",t!=="ex");
+  g("psfu").classList.toggle("hid",t!=="fu");
+  g("pshi").classList.toggle("hid",t!=="hi");
+  g("psap").classList.toggle("hid",t!=="ap");
+  if(t==="ap") renderPatientAppts();
+}
+function renderPatientAppts(){
+  var sec=g("psap"); if(!sec) return;
+  var isHe=lng==="he";
+  var today=fmtDate(new Date());
+  function doRender(list){
+    var future=list.filter(function(a){ return a.date>=today; }).sort(function(a,b){ return (a.date+a.time).localeCompare(b.date+b.time); });
+    var past=list.filter(function(a){ return a.date<today; }).sort(function(a,b){ return (b.date+b.time).localeCompare(a.date+a.time); });
+    if(!future.length&&!past.length){
+      sec.innerHTML='<div style="text-align:center;padding:40px 0;color:#4a6a8a;font-size:14px">'+(isHe?"אין תורים קרובים":"No upcoming sessions")+'</div>';
+      return;
+    }
+    function row(a,dim){
+      var lo=isHe?"he-IL":"en-US";
+      var dt=new Date(a.date+"T00:00:00");
+      var dLabel=dt.toLocaleDateString(lo,{weekday:"long",day:"numeric",month:"long"});
+      var end=a.end_time||addMinutes(a.time,60);
+      return '<div style="display:flex;align-items:center;gap:12px;padding:12px 15px;border-radius:10px;margin-bottom:8px;background:'+(dim?"#f9fafb":"#f0f6ff")+';border:1px solid '+(dim?"#e8ecf0":"#dbeafe")+(a.date===today?";box-shadow:0 0 0 2px #2B6CC440":"")+'">'
+        +'<div style="width:44px;height:44px;border-radius:10px;background:'+(dim?"#e2e8f0":"#2B6CC4")+';display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0">'
+        +'<div style="font-size:16px;font-weight:800;color:'+(dim?"#6a8aaa":"#fff")+';line-height:1">'+dt.getDate()+'</div>'
+        +'<div style="font-size:9px;font-weight:600;color:'+(dim?"#8aaabf":"rgba(255,255,255,0.8)")+';line-height:1">'+dt.toLocaleDateString(lo,{month:"short"})+'</div>'
+        +'</div>'
+        +'<div style="flex:1">'
+        +'<div style="font-size:13px;font-weight:700;color:'+(dim?"#6a8aaa":"#1a3a6e")+'">'+dLabel+'</div>'
+        +'<div style="font-size:12px;color:'+(dim?"#8aaabf":"#2B6CC4")+';margin-top:2px;font-weight:600">'+a.time+' – '+end+'</div>'
+        +(a.notes?'<div style="font-size:11px;color:#6a8aaa;margin-top:2px">'+a.notes+'</div>':"")
+        +'</div>'
+        +(a.date===today?'<div style="font-size:10px;font-weight:700;color:#fff;background:#2B6CC4;border-radius:5px;padding:2px 7px">'+(isHe?"היום":"Today")+'</div>':"")
+        +'</div>';
+    }
+    var html='';
+    if(future.length){
+      html+='<div style="font-size:11px;font-weight:700;color:#2B6CC4;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">'+(isHe?"תורים קרובים":"Upcoming Sessions")+'</div>';
+      html+=future.map(function(a){ return row(a,false); }).join("");
+    }
+    if(past.length){
+      html+='<div style="font-size:11px;font-weight:700;color:#9aabbf;text-transform:uppercase;letter-spacing:.8px;margin:16px 0 8px">'+(isHe?"ביקורים קודמים":"Past Sessions")+'</div>';
+      html+=past.map(function(a){ return row(a,true); }).join("");
+    }
+    sec.innerHTML=html;
+  }
+  // Admin has appts already loaded; patient needs to fetch their own
+  if(auth==="admin" && cur){
+    doRender(appts.filter(function(a){ return a.patient_id==cur.id||a.patientId==cur.id; }));
+  } else if(cur){
+    sec.innerHTML='<div style="text-align:center;padding:30px;color:#4a6a8a;font-size:13px">'+(isHe?"טוען...":"Loading...")+'</div>';
+    apiCall("patient-appts","POST",{patientId:cur.id},function(err,data){
+      doRender(Array.isArray(data)?data:[]);
+    });
+  }
+}
 
 // ── Modals ──
 function om(m, editId){

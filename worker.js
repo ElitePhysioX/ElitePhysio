@@ -152,6 +152,14 @@ export default {
         return json({ ok: true });
       }
 
+      // Get appointments for a specific patient (no admin token — patients fetch own)
+      if(path === "/api/patient-appts" && request.method === "POST"){
+        const { patientId } = body;
+        if(!patientId) return json([]);
+        const rows = await sbFetch(SB_KEY, "appointments?select=*&patient_id=eq."+patientId+"&order=date.asc,time.asc");
+        return json(Array.isArray(rows)?rows:[]);
+      }
+
       // Update appointment date/time (admin only)
       if(path.startsWith("/api/appts/") && request.method === "PATCH"){
         const token = (request.headers.get("Authorization")||"").replace("Bearer ","");
