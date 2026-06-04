@@ -22,18 +22,26 @@ var msReoSel = null; // selected milestone index
 var navSource = "p"; // track which view opened the patient detail ("d"=calendar, "p"=list)
 function navGoBack(){ gv(navSource||"p"); }
 var fuReadMap = {}; // {patientId: latestSeenNoteId} — tracks which follow-up notes admin has read
+var whNoteMap = {}; // {patientId: "date|time"} — tracks which workout history notes admin has seen
 
 function loadFuRead(){ try{ fuReadMap=JSON.parse(localStorage.getItem("ep_furead")||"{}"); }catch(e){ fuReadMap={}; } }
 function saveFuRead(){ try{ localStorage.setItem("ep_furead",JSON.stringify(fuReadMap)); }catch(e){} }
+function loadWhNoteMap(){ try{ whNoteMap=JSON.parse(localStorage.getItem("ep_whnote")||"{}"); }catch(e){ whNoteMap={}; } }
+function saveWhNoteMap(){ try{ localStorage.setItem("ep_whnote",JSON.stringify(whNoteMap)); }catch(e){} }
 function hasNewNote(p){
-  var fus=p.followUps||[]; if(!fus.length) return false;
-  var latest=fus[0].id; // followUps are stored newest-first
-  return fuReadMap[p.id] !== latest;
+  var hist=(p.workoutHistory||[]);
+  var noted=hist.filter(function(h){ return h.note && h.note.trim(); });
+  if(!noted.length) return false;
+  var latestKey=noted[0].date+"|"+(noted[0].time||"");
+  return whNoteMap[p.id] !== latestKey;
 }
 function markNotesRead(id){
   var p=pts.find(function(x){ return x.id===id; }); if(!p) return;
-  var fus=p.followUps||[]; if(!fus.length) return;
-  fuReadMap[id]=fus[0].id; saveFuRead();
+  var hist=(p.workoutHistory||[]);
+  var noted=hist.filter(function(h){ return h.note && h.note.trim(); });
+  if(!noted.length) return;
+  whNoteMap[id]=noted[0].date+"|"+(noted[0].time||"");
+  saveWhNoteMap();
 }
 
 function loadRecycleBin(){
@@ -304,7 +312,7 @@ function alog(){
       auth="admin"; g("apw").value="";
       setL("he");
       sessionStorage.setItem("ep_session", JSON.stringify({auth:"admin", token:pw, sbKey:SB_KEY, lng:"he"}));
-      loadFuRead();
+      loadFuRead(); loadWhNoteMap();
       syncCustomLib();
       ss2("a");
       sbLoad(function(){
@@ -607,7 +615,7 @@ function openNewApptAt(date,time,preselectId){
     '<span style="font-size:11px;color:#2B6CC4;cursor:pointer;font-weight:600" onclick="openQuickNewPatient(\''+d64+'\',\''+t64+'\')">+ '+(lng==="he"?"מטופל חדש":"New patient")+'</span>'+
     '</div>'+
     '<div style="position:relative;margin-bottom:14px">'+
-    '<input id="ca-pat-search" type="text" placeholder="'+(lng==="he"?"חפש מטופל...":"Search patient...")+'..." autocomplete="off" value="'+preselName+'" '+
+    '<input id="ca-pat-search" type="text" placeholder="'+(lng==="he"?"חפש מטופל":"Search patient")+'" autocomplete="off" value="'+preselName+'" '+
       'style="width:100%;padding:9px 10px;border:1px solid #d1d9e0;border-radius:8px;font-size:14px;background:#f8fafc;box-sizing:border-box" '+
       'oninput="filterCalPat(this.value);document.getElementById(\'ca-pat-list\').style.display=\'block\';document.getElementById(\'ca-pat\').value=\'\'" '+
       'onfocus="filterCalPat(this.value);document.getElementById(\'ca-pat-list\').style.display=\'block\'">'+
@@ -667,6 +675,22 @@ function saveQuickPatient(date,time){
   var pin=String((g("qp-pin")||{}).value||"").padStart(4,"0");
   var phone=(g("qp-phone")||{}).value||"";
   if(!name&&!nameHe){ var el=g("qp-name")||g("qp-nhe"); if(el){ el.style.borderColor="#e74c3c"; el.focus(); } return; }
+  var nameLower=(name||nameHe).toLowerCase();
+  var phoneTrim=phone.replace(/\D/g,"");
+  var dup=pts.find(function(x){
+    var xName=((x.name||"")+"/"+(x.nameHe||"")).toLowerCase();
+    var xPhone=(x.phone||"").replace(/\D/g,"");
+    var sameName=(name&&xName.indexOf(name.toLowerCase())>=0)||(nameHe&&xName.indexOf(nameHe.toLowerCase())>=0);
+    var samePhone=phoneTrim&&xPhone&&phoneTrim===xPhone;
+    return sameName||samePhone;
+  });
+  if(dup){
+    var dupMsg=(lng==="he"?"מטופל עם שם זה":"A patient with this name");
+    if((dup.phone||"").replace(/\D/g,"")===phoneTrim&&phoneTrim) dupMsg=(lng==="he"?"מטופל עם מספר טלפון זה":"A patient with this phone number");
+    dupMsg+=(lng==="he"?" כבר קיים במערכת (" :" already exists (")+(pn(dup))+").";
+    dupMsg+="\n"+(lng==="he"?"האם להמשיך ולהוסיף בכל זאת?":"Do you want to continue adding anyway?");
+    if(!confirm(dupMsg)) return;
+  }
   var newP={id:Date.now(),name:name||nameHe,nameHe:nameHe||name,pin:pin,phone:phone,sport:"",injury:"",age:"",
             status:"Active",notes:"",sessions:0,exercises:[],followUps:[],workoutPlans:[],
             workoutHistory:[],avatarId:0,firstLoginDone:false,startDate:new Date().toISOString().slice(0,10)};
@@ -832,6 +856,7 @@ function sct(t){
   ctab=t;
   document.querySelectorAll("#ptbs .nb").forEach(function(b,i){ b.classList.toggle("on",["ex","fu","cl","hi"][i]===t); });
   ["ex","fu","cl","hi"].forEach(function(x,i){ g(["pet","pft","pct","pht"][i]).classList.toggle("hid",x!==t); });
+  if(t==="hi" && cur) { markNotesRead(cur.id); rpd(); }
 }
 
 // ── Workout Plans System ──
@@ -3893,7 +3918,26 @@ function sp2(){
     return;
   }
   var sp=g("fsp")?g("fsp").value||"General":"General";
-  var d={name:nm||(nhe),nameHe:nhe||(nm),sport:sp,age:g("fa")?g("fa").value:"",phone:g("fph")?g("fph").value:"",injury:setBilingual(g("fij_en")?g("fij_en").value:"",g("fij_he")?g("fij_he").value:""),pin:g("fpi")?g("fpi").value||"0000":"0000",status:g("fst")?g("fst").value:"Active",notes:setBilingual(g("fno_en")?g("fno_en").value:"",g("fno_he")?g("fno_he").value:"")};
+  var ph=g("fph")?g("fph").value:"";
+  var d={name:nm||(nhe),nameHe:nhe||(nm),sport:sp,age:g("fa")?g("fa").value:"",phone:ph,injury:setBilingual(g("fij_en")?g("fij_en").value:"",g("fij_he")?g("fij_he").value:""),pin:g("fpi")?g("fpi").value||"0000":"0000",status:g("fst")?g("fst").value:"Active",notes:setBilingual(g("fno_en")?g("fno_en").value:"",g("fno_he")?g("fno_he").value:"")};
+  if(mmode==="ap"){
+    var newNameLower=((nm||nhe)).toLowerCase();
+    var newPhoneTrim=(ph||"").replace(/\D/g,"");
+    var dup2=pts.find(function(x){
+      var xName=((x.name||"")+"/"+(x.nameHe||"")).toLowerCase();
+      var xPhone=(x.phone||"").replace(/\D/g,"");
+      var sameName=(nm&&xName.indexOf(nm.toLowerCase())>=0)||(nhe&&xName.indexOf(nhe.toLowerCase())>=0);
+      var samePhone=newPhoneTrim&&xPhone&&newPhoneTrim===xPhone;
+      return sameName||samePhone;
+    });
+    if(dup2){
+      var dup2Msg=(lng==="he"?"מטופל עם שם זה":"A patient with this name");
+      if((dup2.phone||"").replace(/\D/g,"")===newPhoneTrim&&newPhoneTrim) dup2Msg=(lng==="he"?"מטופל עם מספר טלפון זה":"A patient with this phone number");
+      dup2Msg+=(lng==="he"?" כבר קיים במערכת (" :" already exists (")+(pn(dup2))+").";
+      dup2Msg+="\n"+(lng==="he"?"האם להמשיך ולהוסיף בכל זאת?":"Do you want to continue adding anyway?");
+      if(!confirm(dup2Msg)) return;
+    }
+  }
   if(mmode==="ep"&&cur){ Object.assign(cur,d); pts=pts.map(function(p){ return p.id===cur.id?cur:p; }); }
   else{ pts.push(Object.assign({},d,{id:Date.now(),sessions:0,startDate:new Date().toISOString().split("T")[0],exercises:[],followUps:[],files:[],eval:""})); }
   sv(); cm(); rpl(); if(mmode==="ep") rpd();
