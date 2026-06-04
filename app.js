@@ -2507,13 +2507,19 @@ function renderPatientView(p){
         '<span style="color:#1a2535">'+n+'</span>'+
         '<span style="color:#2B6CC4;font-weight:600">'+e.sets+' × '+e.reps+'</span></div>';
     }).join("");
+    var noteSection = h.note
+      ? '<div style="font-size:12px;color:#4a6a8a;margin-top:8px;padding:6px 9px;background:#f0f5ff;border-radius:6px;border-left:3px solid #2B6CC4">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">'+
+        '<span style="font-size:10px;font-weight:700;color:#2B6CC4">'+(isHe?"הערה שלי":"My note")+'</span>'+
+        '<button onclick="patientEditNote('+i+')" style="background:none;border:none;cursor:pointer;font-size:11px;color:#2B6CC4;padding:0;font-weight:600">✏️ '+(isHe?"ערוך":"Edit")+'</button>'+
+        '</div>'+h.note+'</div>'
+      : '<button onclick="patientEditNote('+i+')" style="margin-top:8px;width:100%;padding:6px;border:1px dashed #c0d0e8;border-radius:6px;background:#f8fbff;color:#2B6CC4;font-size:12px;cursor:pointer;font-weight:600">+ '+(isHe?"הוסף הערה":"Add a note")+'</button>';
     return '<div class="xcard" style="margin-bottom:10px">'+
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'+
       '<div style="font-size:14px;font-weight:700;color:#1a3a6e">'+h.date+'</div>'+
       '<div style="font-size:13px;color:#e67e22;font-weight:600">⏱ '+h.time+'</div></div>'+
       exRows+
-      (h.note?'<div style="font-size:12px;color:#4a6a8a;margin-top:8px;padding:6px 9px;background:#f0f5ff;border-radius:6px;border-left:3px solid #2B6CC4">'+
-        '<div style="font-size:10px;font-weight:700;color:#2B6CC4;margin-bottom:2px">'+(isHe?"הערה שלי":"My note")+'</div>'+h.note+'</div>':'')+
+      noteSection+
       (h.adminReply?'<div style="font-size:12px;color:#1a2535;margin-top:6px;padding:6px 9px;background:#f0fff5;border-radius:6px;border-left:3px solid #00a86b">'+
         '<div style="font-size:10px;font-weight:700;color:#00a86b;margin-bottom:2px">'+(isHe?"תגובת המטפל":"Therapist reply")+'</div>'+h.adminReply+'</div>':'')+
       '</div>';
@@ -2531,6 +2537,35 @@ function endWorkout(){
   workoutMode=false; exChecked={};
   if(activeTimer){ clearInterval(activeTimer); activeTimer=null; }
   renderPatientView(cur);
+}
+
+function patientEditNote(idx){
+  var p=cur; if(!p||!p.workoutHistory||!p.workoutHistory[idx]) return;
+  var h=p.workoutHistory[idx];
+  var isHe=lng==="he";
+  var c=g("MC");
+  c.innerHTML=
+    '<div style="font-size:17px;font-weight:800;color:#1a3a6e;margin-bottom:6px">✏️ '+(isHe?"הערה לאימון":"Workout Note")+'</div>'+
+    '<div style="font-size:12px;color:#4a6a8a;margin-bottom:14px">'+h.date+' · ⏱ '+h.time+'</div>'+
+    '<textarea id="pat-note-edit" style="width:100%;padding:10px;border:1px solid #d1d9e0;border-radius:8px;font-size:14px;min-height:110px;box-sizing:border-box;resize:vertical" placeholder="'+(isHe?"כתוב הערה על האימון...":"Write a note about this workout...")+'">'+( h.note||"")+'</textarea>'+
+    '<div style="display:flex;gap:8px;margin-top:14px">'+
+    '<button class="btn" style="flex:2;background:#2B6CC4;color:#fff;padding:11px" onclick="patientSaveNote('+idx+')">'+(isHe?"שמור":"Save")+'</button>'+
+    '<button class="btn" style="flex:1;background:#f1f5f9;color:#1a3a6e;padding:11px" onclick="cm()">'+(isHe?"ביטול":"Cancel")+'</button>'+
+    '</div>';
+  g("MB").classList.add("on");
+  setTimeout(function(){ var t=g("pat-note-edit"); if(t){t.focus();t.setSelectionRange(t.value.length,t.value.length);} },80);
+}
+
+function patientSaveNote(idx){
+  var p=cur; if(!p||!p.workoutHistory||!p.workoutHistory[idx]) return;
+  var val=(g("pat-note-edit")||{}).value||"";
+  p.workoutHistory[idx].note=val.trim();
+  pts=pts.map(function(x){ return x.id===p.id?p:x; });
+  apiCall("patient-save-history","POST",{id:p.id, workoutHistory:p.workoutHistory},function(){});
+  cm();
+  renderPatientView(p);
+  // jump to history tab
+  spt("hi");
 }
 
 function toggleCheck(i){
