@@ -760,7 +760,7 @@ function rpl(){
   var npBtn=g("pnb"); if(npBtn) npBtn.textContent='+ '+(lng==="he"?"מטופל חדש":"New Patient");
   g("pls").innerHTML=list.length?list.map(function(p){
     var dn=pn(p);
-    var avHtml = p.avatarId ? '<div style="width:38px;height:50px;flex-shrink:0">'+legoSVG(AVATARS.find(function(a){return a.id===p.avatarId;})||AVATARS[0],38)+'</div>' : av(dn);
+    var avHtml = p.avatarId ? '<div style="width:56px;height:56px;flex-shrink:0">'+legoSVG(AVATARS.find(function(a){return a.id===p.avatarId;})||AVATARS[0],56)+'</div>' : av(dn,56);
     var dotHtml = hasNewNote(p) ? '<div style="width:10px;height:10px;border-radius:50%;background:#f97316;flex-shrink:0;box-shadow:0 0 0 2px #fff,0 0 0 3px #f97316" title="New note"></div>' : '';
     return '<div class="card" onclick="op('+p.id+')"><div style="display:flex;align-items:center;justify-content:space-between">'+
       '<div style="display:flex;align-items:center;gap:13px">'+avHtml+
