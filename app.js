@@ -1788,14 +1788,94 @@ var AVATARS = [
   {id:28,label:"Hipster",skin:"#f4a47c",hair:"pompadour",hairC:"#92400e",shirt:"#064e3b",pants:"#374151",hat:"",extra:"glasses"},
   {id:29,label:"Grandpa",skin:"#e0b090",hair:"bald",hairC:"#d1d5db",shirt:"#94a3b8",pants:"#64748b",hat:"",extra:"glasses"},
   {id:30,label:"Grandma",skin:"#e0b090",hair:"curly",hairC:"#e5e7eb",shirt:"#f0abfc",pants:"#7c3aed",hat:"",extra:""},
-  {id:31,type:"img",label:"Guy 1",src:"avatars/avatar1.png"}
+  {id:31,type:"custom",label:"Guy 1"}
 ];
+
+function customAvatarSVG(id, size){
+  size=size||60;
+  var svgs={
+    31: function(z){
+      // Dark-haired man, tan skin, navy jacket, teal background — matches uploaded reference
+      var sc=size/80;
+      return '<svg viewBox="0 0 80 80" width="'+size+'" height="'+size+'" xmlns="http://www.w3.org/2000/svg">'+
+        // Teal background
+        '<circle cx="40" cy="40" r="38" fill="#3bbfbf"/>'+
+        // Navy jacket / shoulders
+        '<path d="M10,80 Q10,58 20,55 Q28,52 32,56 L40,62 L48,56 Q52,52 60,55 Q70,58 70,80 Z" fill="#1a2f5a"/>'+
+        // Collar V-shape
+        '<path d="M32,56 L40,70 L48,56 Q44,58 40,62 Q36,58 32,56 Z" fill="#2a4a8a"/>'+
+        // Collar edge highlight
+        '<path d="M34,56 L40,66 L46,56" stroke="#3a5aaa" stroke-width="1" fill="none"/>'+
+        // Neck
+        '<rect x="35.5" y="47" width="9" height="12" rx="3.5" fill="#c8875a"/>'+
+        // Neck shadow
+        '<rect x="35.5" y="47" width="9" height="4" rx="3" fill="#b8774a" opacity="0.5"/>'+
+        // Ears
+        '<ellipse cx="25.5" cy="32" rx="4" ry="5" fill="#c8875a"/>'+
+        '<ellipse cx="54.5" cy="32" rx="4" ry="5" fill="#c8875a"/>'+
+        '<ellipse cx="25.5" cy="32" rx="2" ry="3" fill="#b8774a"/>'+
+        '<ellipse cx="54.5" cy="32" rx="2" ry="3" fill="#b8774a"/>'+
+        // Face
+        '<ellipse cx="40" cy="30" rx="14.5" ry="17.5" fill="#c8875a"/>'+
+        // Face shadow / jaw definition
+        '<ellipse cx="40" cy="38" rx="13" ry="9" fill="#b8774a" opacity="0.25"/>'+
+        // Hair base (back) — dark, spiky
+        '<ellipse cx="40" cy="15" rx="15" ry="11" fill="#1a1a2a"/>'+
+        '<path d="M26,24 Q24,8 40,7 Q56,8 54,24 Q50,14 40,14 Q30,14 26,24 Z" fill="#1a1a2a"/>'+
+        // Spiky hair top pieces
+        '<path d="M36,10 Q35,2 38,1 Q39,5 38,9 Z" fill="#1a1a2a"/>'+
+        '<path d="M40,8 Q40,0 43,0 Q43,5 41,9 Z" fill="#1a1a2a"/>'+
+        '<path d="M43,9 Q45,2 48,3 Q47,7 44,10 Z" fill="#1a1a2a"/>'+
+        '<path d="M46,11 Q50,5 52,7 Q50,10 47,12 Z" fill="#1a1a2a"/>'+
+        '<path d="M34,10 Q31,4 28,6 Q30,9 33,11 Z" fill="#1a1a2a"/>'+
+        // Hair highlights (subtle)
+        '<path d="M33,10 Q35,8 38,9" stroke="#2d2d3d" stroke-width="1" fill="none" opacity="0.7"/>'+
+        // Thick defined dark eyebrows
+        '<path d="M28,21.5 Q32,18.5 36,20.5" stroke="#1a1a2a" stroke-width="2.8" fill="none" stroke-linecap="round"/>'+
+        '<path d="M44,20.5 Q48,18.5 52,21.5" stroke="#1a1a2a" stroke-width="2.8" fill="none" stroke-linecap="round"/>'+
+        // Eyes — slightly narrowed, defined
+        '<ellipse cx="32" cy="27.5" rx="4.8" ry="4" fill="#fff"/>'+
+        '<circle cx="32" cy="27.5" r="3" fill="#5a4030"/>'+
+        '<circle cx="32" cy="27.5" r="1.7" fill="#1a1010"/>'+
+        '<circle cx="33.2" cy="26.2" r="1" fill="rgba(255,255,255,0.85)"/>'+
+        // Upper eyelid crease
+        '<path d="M27.5,25.5 Q32,23 36.5,25.5" stroke="#b8774a" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.6"/>'+
+        '<ellipse cx="48" cy="27.5" rx="4.8" ry="4" fill="#fff"/>'+
+        '<circle cx="48" cy="27.5" r="3" fill="#5a4030"/>'+
+        '<circle cx="48" cy="27.5" r="1.7" fill="#1a1010"/>'+
+        '<circle cx="49.2" cy="26.2" r="1" fill="rgba(255,255,255,0.85)"/>'+
+        '<path d="M43.5,25.5 Q48,23 52.5,25.5" stroke="#b8774a" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.6"/>'+
+        // Nose — defined, slightly wide
+        '<path d="M38.5,33.5 Q36.5,37 37.5,39 Q40,40 42.5,39 Q43.5,37 41.5,33.5" stroke="#a06840" stroke-width="1.6" fill="none" stroke-linecap="round"/>'+
+        '<ellipse cx="37.8" cy="38.5" rx="2" ry="1.2" fill="#a06840" opacity="0.5"/>'+
+        '<ellipse cx="42.2" cy="38.5" rx="2" ry="1.2" fill="#a06840" opacity="0.5"/>'+
+        // Subtle stubble / chin shadow
+        '<path d="M31,41 Q40,48 49,41 Q44,50 40,51 Q36,50 31,41 Z" fill="#1a1a2a" opacity="0.12"/>'+
+        // Mouth — neutral, slightly open
+        '<path d="M34.5,43.5 Q37.5,42 40,42.5 Q42.5,42 45.5,43.5" stroke="#a06840" stroke-width="1.8" fill="none" stroke-linecap="round"/>'+
+        '<path d="M34.5,43.5 Q40,47.5 45.5,43.5" stroke="#9a5a30" stroke-width="1.4" fill="#c87850" opacity="0.4" stroke-linecap="round"/>'+
+        // Cheek shadow / dimension
+        '<ellipse cx="26" cy="36" rx="5" ry="3.5" fill="rgba(180,90,50,0.18)"/>'+
+        '<ellipse cx="54" cy="36" rx="5" ry="3.5" fill="rgba(180,90,50,0.18)"/>'+
+        // Hair front pieces overlapping face sides
+        '<path d="M26,21 Q24,17 25,14 Q26,18 27,23 Z" fill="#1a1a2a"/>'+
+        '<path d="M54,21 Q56,17 55,14 Q54,18 53,23 Z" fill="#1a1a2a"/>'+
+        // Frame
+        '<circle cx="40" cy="40" r="38" fill="none" stroke="rgba(0,0,0,0.08)" stroke-width="2"/>'+
+        '</svg>';
+    }
+  };
+  return svgs[id] ? svgs[id](size) : legoSVG(AVATARS[0], size);
+}
 
 function legoSVG(av,size){
   if(!av) av=AVATARS[0];
   size=size||60;
   if(av.type==="img"){
     return '<img src="'+av.src+'" width="'+size+'" height="'+size+'" style="border-radius:50%;object-fit:cover;display:block;width:'+size+'px;height:'+size+'px" onerror="this.style.background=\'#e8f2ff\'">';
+  }
+  if(av.type==="custom"){
+    return customAvatarSVG(av.id, size);
   }
   var s=av.skin, h=av.hairC, sh=av.shirt, p=av.pants;
   var bg=AVATAR_BG[(av.id-1)%AVATAR_BG.length];
