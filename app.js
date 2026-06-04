@@ -569,14 +569,36 @@ function caTimeChanged(){
   et.value=addMinutes(st.value,60);
 }
 function openNewAppt(){ openNewApptAt("",""); }
+function filterCalPat(q){
+  var box=g("ca-pat-list"); if(!box) return;
+  q=(q||"").toLowerCase().trim();
+  var list=q?pts.filter(function(p){
+    return (p.name||"").toLowerCase().indexOf(q)>-1||(p.nameHe||"").indexOf(q)>-1;
+  }):pts;
+  if(!list.length){
+    box.innerHTML='<div style="padding:8px 12px;color:#999;font-size:13px">'+(lng==="he"?"לא נמצא":"No results")+'</div>';
+    return;
+  }
+  box.innerHTML=list.map(function(p){
+    var display=pn(p)+(p.nameHe&&p.name&&p.nameHe!==p.name?' / '+p.nameHe:'');
+    return '<div onclick="selCalPat('+p.id+',\''+display.replace(/'/g,"&#39;")+'\')" '+
+      'style="padding:9px 12px;cursor:pointer;border-bottom:1px solid #f0f4f8;font-size:14px;color:#1a3a6e" '+
+      'onmouseover="this.style.background=\'#f0f5fb\'" onmouseout="this.style.background=\'\'">'+display+'</div>';
+  }).join("");
+}
+function selCalPat(id,display){
+  var inp=g("ca-pat-search"),sel=g("ca-pat"),box=g("ca-pat-list");
+  if(inp) inp.value=display;
+  if(sel) sel.value=id;
+  if(box) box.style.display="none";
+}
 function openNewApptAt(date,time,preselectId){
   var td=fmtDate(new Date());
-  var pO=pts.map(function(p){ return '<option value="'+p.id+'"'+(p.id===preselectId?' selected':'')+'>'+pn(p)+'</option>'; }).join("");
-  if(!pO) pO='<option value="">'+( lng==="he"?"אין מטופלים":"No patients")+'</option>';
   var iS='style="width:100%;padding:9px 10px;border:1px solid #d1d9e0;border-radius:8px;font-size:14px;margin-bottom:14px;background:#f8fafc;box-sizing:border-box"';
   var tS='style="width:100%;padding:8px 6px;border:1px solid #d1d9e0;border-radius:8px;font-size:14px;background:#f8fafc;box-sizing:border-box"';
   var defStart=time||"08:00", defEnd=addMinutes(defStart,60);
   var d64=encodeURIComponent(date||""), t64=encodeURIComponent(time||"");
+  var preselName=""; if(preselectId){ var pp=pts.find(function(x){return x.id===preselectId;}); if(pp) preselName=pn(pp); }
   g("MC").innerHTML=
     '<div style="padding:4px 0">'+
     '<div style="font-size:18px;font-weight:800;color:#1a3a6e;margin-bottom:18px">'+(lng==="he"?"תור חדש":"New Appointment")+'</div>'+
@@ -584,7 +606,14 @@ function openNewApptAt(date,time,preselectId){
     '<label style="font-size:12px;color:#4a6a8a;font-weight:600">'+(lng==="he"?"מטופל":"Patient")+'</label>'+
     '<span style="font-size:11px;color:#2B6CC4;cursor:pointer;font-weight:600" onclick="openQuickNewPatient(\''+d64+'\',\''+t64+'\')">+ '+(lng==="he"?"מטופל חדש":"New patient")+'</span>'+
     '</div>'+
-    '<select id="ca-pat" '+iS+'>'+pO+'</select>'+
+    '<div style="position:relative;margin-bottom:14px">'+
+    '<input id="ca-pat-search" type="text" placeholder="'+(lng==="he"?"חפש מטופל...":"Search patient...")+'..." autocomplete="off" value="'+preselName+'" '+
+      'style="width:100%;padding:9px 10px;border:1px solid #d1d9e0;border-radius:8px;font-size:14px;background:#f8fafc;box-sizing:border-box" '+
+      'oninput="filterCalPat(this.value);document.getElementById(\'ca-pat-list\').style.display=\'block\';document.getElementById(\'ca-pat\').value=\'\'" '+
+      'onfocus="filterCalPat(this.value);document.getElementById(\'ca-pat-list\').style.display=\'block\'">'+
+    '<input type="hidden" id="ca-pat" value="'+(preselectId||'')+'">'+
+    '<div id="ca-pat-list" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #d1d9e0;border-radius:0 0 8px 8px;max-height:180px;overflow-y:auto;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,0.1)"></div>'+
+    '</div>'+
     '<label style="font-size:12px;color:#4a6a8a;font-weight:600;display:block;margin-bottom:5px">'+(lng==="he"?"תאריך":"Date")+'</label>'+
     '<input id="ca-date" type="date" value="'+(date||td)+'" '+iS+'>'+
     '<label style="font-size:12px;color:#4a6a8a;font-weight:600;display:block;margin-bottom:6px">'+(lng==="he"?"שעת התחלה וסיום":"Start &amp; end time")+'</label>'+
@@ -604,7 +633,8 @@ function openNewApptAt(date,time,preselectId){
 }
 function saveNewAppt(){
   var ep=g("ca-pat"),ed=g("ca-date"),et=g("ca-time"),ee=g("ca-etime"),en=g("ca-notes");
-  if(!ep||!ed||!et||!ep.value||!ed.value||!et.value) return;
+  if(!ep||!ep.value){ var si=g("ca-pat-search"); if(si){si.style.borderColor="#e74c3c";si.focus();} return; }
+  if(!ed||!ed.value||!et||!et.value) return;
   var endT=ee&&ee.value&&ee.value>et.value?ee.value:addMinutes(et.value,60);
   addAppt({patient_id:parseInt(ep.value),date:ed.value,time:et.value,end_time:endT,notes:en?en.value:""});
   cm();
