@@ -1758,37 +1758,13 @@ var AVATAR_BG=["#f87171","#fb923c","#fbbf24","#34d399","#22d3ee","#60a5fa","#a78
 function eyeColorFor(hc){try{var r=parseInt(hc.slice(1,3),16),g=parseInt(hc.slice(3,5),16),b=parseInt(hc.slice(5,7),16),lum=r*0.299+g*0.587+b*0.114;return lum>175?"#5b8dd9":lum>105?"#7a6544":"#4a2c0a";}catch(e){return "#4a2c0a";}}
 // (legacy name kept for any references)
 var AVATARS = [
-  {id:1,label:"Young Man",skin:"#f4a47c",hair:"short",hairC:"#3d2200",shirt:"#2B6CC4",pants:"#1a3a6e",hat:"",extra:""},
-  {id:2,label:"Young Woman",skin:"#f4a47c",hair:"long",hairC:"#8b4513",shirt:"#e84393",pants:"#6b21a8",hat:"",extra:""},
-  {id:3,label:"Boy",skin:"#f4a47c",hair:"short",hairC:"#1a1a1a",shirt:"#f97316",pants:"#1d4ed8",hat:"cap",extra:""},
-  {id:4,label:"Girl",skin:"#f4a47c",hair:"pigtail",hairC:"#c084fc",shirt:"#ec4899",pants:"#7c3aed",hat:"",extra:"bow"},
-  {id:5,label:"Older Man",skin:"#e8956d",hair:"short",hairC:"#aaaaaa",shirt:"#64748b",pants:"#374151",hat:"",extra:""},
-  {id:6,label:"Older Woman",skin:"#e8956d",hair:"bun",hairC:"#9ca3af",shirt:"#7c3aed",pants:"#4b5563",hat:"",extra:""},
-  {id:7,label:"Bodybuilder",skin:"#c87941",hair:"short",hairC:"#1a1a1a",shirt:"#dc2626",pants:"#111827",hat:"",extra:"muscle"},
-  {id:8,label:"Weightlifter",skin:"#f4a47c",hair:"short",hairC:"#4a3000",shirt:"#16a34a",pants:"#064e3b",hat:"",extra:"muscle"},
-  {id:9,label:"Runner",skin:"#d4956a",hair:"ponytail",hairC:"#1a1a1a",shirt:"#f59e0b",pants:"#7c3aed",hat:"",extra:""},
-  {id:10,label:"Cyclist",skin:"#f4a47c",hair:"short",hairC:"#5a3e00",shirt:"#0ea5e9",pants:"#1e40af",hat:"helmet",extra:""},
-  {id:11,label:"Swimmer",skin:"#e0a070",hair:"short",hairC:"#2563eb",shirt:"#0284c7",pants:"#0c4a6e",hat:"goggle",extra:""},
-  {id:12,label:"Soccer Player",skin:"#d4956a",hair:"short",hairC:"#1a1a1a",shirt:"#16a34a",pants:"#f9fafb",hat:"",extra:""},
-  {id:13,label:"Tattooed Guy",skin:"#f4a47c",hair:"mohawk",hairC:"#1a1a1a",shirt:"#111827",pants:"#1f2937",hat:"",extra:"tattoo"},
-  {id:14,label:"Pierced Girl",skin:"#f4a47c",hair:"long",hairC:"#7c3aed",shirt:"#6d28d9",pants:"#1f2937",hat:"",extra:"pierce"},
-  {id:15,label:"Bearded Man",skin:"#c87941",hair:"short",hairC:"#3d2200",shirt:"#92400e",pants:"#78350f",hat:"",extra:"beard"},
-  {id:16,label:"Curly Hair",skin:"#8b5e3c",hair:"curly",hairC:"#1a1a1a",shirt:"#2563eb",pants:"#1d4ed8",hat:"",extra:""},
-  {id:17,label:"Baseball Cap",skin:"#f4a47c",hair:"short",hairC:"#4a3000",shirt:"#f97316",pants:"#374151",hat:"baseball",extra:""},
-  {id:18,label:"Beanie",skin:"#e8956d",hair:"short",hairC:"#5a3e00",shirt:"#7c3aed",pants:"#4b5563",hat:"beanie",extra:""},
-  {id:19,label:"Ninja",skin:"#f4a47c",hair:"none",hairC:"#1a1a1a",shirt:"#111827",pants:"#111827",hat:"ninja",extra:""},
-  {id:20,label:"Doctor",skin:"#f4a47c",hair:"short",hairC:"#374151",shirt:"#f8fafc",pants:"#cbd5e1",hat:"",extra:"stethoscope"},
-  {id:21,label:"Chef",skin:"#e8956d",hair:"short",hairC:"#6b7280",shirt:"#f8fafc",pants:"#374151",hat:"chef",extra:""},
-  {id:22,label:"Artist",skin:"#f4a47c",hair:"messy",hairC:"#7c3aed",shirt:"#fbbf24",pants:"#1f2937",hat:"beret",extra:""},
-  {id:23,label:"Surfer",skin:"#c8965a",hair:"long",hairC:"#d4a017",shirt:"#06b6d4",pants:"#0e7490",hat:"",extra:""},
-  {id:24,label:"Gamer",skin:"#f4a47c",hair:"short",hairC:"#1a1a1a",shirt:"#6d28d9",pants:"#1f2937",hat:"headset",extra:""},
-  {id:25,label:"Yoga Lady",skin:"#e8956d",hair:"bun",hairC:"#b45309",shirt:"#10b981",pants:"#065f46",hat:"",extra:""},
-  {id:26,label:"Skater",skin:"#f4a47c",hair:"shaggy",hairC:"#78350f",shirt:"#f43f5e",pants:"#374151",hat:"backwards",extra:""},
-  {id:27,label:"Martial Artist",skin:"#d4956a",hair:"none",hairC:"#1a1a1a",shirt:"#f8fafc",pants:"#f8fafc",hat:"",extra:"belt"},
-  {id:28,label:"Hipster",skin:"#f4a47c",hair:"pompadour",hairC:"#92400e",shirt:"#064e3b",pants:"#374151",hat:"",extra:"glasses"},
-  {id:29,label:"Grandpa",skin:"#e0b090",hair:"bald",hairC:"#d1d5db",shirt:"#94a3b8",pants:"#64748b",hat:"",extra:"glasses"},
-  {id:30,label:"Grandma",skin:"#e0b090",hair:"curly",hairC:"#e5e7eb",shirt:"#f0abfc",pants:"#7c3aed",hat:"",extra:""},
-  {id:31,type:"custom",label:"Guy 1"}
+  {id:101,type:"img",label:"Avatar 1",src:"avatars/avatar1.png"},
+  {id:102,type:"img",label:"Avatar 2",src:"avatars/avatar2.png"},
+  {id:103,type:"img",label:"Avatar 3",src:"avatars/avatar3.png"},
+  {id:104,type:"img",label:"Avatar 4",src:"avatars/avatar4.png"},
+  {id:105,type:"img",label:"Avatar 5",src:"avatars/avatar5.png"},
+  {id:106,type:"img",label:"Avatar 6",src:"avatars/avatar6.png"},
+  {id:107,type:"img",label:"Avatar 7",src:"avatars/avatar7.png"}
 ];
 
 function customAvatarSVG(id, size){
@@ -2139,7 +2115,7 @@ function toggleWelcomeSport(v){
 
 function showFirstTimeWelcome(p){
   var isHe=lng==="he";
-  if(!cur.avatarId){ var svgAvs=AVATARS.filter(function(a){return !a.type;}); cur.avatarId=svgAvs[Math.floor(Math.random()*svgAvs.length)].id; }
+  if(!cur.avatarId) cur.avatarId=AVATARS[Math.floor(Math.random()*AVATARS.length)].id;
   var c=g("MC");
   c.innerHTML=
     '<div style="text-align:center;margin-bottom:18px">'+
