@@ -2105,11 +2105,11 @@ function showAvatarPicker(onSelect){
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'+
     '<span style="font-size:17px;font-weight:800;color:#1a3a6e">🧱 '+(isHe?"בחר אווטאר":"Pick Your Avatar")+'</span>'+
     '<button onclick="cm()" style="background:rgba(0,0,0,0.08);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:16px">✕</button></div>'+
-    '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;max-height:460px;overflow-y:auto;padding:2px">'+
+    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-height:460px;overflow-y:auto;padding:4px">'+
     AVATARS.map(function(av){
       var sel=cur&&cur.avatarId===av.id;
-      return '<div onclick="selectAvatar('+av.id+')" style="text-align:center;padding:6px 2px;border-radius:10px;cursor:pointer;border:2px solid '+(sel?'#2B6CC4':'transparent')+';background:'+(sel?'#e8f2ff':'#f8fbff')+'" onmouseover="this.style.background=\'#e8f2ff\'" onmouseout="this.style.background=\''+(sel?'#e8f2ff':'#f8fbff')+'\'">'+
-        legoSVG(av,42)+'<div style="font-size:8px;color:#4a6a8a;margin-top:2px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+av.label+'</div></div>';
+      return '<div onclick="selectAvatar('+av.id+')" style="text-align:center;padding:8px 4px;border-radius:12px;cursor:pointer;border:2px solid '+(sel?'#2B6CC4':'transparent')+';background:'+(sel?'#e8f2ff':'#f8fbff')+'" onmouseover="this.style.background=\'#e8f2ff\'" onmouseout="this.style.background=\''+(sel?'#e8f2ff':'#f8fbff')+'\'">'+
+        legoSVG(av,72)+'<div style="font-size:10px;color:#4a6a8a;margin-top:4px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+av.label+'</div></div>';
     }).join("")+'</div>';
   g("MB").classList.add("on");
   window._avatarOnSelect=onSelect;
