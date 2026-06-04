@@ -791,18 +791,17 @@ function rpd(){
     (getBilingual(p.injury,lng==="he")?'<div style="margin-top:13px;background:rgba(43,108,196,0.08);border-radius:8px;padding:11px 15px;border-left:3px solid #2B6CC4"><div style="font-size:11px;color:#2B6CC4;font-weight:700;text-transform:uppercase;margin-bottom:3px">'+L().ij+'</div><div style="font-size:14px;color:#1a2535">'+getBilingual(p.injury,lng==="he")+'</div></div>':"")+
     (getBilingual(p.notes,lng==="he")?'<div style="margin-top:8px;background:rgba(0,168,107,0.07);border-radius:8px;padding:11px 15px;border-left:3px solid #00a86b"><div style="font-size:11px;color:#00a86b;font-weight:700;text-transform:uppercase;margin-bottom:3px">'+(lng==="he"?"המטרה שלי":"My Goal")+'</div><div style="font-size:14px;color:#1a2535">'+getBilingual(p.notes,lng==="he")+'</div></div>':"");
   var isHeLng=lng==="he";
-  g("ptbs").innerHTML=[["ex",L().ex,(p.exercises||[]).length],["fu",L().fu,(p.followUps||[]).length],["cl",L().cl,null]].map(function(t){
+  g("ptbs").innerHTML=[["ex",L().ex,(p.exercises||[]).length],["fu",L().fu,(p.followUps||[]).length],["cl",L().cl,null],["hi",isHeLng?"היסטוריה":"History",(p.workoutHistory||[]).length]].map(function(t){
     return '<button class="nb'+(ctab===t[0]?" on":"")+'" onclick="sct(\''+t[0]+'\')">'+t[1]+(t[2]!==null?' <span style="background:rgba(255,255,255,0.25);border-radius:9px;padding:1px 7px;font-size:11px">'+t[2]+'</span>':"")+' </button>';
   }).join("");
-  if(ctab==="hi") ctab="ex";
-  rex(); rfu(); rcl();
-  ["ex","fu","cl"].forEach(function(t,i){ g(["pet","pft","pct"][i]).classList.toggle("hid",ctab!==t); });
+  rex(); rfu(); rcl(); rht();
+  ["ex","fu","cl","hi"].forEach(function(t,i){ g(["pet","pft","pct","pht"][i]).classList.toggle("hid",ctab!==t); });
 }
 
 function sct(t){
   ctab=t;
-  document.querySelectorAll("#ptbs .nb").forEach(function(b,i){ b.classList.toggle("on",["ex","fu","cl"][i]===t); });
-  ["ex","fu","cl"].forEach(function(x,i){ g(["pet","pft","pct"][i]).classList.toggle("hid",x!==t); });
+  document.querySelectorAll("#ptbs .nb").forEach(function(b,i){ b.classList.toggle("on",["ex","fu","cl","hi"][i]===t); });
+  ["ex","fu","cl","hi"].forEach(function(x,i){ g(["pet","pft","pct","pht"][i]).classList.toggle("hid",x!==t); });
 }
 
 // ── Workout Plans System ──
