@@ -1773,7 +1773,13 @@ var AVATARS = [
   {id:113,type:"img",label:"Avatar 13",src:"avatars/avatar13.png"},
   {id:114,type:"img",label:"Avatar 14",src:"avatars/avatar14.png"},
   {id:115,type:"img",label:"Avatar 15",src:"avatars/avatar15.png"},
-  {id:116,type:"img",label:"Avatar 16",src:"avatars/avatar16.png"}
+  {id:116,type:"img",label:"Avatar 16",src:"avatars/avatar16.png"},
+  {id:117,type:"img",label:"Avatar 17",src:"avatars/avatar17.png"},
+  {id:118,type:"img",label:"Avatar 18",src:"avatars/avatar18.png"},
+  {id:119,type:"img",label:"Avatar 19",src:"avatars/avatar19.png"},
+  {id:120,type:"img",label:"Avatar 20",src:"avatars/avatar20.png"},
+  {id:121,type:"img",label:"Avatar 21",src:"avatars/avatar21.png"},
+  {id:122,type:"img",label:"Avatar 22",src:"avatars/avatar22.png"}
 ];
 
 function customAvatarSVG(id, size){
