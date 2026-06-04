@@ -1787,11 +1787,16 @@ var AVATARS = [
   {id:27,label:"Martial Artist",skin:"#d4956a",hair:"none",hairC:"#1a1a1a",shirt:"#f8fafc",pants:"#f8fafc",hat:"",extra:"belt"},
   {id:28,label:"Hipster",skin:"#f4a47c",hair:"pompadour",hairC:"#92400e",shirt:"#064e3b",pants:"#374151",hat:"",extra:"glasses"},
   {id:29,label:"Grandpa",skin:"#e0b090",hair:"bald",hairC:"#d1d5db",shirt:"#94a3b8",pants:"#64748b",hat:"",extra:"glasses"},
-  {id:30,label:"Grandma",skin:"#e0b090",hair:"curly",hairC:"#e5e7eb",shirt:"#f0abfc",pants:"#7c3aed",hat:"",extra:""}
+  {id:30,label:"Grandma",skin:"#e0b090",hair:"curly",hairC:"#e5e7eb",shirt:"#f0abfc",pants:"#7c3aed",hat:"",extra:""},
+  {id:31,type:"img",label:"Guy 1",src:"avatars/avatar1.png"}
 ];
 
 function legoSVG(av,size){
+  if(!av) av=AVATARS[0];
   size=size||60;
+  if(av.type==="img"){
+    return '<img src="'+av.src+'" width="'+size+'" height="'+size+'" style="border-radius:50%;object-fit:cover;display:block;width:'+size+'px;height:'+size+'px" onerror="this.style.background=\'#e8f2ff\'">';
+  }
   var s=av.skin, h=av.hairC, sh=av.shirt, p=av.pants;
   var bg=AVATAR_BG[(av.id-1)%AVATAR_BG.length];
   var ec=eyeColorFor(h);
@@ -2054,7 +2059,7 @@ function toggleWelcomeSport(v){
 
 function showFirstTimeWelcome(p){
   var isHe=lng==="he";
-  if(!cur.avatarId) cur.avatarId=Math.floor(Math.random()*30)+1;
+  if(!cur.avatarId){ var svgAvs=AVATARS.filter(function(a){return !a.type;}); cur.avatarId=svgAvs[Math.floor(Math.random()*svgAvs.length)].id; }
   var c=g("MC");
   c.innerHTML=
     '<div style="text-align:center;margin-bottom:18px">'+
