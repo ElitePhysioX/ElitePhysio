@@ -2212,12 +2212,12 @@ function legoAv(p,size){
       legoSVG(avObj,size)+
       '<div style="position:absolute;top:'+yShirt+'px;left:0;right:0;text-align:center;font-size:'+fSize+'px;font-weight:900;color:rgba(255,255,255,0.90);letter-spacing:1px;line-height:1;pointer-events:none;text-shadow:0 1px 3px rgba(0,0,0,0.4)">'+initials+'</div>'+
       '</div>'+
-      '<div style="position:absolute;bottom:-2px;right:-2px;background:#2B6CC4;border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;border:2px solid #fff">✏️</div>'+
+      '<div style="position:absolute;bottom:0px;right:0px;background:#2B6CC4;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.2)">✏️</div>'+
       '</div>';
   }
   return '<div onclick="showPatientProfile()" style="cursor:pointer;position:relative;display:inline-block" title="My Profile">'+
     av(pn(p),size)+
-    '<div style="position:absolute;bottom:-2px;right:-2px;background:#2B6CC4;border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;border:2px solid #fff">✏️</div>'+
+    '<div style="position:absolute;bottom:0px;right:0px;background:#2B6CC4;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.2)">✏️</div>'+
     '</div>';
 }
 
@@ -2385,9 +2385,9 @@ function renderWorkoutExercises(exercises, plan, day, isHe){
 
 function renderPatientView(p){
   g("psh").innerHTML=
-    '<div style="display:flex;align-items:center;gap:15px;margin-bottom:14px">'+legoAv(p,52)+
-    '<div><div style="font-size:21px;font-weight:800;color:#1a3a6e">'+pn(p)+'</div>'+
-    '<div style="margin-top:5px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">'+
+    '<div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;margin-bottom:16px;padding:14px 0 10px">'+legoAv(p,90)+
+    '<div><div style="font-size:22px;font-weight:800;color:#1a3a6e;margin-top:4px">'+pn(p)+'</div>'+
+    '<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:center">'+
     bdg(spName(p.sport))+
     (p.age?'<span style="background:#f0f5ff;color:#2B6CC4;border-radius:5px;padding:2px 8px;font-size:12px;font-weight:600;border:1px solid rgba(43,108,196,0.2)">'+(lng==="he"?"גיל":"Age")+' '+p.age+'</span>':"")+
     '</div></div></div>'+
