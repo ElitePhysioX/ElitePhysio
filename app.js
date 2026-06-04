@@ -1764,7 +1764,16 @@ var AVATARS = [
   {id:104,type:"img",label:"Avatar 4",src:"avatars/avatar4.png"},
   {id:105,type:"img",label:"Avatar 5",src:"avatars/avatar5.png"},
   {id:106,type:"img",label:"Avatar 6",src:"avatars/avatar6.png"},
-  {id:107,type:"img",label:"Avatar 7",src:"avatars/avatar7.png"}
+  {id:107,type:"img",label:"Avatar 7",src:"avatars/avatar7.png"},
+  {id:108,type:"img",label:"Avatar 8",src:"avatars/avatar8.png"},
+  {id:109,type:"img",label:"Avatar 9",src:"avatars/avatar9.png"},
+  {id:110,type:"img",label:"Avatar 10",src:"avatars/avatar10.png"},
+  {id:111,type:"img",label:"Avatar 11",src:"avatars/avatar11.png"},
+  {id:112,type:"img",label:"Avatar 12",src:"avatars/avatar12.png"},
+  {id:113,type:"img",label:"Avatar 13",src:"avatars/avatar13.png"},
+  {id:114,type:"img",label:"Avatar 14",src:"avatars/avatar14.png"},
+  {id:115,type:"img",label:"Avatar 15",src:"avatars/avatar15.png"},
+  {id:116,type:"img",label:"Avatar 16",src:"avatars/avatar16.png"}
 ];
 
 function customAvatarSVG(id, size){
@@ -1848,7 +1857,10 @@ function legoSVG(av,size){
   if(!av) av=AVATARS[0];
   size=size||60;
   if(av.type==="img"){
-    return '<img src="'+av.src+'" width="'+size+'" height="'+size+'" style="border-radius:50%;object-fit:cover;display:block;width:'+size+'px;height:'+size+'px" onerror="this.style.background=\'#e8f2ff\'">';
+    var imgBg=AVATAR_BG[(av.id-101)%AVATAR_BG.length]||"#3bbfbf";
+    return '<div style="width:'+size+'px;height:'+size+'px;border-radius:50%;background:'+imgBg+';overflow:hidden;display:inline-block;flex-shrink:0">'+
+      '<img src="'+av.src+'" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.style.opacity=0">'+
+      '</div>';
   }
   if(av.type==="custom"){
     return customAvatarSVG(av.id, size);
