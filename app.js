@@ -832,7 +832,7 @@ function rpd(){
   g("pbk").textContent=L().bk;
   g("phd").innerHTML=
     '<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">'+
-    '<div style="display:flex;align-items:center;gap:15px">'+adminPatientAv(p,54)+'<div>'+
+    '<div style="display:flex;align-items:center;gap:18px">'+adminPatientAv(p,86)+'<div>'+
     '<div style="font-size:22px;font-weight:800;color:#1a3a6e">'+pn(p)+'</div>'+
     '<div style="display:flex;align-items:center;gap:7px;margin-top:6px;flex-wrap:wrap">'+bdg(p.sport)+' '+sbdg(p.status)+
     (p.age?'<span style="font-size:12px;color:#4a6a8a">'+p.age+'y</span>':"")+
@@ -2181,12 +2181,12 @@ function adminPatientAv(p,size){
       legoSVG(avObj,size)+
       '<div style="position:absolute;top:'+yShirt+'px;left:0;right:0;text-align:center;font-size:'+fSize+'px;font-weight:900;color:rgba(255,255,255,0.90);letter-spacing:1px;line-height:1;pointer-events:none;text-shadow:0 1px 3px rgba(0,0,0,0.4)">'+initials+'</div>'+
       '</div>'+
-      '<div style="position:absolute;bottom:-2px;right:-2px;background:#2B6CC4;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;border:2px solid #fff">✏️</div>'+
+      '<div style="position:absolute;bottom:0;right:0;background:#2B6CC4;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.2)">✏️</div>'+
       '</div>';
   }
   return '<div onclick="adminChangeAvatar('+p.id+')" style="cursor:pointer;position:relative;display:inline-block" title="Change avatar">'+
     av(pn(p),size)+
-    '<div style="position:absolute;bottom:-2px;right:-2px;background:#2B6CC4;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;border:2px solid #fff">✏️</div>'+
+    '<div style="position:absolute;bottom:0;right:0;background:#2B6CC4;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.2)">✏️</div>'+
     '</div>';
 }
 
