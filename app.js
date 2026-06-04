@@ -1779,7 +1779,9 @@ var AVATARS = [
   {id:119,type:"img",label:"Avatar 19",src:"avatars/avatar19.png"},
   {id:120,type:"img",label:"Avatar 20",src:"avatars/avatar20.png"},
   {id:121,type:"img",label:"Avatar 21",src:"avatars/avatar21.png"},
-  {id:122,type:"img",label:"Avatar 22",src:"avatars/avatar22.png"}
+  {id:122,type:"img",label:"Avatar 22",src:"avatars/avatar22.png"},
+  {id:123,type:"img",label:"Deadpool",src:"avatars/avatar23.png"},
+  {id:124,type:"img",label:"Thor",src:"avatars/avatar24.png"}
 ];
 
 function customAvatarSVG(id, size){
