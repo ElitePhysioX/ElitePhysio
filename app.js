@@ -636,8 +636,8 @@ function saveQuickPatient(date,time){
   var nameHe=(g("qp-nhe")||{}).value||"";
   var pin=String((g("qp-pin")||{}).value||"").padStart(4,"0");
   var phone=(g("qp-phone")||{}).value||"";
-  if(!name){ var el=g("qp-name"); if(el){ el.style.borderColor="#e74c3c"; el.focus(); } return; }
-  var newP={id:Date.now(),name:name,nameHe:nameHe,pin:pin,phone:phone,sport:"",injury:"",age:"",
+  if(!name&&!nameHe){ var el=g("qp-name")||g("qp-nhe"); if(el){ el.style.borderColor="#e74c3c"; el.focus(); } return; }
+  var newP={id:Date.now(),name:name||nameHe,nameHe:nameHe||name,pin:pin,phone:phone,sport:"",injury:"",age:"",
             status:"Active",notes:"",sessions:0,exercises:[],followUps:[],workoutPlans:[],
             workoutHistory:[],avatarId:0,firstLoginDone:false,startDate:new Date().toISOString().slice(0,10)};
   pts.push(newP);
