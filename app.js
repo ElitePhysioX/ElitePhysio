@@ -1236,9 +1236,9 @@ function deletePlan(planId){
 }
 
 function _msTargetDate(plan,wTo){
-  if(!plan||!plan.milestonesSetAt) return '';
-  var base=new Date(plan.milestonesSetAt);
-  if(isNaN(base.getTime())) return '';
+  if(!plan) return '';
+  var base=plan.milestonesSetAt?new Date(plan.milestonesSetAt):(plan.id?new Date(plan.id):null);
+  if(!base||isNaN(base.getTime())) return '';
   var d=new Date(base);
   d.setDate(d.getDate()+wTo*7);
   var dd=String(d.getDate()).padStart(2,'0'),mm=String(d.getMonth()+1).padStart(2,'0'),yyyy=d.getFullYear();
