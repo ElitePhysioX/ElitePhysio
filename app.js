@@ -473,7 +473,7 @@ function deleteAppt(id){
   var a=appts.find(function(x){return x.id==id;});
   var p=a?pts.find(function(x){return x.id==(a.patient_id||a.patientId);}):null;
   var nm=p?pn(p):(a&&a.patientName||"?");
-  var info=a?(nm+' &mdash; '+a.date+' '+a.time+(a.end_time?' – '+a.end_time:'')):'';
+  var info=a?(esc(nm)+' &mdash; '+a.date+' '+a.time+(a.end_time?' – '+a.end_time:'')):'';
   g("MC").innerHTML=
     '<div style="padding:8px 0;text-align:center">'+
     '<div style="font-size:28px;margin-bottom:10px">&#128465;</div>'+
@@ -656,12 +656,14 @@ function filterCalPat(q){
   }
   box.innerHTML=list.map(function(p){
     var display=pn(p)+(p.nameHe&&p.name&&p.nameHe!==p.name?' / '+p.nameHe:'');
-    return '<div onclick="selCalPat('+p.id+',\''+display.replace(/'/g,"&#39;")+'\')" '+
+    return '<div onclick="selCalPat('+p.id+')" '+
       'style="padding:9px 12px;cursor:pointer;border-bottom:1px solid #f0f4f8;font-size:14px;color:#1a3a6e" '+
-      'onmouseover="this.style.background=\'#f0f5fb\'" onmouseout="this.style.background=\'\'">'+display+'</div>';
+      'onmouseover="this.style.background=\'#f0f5fb\'" onmouseout="this.style.background=\'\'">'+esc(display)+'</div>';
   }).join("");
 }
-function selCalPat(id,display){
+function selCalPat(id){
+  var p=pts.find(function(x){ return x.id===id; });
+  var display=p?(pn(p)+(p.nameHe&&p.name&&p.nameHe!==p.name?' / '+p.nameHe:'')):'';
   var inp=g("ca-pat-search"),sel=g("ca-pat"),box=g("ca-pat-list");
   if(inp) inp.value=display;
   if(sel) sel.value=id;
@@ -1788,7 +1790,7 @@ function rcl(){
     '<div><div style="font-size:14px;font-weight:700;color:#6d28d9">'+L().aie+'</div>'+
     '<div style="font-size:11px;color:#4a6a8a;margin-top:2px">'+L().ah+'</div></div>'+
     '<button class="btn btnpu" style="font-size:12px" id="evb" onclick="aiev()">'+L().aie+'</button></div>'+
-    (p.eval?'<div style="font-size:13px;color:#1a2535;line-height:1.9;white-space:pre-wrap;background:rgba(255,255,255,0.8);border-radius:9px;padding:15px 17px;border:1px solid rgba(167,139,250,0.25)">'+p.eval+'</div>':
+    (p.eval?'<div style="font-size:13px;color:#1a2535;line-height:1.9;white-space:pre-wrap;background:rgba(255,255,255,0.8);border-radius:9px;padding:15px 17px;border:1px solid rgba(167,139,250,0.25)">'+esc(p.eval)+'</div>':
     '<div style="color:#4a6a8a;font-size:13px;font-style:italic">No evaluation yet. Click "'+L().aie+'" to generate.</div>')+'</div>';
 }
 
@@ -2375,9 +2377,9 @@ function showPatientProfile(){
     // Profile fields
     '<div class="g2" style="gap:10px;margin-bottom:14px">'+
     '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"שם בעברית":"שם בעברית")+'</label>'+
-    '<input class="inp" id="pp_nhe" dir="rtl" value="'+(p.nameHe||'')+'"></div>'+
+    '<input class="inp" id="pp_nhe" dir="rtl" value="'+esc(p.nameHe||'')+'"></div>'+
     '<div style="grid-column:1/-1"><label class="lbl">English Name</label>'+
-    '<input class="inp" id="pp_nen" value="'+(p.name||'')+'"></div>'+
+    '<input class="inp" id="pp_nen" value="'+esc(p.name||'')+'"></div>'+
     '<div><label class="lbl">'+(isHe?"גיל":"Age")+'</label>'+
     '<input class="inp" id="pp_age" type="number" value="'+(p.age||'')+'"></div>'+
     '<div><label class="lbl">'+(isHe?"ספורט":"Sport")+'</label>'+
@@ -3900,8 +3902,8 @@ function omRecycleBin(){
       var p=item.patient;
       var d=item.deletedAt?item.deletedAt.split("T")[0]:"";
       return '<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 12px;background:#fff5f5;border:1px solid #ffd0d0;border-radius:8px;margin-bottom:6px">'+
-        '<div><div style="font-weight:600;font-size:13px;color:#1a3a6e">'+(p.name||p.nameHe)+'</div>'+
-        '<div style="font-size:11px;color:#4a6a8a">'+(p.sport||"")+(d?" · deleted "+d:"")+'</div></div>'+
+        '<div><div style="font-weight:600;font-size:13px;color:#1a3a6e">'+esc(p.name||p.nameHe||"")+'</div>'+
+        '<div style="font-size:11px;color:#4a6a8a">'+esc(p.sport||"")+(d?" · deleted "+d:"")+'</div></div>'+
         '<button class="btn" style="font-size:12px;background:#e8f8f0;color:#00a86b;border:1px solid rgba(0,168,107,0.3)" onclick="restorePatient('+i+')">↩ Restore</button>'+
         '</div>';
     }).join("") : '<div style="color:#4a6a8a;font-size:13px;padding:8px 0">No deleted patients</div>';
@@ -3914,7 +3916,7 @@ function omRecycleBin(){
       var d=item.deletedAt?item.deletedAt.split("T")[0]:"";
       return '<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 12px;background:#fff8f0;border:1px solid #ffd8a8;border-radius:8px;margin-bottom:6px">'+
         '<div><div style="font-weight:600;font-size:13px;color:#1a3a6e">'+eName+'</div>'+
-        '<div style="font-size:11px;color:#4a6a8a">from: '+item.patientName+(d?" · deleted "+d:"")+'</div></div>'+
+        '<div style="font-size:11px;color:#4a6a8a">from: '+esc(item.patientName||"")+(d?" · deleted "+d:"")+'</div></div>'+
         '<button class="btn" style="font-size:12px;background:#e8f8f0;color:#00a86b;border:1px solid rgba(0,168,107,0.3)" onclick="restoreExercise('+i+')">↩ Restore</button>'+
         '</div>';
     }).join("") : '<div style="color:#4a6a8a;font-size:13px;padding:8px 0">No deleted exercises</div>';
