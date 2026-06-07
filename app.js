@@ -150,6 +150,27 @@ function showPolicyModal(tab){
     '</div>';
   g("MB").classList.add("on");
 }
+function consentEvidenceHTML(p){
+  var isHe=lng==="he";
+  var c=p&&p.consent;
+  var title=isHe?"📋 הוכחת הסכמה לאיסוף מידע":"📋 Consent Evidence";
+  if(!c||!c.given){
+    return '<div style="grid-column:1/-1;margin-bottom:11px"><label class="lbl">'+title+'</label>'+
+      '<div style="font-size:12px;color:#9aa;background:rgba(0,0,0,0.04);border-radius:8px;padding:10px 12px">'+
+      (isHe?"המטופל/ת טרם אישר/ה את תנאי השימוש במידע":"Patient has not yet given consent")+'</div></div>';
+  }
+  var rows=[
+    [isHe?"תאריך ושעה (שרת)":"Recorded at (server)", c.recordedAt?new Date(c.recordedAt).toLocaleString():"—"],
+    [isHe?"כתובת IP":"IP address", c.ip||"—"],
+    [isHe?"מכשיר/דפדפן":"Device / browser", c.userAgent||"—"],
+    [isHe?"שפת ההסכמה":"Consent language", c.lang||"—"],
+    [isHe?"גרסת נוסח ההסכמה":"Consent text version", c.version||"—"]
+  ];
+  return '<div style="grid-column:1/-1;margin-bottom:11px"><label class="lbl">'+title+'</label>'+
+    '<div style="font-size:12px;line-height:1.9;color:#1a2535;background:rgba(43,108,196,0.05);border:1px solid rgba(43,108,196,0.15);border-radius:8px;padding:10px 12px">'+
+    rows.map(function(r){ return '<div><b>'+esc(r[0])+':</b> '+esc(String(r[1]))+'</div>'; }).join("")+
+    '</div></div>';
+}
 
 function showToast(msg, type){
   var t=document.createElement("div");
@@ -183,7 +204,8 @@ function fromRow(r){
     workoutHistory:r.workout_history||[],
     workoutPlans:r.workout_plans||[],
     avatarId:r.avatar_id||0,
-    firstLoginDone:r.first_login_done||false
+    firstLoginDone:r.first_login_done||false,
+    consent:r.consent||null
   };
   // Migrate old flat exercises into default plan if no plans exist
   if(p.workoutPlans.length===0 && p.exercises && p.exercises.length>0){
@@ -2895,6 +2917,7 @@ function om(m, editId){
       '<div style="margin-top:5px"><button type="button" onclick="omManageSports()" style="font-size:11px;color:#2B6CC4;background:none;border:none;cursor:pointer;text-decoration:underline">⚙️ '+(lng==="he"?"נהל רשימת ספורט":"Manage sports list")+'</button></div></div>'+
       '<div style="grid-column:1/-1"><label class="lbl">'+(lng==="he"?"המטרה שלי":"My Goal")+' (EN)</label><textarea class="inp" id="fno_en" style="height:54px">'+esc(_nB.en)+'</textarea></div>'+
       '<div style="grid-column:1/-1"><label class="lbl">'+(lng==="he"?"המטרה שלי":"My Goal")+' (עברית)</label><textarea class="inp" id="fno_he" dir="rtl" style="height:54px">'+esc(_nB.he)+'</textarea></div></div>'+
+      (m==="ep"?consentEvidenceHTML(p):'')+
       '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btnd" onclick="cm()">'+Lx.ca+'</button><button class="btn" onclick="sp2()">'+Lx.sa+'</button></div>';
   } else if(m==="ae"){
     // Find exercise in plan day first, then flat exercises
