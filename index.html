@@ -97,6 +97,9 @@
         <img src="https://flagcdn.com/w40/il.png" style="width:28px;height:auto;border-radius:3px"> HE
       </button>
     </div>
+    <div style="text-align:center;margin-top:14px">
+      <button onclick="showPolicyModal('resp')" style="background:none;border:none;color:rgba(255,255,255,0.55);font-size:11px;cursor:pointer;text-decoration:underline">🔒 <span id="l-policy-link"></span></button>
+    </div>
   </div>
 </div>
 </div>
@@ -123,6 +126,7 @@
       <span id="svi" style="font-size:11px;color:rgba(255,255,255,0.8);display:none;align-items:center"><span class="spi"></span><span id="svt">Saving...</span></span>
       <button id="afle" onclick="setL('en')" style="background:rgba(255,255,255,0.9);border:2px solid #fff;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;gap:4px;color:#1a3a6e"><img src="https://flagcdn.com/w40/us.png" style="width:20px;height:auto;border-radius:2px"> EN</button>
       <button id="aflh" onclick="setL('he')" style="background:rgba(255,255,255,0.12);border:2px solid rgba(255,255,255,0.3);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;gap:4px;color:rgba(255,255,255,0.9)"><img src="https://flagcdn.com/w40/il.png" style="width:20px;height:auto;border-radius:2px"> HE</button>
+      <button class="btn btng" style="font-size:11px;padding:6px 9px" onclick="showPolicyModal('resp')" title="Privacy &amp; Security">🔒</button>
       <button class="btn btng" style="font-size:12px;padding:6px 12px" onclick="dout()" id="alo">Log Out</button>
     </div>
   </header>
@@ -191,7 +195,7 @@
 
 <!-- Scripts — order matters: data first, then app logic -->
 <script src="data.js?v=6"></script>
-<script src="app.js?v=23"></script>
+<script src="app.js?v=24"></script>
 <script>
 // ── Mobile scroll aura on login screen ──
 (function(){

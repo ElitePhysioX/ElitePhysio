@@ -325,7 +325,7 @@ export default {
       if(path === "/api/patient-save-profile"){
         const id = await requirePatient(request, SESSION_SECRET);
         if(!id) return json({ ok:false, error:"Unauthorized" }, 401);
-        const { name, nameHe, age, sport, injury, notes, avatarId, firstLoginDone, pin } = body;
+        const { name, nameHe, age, sport, injury, notes, avatarId, firstLoginDone, pin, consent } = body;
         const update = {};
         if(name!==undefined) update.name=name;
         if(nameHe!==undefined) update.name_he=nameHe;
@@ -336,6 +336,17 @@ export default {
         if(avatarId!==undefined) update.avatar_id=avatarId;
         if(firstLoginDone!==undefined) update.first_login_done=firstLoginDone;
         if(pin) update.pin = await encryptPin(String(pin), SESSION_SECRET);
+        // Record consent as evidence: server-side timestamp + IP + user-agent (not client-supplied, so it can't be forged)
+        if(consent && consent.given){
+          update.consent = {
+            given: true,
+            version: consent.version || null,
+            lang: consent.lang || null,
+            recordedAt: new Date().toISOString(),
+            ip: request.headers.get("CF-Connecting-IP") || null,
+            userAgent: request.headers.get("User-Agent") || null
+          };
+        }
         await encryptClinicalFields(update, SESSION_SECRET);
         await sbFetch(SB_KEY, "patients?id=eq."+id, "PATCH", update);
         return json({ ok: true });

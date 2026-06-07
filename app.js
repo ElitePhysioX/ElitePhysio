@@ -100,6 +100,57 @@ function esc(s){
 }
 function gbE(raw,isHe){ return esc(getBilingual(raw,isHe)); }
 
+// ── Privacy / Security policy & consent ──
+var CONSENT_VERSION = "v1-2026-06-07";
+var _policyTab = "resp";
+function showPolicyModal(tab){
+  _policyTab = tab||"resp";
+  var isHe=lng==="he";
+  var c=g("MC");
+  var respEn = '<div style="font-size:13px;line-height:1.8;color:#1a2535">'+
+    '<b>Data controller & responsibility.</b> The owner/operator of this clinic (the admin account holder of ElitePhysio) is solely responsible for your data, and acts as the data controller and data security officer.<br><br>'+
+    '<b>What is collected:</b> name, contact details, age, sport, injury/condition, treatment notes, appointment &amp; progress history, and a login PIN.<br><br>'+
+    '<b>Why:</b> solely to provide and manage your physiotherapy treatment and track your progress.<br><br>'+
+    '<b>Where it is stored:</b> in an encrypted database, accessed only through this secured application.<br><br>'+
+    '<b>Who can access it:</b> only the clinic admin, and you yourself (you can only see your own data).<br><br>'+
+    '<b>How long it is kept:</b> while you are an active patient, plus the period required for medical record-keeping.<br><br>'+
+    '<b>Your rights:</b> you may request to view, correct, or delete your data at any time, in accordance with the Patient Rights Law (1996) and the Privacy Protection Law (1981).</div>';
+  var respHe = '<div dir="rtl" style="font-size:13px;line-height:1.9;color:#1a2535;text-align:right">'+
+    '<b>אחראי המידע.</b> בעל/ת הקליניקה (בעל/ת חשבון הניהול באפליקציית ElitePhysio) הוא/היא האחראי/ת הבלעדי/ת למידע שלך, ומשמש/ת כבעל/ת המאגר וכאחראי/ת אבטחת מידע.<br><br>'+
+    '<b>אילו נתונים נאספים:</b> שם, פרטי קשר, גיל, ענף ספורט, פציעה/מצב, הערות טיפול, היסטוריית פגישות והתקדמות, וקוד PIN לכניסה.<br><br>'+
+    '<b>מדוע:</b> אך ורק לצורך מתן וניהול הטיפול הפיזיותרפי שלך ומעקב אחר ההתקדמות.<br><br>'+
+    '<b>היכן נשמר המידע:</b> במסד נתונים מוצפן, הנגיש רק דרך אפליקציה מאובטחת זו.<br><br>'+
+    '<b>מי יכול לגשת אליו:</b> רק מנהל/ת הקליניקה, ואת/ה עצמך (אתה רואה רק את המידע שלך).<br><br>'+
+    '<b>כמה זמן נשמר:</b> כל עוד הינך מטופל/ת פעיל/ה, ובנוסף פרק הזמן הנדרש לשמירת רשומות רפואיות.<br><br>'+
+    '<b>הזכויות שלך:</b> ניתן לבקש לעיין, לתקן או למחוק את המידע שלך בכל עת, בהתאם לחוק זכויות החולה (1996) ולחוק הגנת הפרטיות (1981).</div>';
+  var secEn = '<div style="font-size:13px;line-height:1.8;color:#1a2535">'+
+    '<b>Encryption:</b> sensitive medical data (injuries, notes, evaluations, history) and PIN codes are encrypted at rest in the database, and all traffic to the app is sent over secure encrypted connections (HTTPS/TLS).<br><br>'+
+    '<b>Access control:</b> a login is required for both admin and patients; admin and patient accounts are fully separated, and each patient can only see their own data.<br><br>'+
+    '<b>No plaintext credentials:</b> passwords and PIN codes are never stored as plain, readable text.<br><br>'+
+    '<b>No unauthorized sharing:</b> your data is never shared with third parties (including external services) without your explicit consent.<br><br>'+
+    '<b>Breach notification:</b> in the unlikely event of a data security breach, affected patients and the Privacy Protection Authority will be notified as required by Israeli law.<br><br>'+
+    '<span style="color:#4a6a8a;font-size:11px">Policy version '+CONSENT_VERSION+'</span></div>';
+  var secHe = '<div dir="rtl" style="font-size:13px;line-height:1.9;color:#1a2535;text-align:right">'+
+    '<b>הצפנה:</b> מידע רפואי רגיש (פציעות, הערות, הערכות, היסטוריה) וקודי PIN מוצפנים במסד הנתונים, וכל התקשורת עם האפליקציה מועברת בחיבור מאובטח ומוצפן (HTTPS/TLS).<br><br>'+
+    '<b>בקרת גישה:</b> נדרשת התחברות הן עבור מנהל/ת והן עבור מטופלים; חשבונות מנהל ומטופל מופרדים לחלוטין, וכל מטופל/ת רואה רק את המידע שלו/שלה.<br><br>'+
+    '<b>ללא סיסמאות גלויות:</b> סיסמאות וקודי PIN לעולם אינם נשמרים כטקסט גלוי הניתן לקריאה.<br><br>'+
+    '<b>ללא העברה לא מורשית:</b> המידע שלך לא יועבר לצד שלישי (כולל שירותים חיצוניים) ללא הסכמתך המפורשת.<br><br>'+
+    '<b>דיווח על אירועי אבטחה:</b> במקרה הלא סביר של אירוע אבטחת מידע, מטופלים שנפגעו והרשות להגנת הפרטיות יעודכנו כנדרש בחוק הישראלי.<br><br>'+
+    '<span style="color:#4a6a8a;font-size:11px">גרסת מדיניות '+CONSENT_VERSION+'</span></div>';
+  c.innerHTML=
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'+
+    '<span style="font-size:16px;font-weight:800;color:#1a3a6e">🔒 '+(isHe?"פרטיות ואבטחת מידע":"Privacy &amp; Security")+'</span>'+
+    '<button onclick="cm()" style="background:rgba(0,0,0,0.08);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:16px">✕</button></div>'+
+    '<div style="display:flex;gap:6px;margin-bottom:14px">'+
+    '<button class="btn'+(_policyTab==="resp"?"":" btnd")+'" style="flex:1;font-size:12px;padding:8px" onclick="showPolicyModal(\'resp\')">'+(isHe?"אחריות על המידע":"Data Responsibility")+'</button>'+
+    '<button class="btn'+(_policyTab==="sec"?"":" btnd")+'" style="flex:1;font-size:12px;padding:8px" onclick="showPolicyModal(\'sec\')">'+(isHe?"מדיניות אבטחה":"Security Policy")+'</button>'+
+    '</div>'+
+    '<div style="background:rgba(43,108,196,0.05);border-radius:10px;padding:14px 16px;border:1px solid rgba(43,108,196,0.15)">'+
+    (_policyTab==="sec" ? (isHe?secHe:secEn) : (isHe?respHe:respEn))+
+    '</div>';
+  g("MB").classList.add("on");
+}
+
 function showToast(msg, type){
   var t=document.createElement("div");
   t.textContent=msg;
@@ -275,6 +326,7 @@ function setL(l){
   var lal=g("l-al"); if(lal) lal.textContent=Lx.al;
   var lyn=g("l-yn"); if(lyn) lyn.textContent=Lx.yn;
   var lyp=g("l-yp"); if(lyp) lyp.textContent=Lx.yp;
+  var lpl=g("l-policy-link"); if(lpl) lpl.textContent=(l==="he"?"פרטיות ואבטחת מידע":"Privacy & Security Policy");
   var pnm=g("pnm"); if(pnm) pnm.placeholder=l==="he"?"\u05e9\u05dd \u05de\u05dc\u05d0":"Full name"; // v2
   var ppi=g("ppi"); if(ppi) ppi.placeholder=l==="he"?"\u05e7\u05d5\u05d3 \u05d0\u05d1\u05d8\u05d7\u05d4":"PIN code"; // v2
   // Header taglines
@@ -1735,6 +1787,8 @@ function saveWelcome(){
   var nhe=g("wn_he")?g("wn_he").value.trim():"";
   var nen=g("wn_en")?g("wn_en").value.trim():"";
   if(!nhe&&!nen){alert(isHe?"הכנס שם":"Enter your name");return;}
+  if(!g("w_consent")||!g("w_consent").checked){alert(isHe?"יש לאשר את תנאי השימוש במידע כדי להמשיך":"Please confirm your consent to continue");return;}
+  var consent={ given:true, lang:lng, version:CONSENT_VERSION };
   cur.name=nen||nhe; cur.nameHe=nhe||nen;
   cur.age=g("w_age")?g("w_age").value:"";
   var wSportSel=g("w_sport_sel"); var wSportOther=g("w_sport_other");
@@ -1753,7 +1807,8 @@ function saveWelcome(){
   apiCall("patient-save-profile","POST",{
     id:cur.id, name:cur.name, nameHe:cur.nameHe,
     age:cur.age, sport:cur.sport, injury:cur.injury,
-    notes:cur.notes, avatarId:cur.avatarId, firstLoginDone:true
+    notes:cur.notes, avatarId:cur.avatarId, firstLoginDone:true,
+    consent:consent
   },function(){});
   cm(); rpv();
 }
@@ -2174,7 +2229,14 @@ function showFirstTimeWelcome(p){
     '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"המטרה שלי":"My Goal")+' (EN)</label><input class="inp" id="w_goal_en" value="'+esc(wgB.en)+'"></div>'+
     '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"המטרה שלי":"My Goal")+' (עברית)</label><input class="inp" id="w_goal_he" dir="rtl" value="'+esc(wgB.he)+'"></div>'; })()+
     '</div>'+
-    '<button class="btn" style="width:100%;padding:12px;font-size:15px;font-weight:700" onclick="saveWelcome()">'+
+    '<label style="display:flex;align-items:flex-start;gap:8px;font-size:11.5px;color:#4a6a8a;line-height:1.5;margin-bottom:14px;cursor:pointer;text-align:'+(isHe?'right':'left')+'">'+
+    '<input type="checkbox" id="w_consent" onchange="g(\'w_enter_btn\').disabled=!this.checked" style="margin-top:2px;flex-shrink:0">'+
+    '<span>'+(isHe?
+      'אני מאשר/ת ש-ElitePhysio תאחסן ותשתמש במידע האישי והרפואי שלי (כגון פציעה, הערות והתקדמות) אך ורק לצורך הטיפול והמעקב שלי, בהתאם לחוק זכויות החולה וחוק הגנת הפרטיות בישראל, וכי המידע לא יועבר לצד שלישי ללא הסכמתי. ('
+      :'I agree that ElitePhysio may store and use my personal and medical information (e.g. injury, notes, progress) solely for my treatment and tracking, in accordance with Israeli patient-rights and privacy laws, and that it won\'t be shared with third parties without my consent. (')+
+    '<a href="#" onclick="event.preventDefault();event.stopPropagation();showPolicyModal();" style="color:#2B6CC4;text-decoration:underline">'+(isHe?'קרא עוד':'read more')+'</a>)</span>'+
+    '</label>'+
+    '<button class="btn" id="w_enter_btn" disabled style="width:100%;padding:12px;font-size:15px;font-weight:700" onclick="saveWelcome()">'+
     (isHe?"כניסה לתוכנית שלי ➜":"Enter My Program ➜")+'</button>';
   g("MB").classList.add("on");
 }
