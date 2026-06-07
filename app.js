@@ -1799,6 +1799,10 @@ function rpv(){
   if(!p.firstLoginDone){
     renderPatientView(p);
     setTimeout(function(){ showFirstTimeWelcome(p); },300);
+  } else if(!(p.consent && p.consent.given)){
+    // Existing patient (pre-dates the consent feature) — show a standalone consent gate
+    renderPatientView(p);
+    setTimeout(function(){ showConsentGate(p); },300);
   } else {
     renderPatientView(p);
   }
@@ -1832,6 +1836,37 @@ function saveWelcome(){
     notes:cur.notes, avatarId:cur.avatarId, firstLoginDone:true,
     consent:consent
   },function(){});
+  cm(); rpv();
+}
+
+// Standalone consent gate for existing patients who logged in before the consent feature existed
+function showConsentGate(p){
+  var isHe=lng==="he";
+  var c=g("MC");
+  c.innerHTML='<div style="font-size:17px;font-weight:800;margin-bottom:14px;color:#1a3a6e">'+
+    (isHe?"🔒 עדכון מדיניות פרטיות":"🔒 Privacy Policy Update")+'</div>'+
+    '<div style="font-size:13px;line-height:1.7;color:#4a6a8a;margin-bottom:14px">'+
+    (isHe?"לפני שתמשיך/י, אנא אשר/י את הסכמתך לאופן שבו המידע שלך נאסף ונשמר:":
+    "Before you continue, please confirm your consent to how your data is collected and stored:")+'</div>'+
+    '<label style="display:flex;align-items:flex-start;gap:8px;font-size:11.5px;color:#4a6a8a;line-height:1.5;margin-bottom:16px;cursor:pointer;text-align:'+(isHe?'right':'left')+'">'+
+    '<input type="checkbox" id="cg_consent" onchange="g(\'cg_btn\').disabled=!this.checked" style="margin-top:2px;flex-shrink:0">'+
+    '<span>'+(isHe?
+      'אני מאשר/ת ש-ElitePhysio תאחסן ותשתמש במידע האישי והרפואי שלי (כגון פציעה, הערות והתקדמות) אך ורק לצורך הטיפול והמעקב שלי, בהתאם לחוק זכויות החולה וחוק הגנת הפרטיות בישראל, וכי המידע לא יועבר לצד שלישי ללא הסכמתי. ('
+      :'I agree that ElitePhysio may store and use my personal and medical information (e.g. injury, notes, progress) solely for my treatment and tracking, in accordance with Israeli patient-rights and privacy laws, and that it won\'t be shared with third parties without my consent. (')+
+    '<a href="#" onclick="event.preventDefault();event.stopPropagation();showPolicyModal();" style="color:#2B6CC4;text-decoration:underline">'+(isHe?'קרא עוד':'read more')+'</a>)</span>'+
+    '</label>'+
+    '<button class="btn" id="cg_btn" disabled style="width:100%;padding:12px;font-size:15px;font-weight:700" onclick="saveConsentOnly()">'+
+    (isHe?"אישור והמשך ➜":"Confirm & Continue ➜")+'</button>';
+  g("MB").classList.add("on");
+}
+function saveConsentOnly(){
+  var isHe=lng==="he";
+  if(!g("cg_consent")||!g("cg_consent").checked){alert(isHe?"יש לאשר את תנאי השימוש במידע כדי להמשיך":"Please confirm your consent to continue");return;}
+  var consent={ given:true, lang:lng, version:CONSENT_VERSION };
+  cur.consent=consent;
+  pts=pts.map(function(p){return p.id===cur.id?cur:p;});
+  lsave();
+  apiCall("patient-save-profile","POST",{ id:cur.id, consent:consent },function(){});
   cm(); rpv();
 }
 
