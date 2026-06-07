@@ -333,6 +333,9 @@ export default {
         // while still letting admin/patient view it later
         const toSave = Object.assign({}, body);
         if(toSave.pin) toSave.pin = await encryptPin(String(toSave.pin), SESSION_SECRET);
+        // Editing an existing patient with no/blank PIN in the payload must never
+        // clobber their real stored PIN with an empty value via the upsert merge
+        else if(toSave.id) delete toSave.pin;
         await sbFetch(SB_KEY, "patients", "POST", toSave);
         return json({ ok: true });
       }

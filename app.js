@@ -105,7 +105,7 @@ function showToast(msg, type){
 function toRow(p){
   return {
     id:p.id, name:p.name||"", name_he:p.nameHe||"", sport:p.sport||"",
-    age:p.age||"", phone:p.phone||"", injury:p.injury||"", pin:p.pin||"0000",
+    age:p.age||"", phone:p.phone||"", injury:p.injury||"", pin:p.pin||"",
     status:p.status||"Active", notes:p.notes||"", sessions:p.sessions||0,
     start_date:p.startDate||"", exercises:p.exercises||[],
     follow_ups:p.followUps||[], eval:p.eval||"",
@@ -118,7 +118,7 @@ function toRow(p){
 function fromRow(r){
   var p = {
     id:r.id, name:r.name||"", nameHe:r.name_he||"", sport:r.sport||"",
-    age:r.age||"", phone:r.phone||"", injury:r.injury||"", pin:r.pin||"0000",
+    age:r.age||"", phone:r.phone||"", injury:r.injury||"", pin:r.pin||"",
     status:r.status||"Active", notes:r.notes||"", sessions:r.sessions||0,
     startDate:r.start_date||"", exercises:r.exercises||[],
     followUps:r.follow_ups||[], files:[], eval:r.eval||"",
@@ -824,7 +824,7 @@ function rpd(){
     '<div style="font-size:22px;font-weight:800;color:#1a3a6e">'+pn(p)+'</div>'+
     '<div style="display:flex;align-items:center;gap:7px;margin-top:6px;flex-wrap:wrap">'+bdg(p.sport)+' '+sbdg(p.status)+
     (p.age?'<span style="font-size:12px;color:#4a6a8a">'+p.age+'y</span>':"")+
-    '<span style="font-size:11px;color:#4a6a8a;border:1px solid rgba(43,108,196,0.25);border-radius:4px;padding:2px 8px">PIN: '+p.pin+'</span>'+
+    '<span style="font-size:11px;color:#4a6a8a;border:1px solid rgba(43,108,196,0.25);border-radius:4px;padding:2px 8px">PIN: '+(p.pin||(lng==="he"?"לא זמין – יש לאפס":"unavailable – reset needed"))+'</span>'+
     waLink(p)+'</div></div></div>'+
     '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
     '<button class="btn" style="font-size:12px" onclick="dprint('+p.id+')">'+L().pdf+'</button>'+
@@ -4021,7 +4021,7 @@ function sp2(){
   }
   var sp=g("fsp")?g("fsp").value||"General":"General";
   var ph=g("fph")?g("fph").value:"";
-  var d={name:nm||(nhe),nameHe:nhe||(nm),sport:sp,age:g("fa")?g("fa").value:"",phone:ph,injury:setBilingual(g("fij_en")?g("fij_en").value:"",g("fij_he")?g("fij_he").value:""),pin:g("fpi")?g("fpi").value||"0000":"0000",status:g("fst")?g("fst").value:"Active",notes:setBilingual(g("fno_en")?g("fno_en").value:"",g("fno_he")?g("fno_he").value:"")};
+  var d={name:nm||(nhe),nameHe:nhe||(nm),sport:sp,age:g("fa")?g("fa").value:"",phone:ph,injury:setBilingual(g("fij_en")?g("fij_en").value:"",g("fij_he")?g("fij_he").value:""),pin:g("fpi")?g("fpi").value||"":"",status:g("fst")?g("fst").value:"Active",notes:setBilingual(g("fno_en")?g("fno_en").value:"",g("fno_he")?g("fno_he").value:"")};
   if(mmode==="ap"){
     var newNameLower=((nm||nhe)).toLowerCase();
     var newPhoneTrim=(ph||"").replace(/\D/g,"");
