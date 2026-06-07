@@ -1856,7 +1856,9 @@ function showConsentGate(p){
     '<a href="#" onclick="event.preventDefault();event.stopPropagation();showPolicyModal();" style="color:#2B6CC4;text-decoration:underline">'+(isHe?'קרא עוד':'read more')+'</a>)</span>'+
     '</label>'+
     '<button class="btn" id="cg_btn" disabled style="width:100%;padding:12px;font-size:15px;font-weight:700" onclick="saveConsentOnly()">'+
-    (isHe?"אישור והמשך ➜":"Confirm & Continue ➜")+'</button>';
+    (isHe?"אישור והמשך ➜":"Confirm & Continue ➜")+'</button>'+
+    '<div style="text-align:center;margin-top:12px"><a href="#" onclick="event.preventDefault();cm();dout();" style="font-size:12px;color:#4a6a8a;text-decoration:underline">'+
+    (isHe?"חזרה למסך הכניסה":"Back to login")+'</a></div>';
   g("MB").classList.add("on");
 }
 function saveConsentOnly(){
