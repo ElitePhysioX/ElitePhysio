@@ -2384,6 +2384,7 @@ function renderPatientView(p){
     '<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:center">'+
     bdg(spName(p.sport))+
     (p.age?'<span style="background:#f0f5ff;color:#2B6CC4;border-radius:5px;padding:2px 8px;font-size:12px;font-weight:600;border:1px solid rgba(43,108,196,0.2)">'+(lng==="he"?"גיל":"Age")+' '+p.age+'</span>':"")+
+    (p.pin?'<span style="background:#f0f5ff;color:#2B6CC4;border-radius:5px;padding:2px 8px;font-size:12px;font-weight:600;border:1px solid rgba(43,108,196,0.2)">'+(lng==="he"?"קוד PIN":"PIN")+': '+p.pin+'</span>':"")+
     '</div></div></div>'+
     (getBilingual(p.injury,lng==="he")?'<div style="background:rgba(43,108,196,0.08);border-radius:8px;padding:11px 15px;border-left:3px solid #2B6CC4;margin-bottom:8px">'+
     '<div style="font-size:11px;color:#2B6CC4;font-weight:700;text-transform:uppercase;margin-bottom:3px">'+L().ij+'</div>'+
