@@ -758,7 +758,9 @@ function rpl(){
     return '<div class="card" onclick="op('+p.id+')"><div style="display:flex;align-items:center;justify-content:space-between">'+
       '<div style="display:flex;align-items:center;gap:13px">'+avHtml+
       '<div><div class="pat-name" style="display:flex;align-items:center;gap:7px">'+dn+dotHtml+'</div><div class="pat-sub">'+(gbE(p.injury,lng==="he")||"—")+' &middot; '+(p.age||"—")+'</div></div></div>'+
-      '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">'+bdg(spName(p.sport))+' '+sbdg(p.status)+'</div></div></div>';
+      '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">'+
+      '<span style="font-size:11px;color:#4a6a8a;border:1px solid rgba(43,108,196,0.25);border-radius:4px;padding:2px 8px">PIN: '+esc(p.pin||(lng==="he"?"לא זמין":"unavailable"))+'</span>'+
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">'+bdg(spName(p.sport))+' '+sbdg(p.status)+'</div></div></div></div>';
   }).join(""):'<div style="color:#4a6a8a;text-align:center;padding:32px 0;font-size:14px">No patients found</div>';
 }
 
@@ -831,7 +833,7 @@ function rpd(){
     '<div style="font-size:22px;font-weight:800;color:#1a3a6e">'+esc(pn(p))+'</div>'+
     '<div style="display:flex;align-items:center;gap:7px;margin-top:6px;flex-wrap:wrap">'+bdg(p.sport)+' '+sbdg(p.status)+
     (p.age?'<span style="font-size:12px;color:#4a6a8a">'+p.age+'y</span>':"")+
-    '<span style="font-size:11px;color:#4a6a8a;border:1px solid rgba(43,108,196,0.25);border-radius:4px;padding:2px 8px">PIN: '+(p.pin||(lng==="he"?"לא זמין – יש לאפס":"unavailable – reset needed"))+'</span>'+
+    '<span style="font-size:11px;color:#4a6a8a;border:1px solid rgba(43,108,196,0.25);border-radius:4px;padding:2px 8px">PIN: '+esc(p.pin||(lng==="he"?"לא זמין – יש לאפס":"unavailable – reset needed"))+'</span>'+
     waLink(p)+'</div></div></div>'+
     '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
     '<button class="btn" style="font-size:12px" onclick="dprint('+p.id+')">'+L().pdf+'</button>'+
@@ -1199,6 +1201,8 @@ function saveEditPlan(planId){
     milestones.push({weekFrom:parseInt(mf.value)||1,weekTo:parseInt(mt&&mt.value)||parseInt(mf.value)||1,text:men?men.value.trim():"",textHe:mhe?mhe.value.trim():""});
   }
   plan.milestones=milestones;
+  if(milestones.length && !plan.milestonesSetAt) plan.milestonesSetAt=new Date().toISOString();
+  if(!milestones.length) plan.milestonesSetAt=null;
   if(plan.type==="repeating"){
     var wrap=g("ep_days_wrap");
     var total=wrap?parseInt(wrap.dataset.count)||plan.days.length:plan.days.length;
@@ -1240,12 +1244,23 @@ function deletePlan(planId){
   sv(); rplans();
 }
 
-function _msRow(m,i,clrs,bgs,isHe,editable){
+function _msTargetDate(plan,wTo){
+  if(!plan) return '';
+  var base=plan.milestonesSetAt?new Date(plan.milestonesSetAt):(plan.id?new Date(plan.id):null);
+  if(!base||isNaN(base.getTime())) return '';
+  var d=new Date(base);
+  d.setDate(d.getDate()+wTo*7);
+  var dd=String(d.getDate()).padStart(2,'0'),mm=String(d.getMonth()+1).padStart(2,'0'),yyyy=d.getFullYear();
+  return dd+'.'+mm+'.'+yyyy;
+}
+function _msRow(m,i,clrs,bgs,isHe,editable,plan){
   var clr=clrs[i%clrs.length],bg=bgs[i%bgs.length];
   var txt=(isHe&&m.textHe)?m.textHe:(m.text||'');
   var wFrom=m.weekFrom||1,wTo=m.weekTo||wFrom;
   var wLabel=isHe?('שב\' '+(wFrom===wTo?wFrom:wFrom+'–'+wTo)):('Wk '+(wFrom===wTo?wFrom:wFrom+'–'+wTo));
   var sel=editable&&msReo&&msReoSel===i;
+  var dateStr=_msTargetDate(plan,wTo);
+  var dateLbl=dateStr?('<div style="font-size:11px;font-weight:600;color:'+clr+';margin-top:4px">'+(isHe?'עד תאריך '+dateStr:'to achieve by '+dateStr)+'</div>'):'';
   return '<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:7px;transition:all 0.15s'+(sel?';outline:2px solid #2B6CC4;border-radius:9px;padding:4px;background:rgba(43,108,196,0.04)':'')+'">'+
     (editable&&msReo?
       '<div onclick="msReoSelect('+i+')" style="cursor:pointer;flex-shrink:0;display:flex;align-items:center;padding-top:2px">'+
@@ -1253,7 +1268,7 @@ function _msRow(m,i,clrs,bgs,isHe,editable){
       (sel?'<div style="width:8px;height:8px;border-radius:50%;background:#fff"></div>':'')+
       '</div></div>':'')+
     '<div style="flex-shrink:0;background:'+clr+';color:#fff;border-radius:6px;padding:4px 7px;font-size:10px;font-weight:700;line-height:1.3;min-width:42px;text-align:center;margin-top:2px">'+wLabel+'</div>'+
-    '<div style="flex:1;background:'+bg+';border-left:3px solid '+clr+';border-radius:0 8px 8px 0;padding:8px 11px;font-size:13px;color:#1a2535;line-height:1.5">'+(txt||('<span style="color:#9ab;font-style:italic">'+(isHe?'ללא טקסט':'No text')+'</span>'))+'</div>'+
+    '<div style="flex:1;background:'+bg+';border-left:3px solid '+clr+';border-radius:0 8px 8px 0;padding:8px 11px;font-size:13px;color:#1a2535;line-height:1.5">'+(txt||('<span style="color:#9ab;font-style:italic">'+(isHe?'ללא טקסט':'No text')+'</span>'))+dateLbl+'</div>'+
     '</div>';
 }
 function renderMilestones(plan,isHe){
@@ -1262,7 +1277,7 @@ function renderMilestones(plan,isHe){
   var clrs=['#2B6CC4','#6d28d9','#00a86b','#c8801e','#c0392b'];
   var bgs=['rgba(43,108,196,0.08)','rgba(109,40,217,0.08)','rgba(0,168,107,0.08)','rgba(200,128,30,0.08)','rgba(192,57,43,0.08)'];
   var html='<div style="margin-bottom:14px"><div style="font-size:11px;font-weight:700;color:#1a3a6e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📅 '+(isHe?'ציר זמן מטרות':'Goal Timeline')+'</div>';
-  ms.forEach(function(m,i){ html+=_msRow(m,i,clrs,bgs,isHe,false); });
+  ms.forEach(function(m,i){ html+=_msRow(m,i,clrs,bgs,isHe,false,plan); });
   return html+'</div>';
 }
 function renderMilestonesAdmin(plan,isHe){
@@ -1279,7 +1294,7 @@ function renderMilestonesAdmin(plan,isHe){
   if(msReo&&msReoSel===null) html+='<div style="font-size:12px;color:#2B6CC4;padding:4px 0 8px;font-weight:600">'+(isHe?'בחר מטרה להזזה ⬤':'Select a goal to move ⬤')+'</div>';
   ms.forEach(function(m,i){
     html+=msReoGap(i,ms.length);
-    html+=_msRow(m,i,clrs,bgs,isHe,true);
+    html+=_msRow(m,i,clrs,bgs,isHe,true,plan);
   });
   html+=msReoGap(ms.length,ms.length);
   return html+'</div>';
@@ -2364,7 +2379,7 @@ function renderWorkoutExercises(exercises, plan, day, isHe){
         '<div style="font-size:24px;font-weight:800;color:'+(doneSets>=totalSets?'#00a86b':'#2B6CC4')+'">'+doneSets+'/'+totalSets+'</div>'+
         '<div style="font-size:11px;color:#4a6a8a;line-height:1.3">'+(isHe?"סטים<br>הושלמו":"sets<br>done")+'</div>'+
         '<button onclick="exChecked[\'sets_'+i+'\']=Math.min('+totalSets+',(exChecked[\'sets_'+i+'\']||0)+1);renderPatientView(cur)" style="background:#00a86b;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:13px;font-weight:700;cursor:pointer">+'+(isHe?" סט":" Set")+'</button>'+
-        (doneSets>0?'<button onclick="exChecked[\'sets_'+i+'\']=Math.max(0,(exChecked[\'sets_'+i+'\']||0)-1);renderPatientView(cur)" style="background:rgba(0,0,0,0.06);border:none;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:13px">↩</button>':'')+'</div>';
+        '<button onclick="exChecked[\'sets_'+i+'\']=Math.max(0,(exChecked[\'sets_'+i+'\']||0)-1);renderPatientView(cur)" style="background:rgba(0,0,0,0.06);border:none;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:13px;visibility:'+(doneSets>0?'visible':'hidden')+'">↩</button>'+'</div>';
       card+='<div style="display:flex;flex-direction:column;align-items:'+(eIsHe?'flex-start':'flex-end')+';gap:4px">'+
         '<button onclick="startTimer('+i+',((parseInt(document.getElementById(\'tmin'+i+'\').value)||0)*60)+(parseInt(document.getElementById(\'tsec'+i+'\').value)||0),'+i+')" id="tbtn'+i+'" style="background:#e67e22;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">⏱ '+(isHe?"טיימר":"Timer")+'</button>'+
         '<div style="display:flex;align-items:center;gap:3px;direction:ltr">'+
