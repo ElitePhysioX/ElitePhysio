@@ -65,7 +65,7 @@ function saveRecycleBin(){
 function L(){ return T[lng]; }
 function g(id){ return document.getElementById(id); }
 function av(n,s){ s=s||38; var i=(n||"?").split(" ").map(function(x){return x[0];}).join("").slice(0,2); return '<div class="av" style="width:'+s+'px;height:'+s+'px;font-size:'+(s>44?17:13)+'px">'+i+'</div>'; }
-function bdg(t,c){ c=c||"#2B6CC4"; return '<span class="bdg" style="background:'+c+'15;color:'+c+';border:1px solid '+c+'40">'+t+'</span>'; }
+function bdg(t,c){ c=c||"#2B6CC4"; return '<span class="bdg" style="background:'+c+'15;color:'+c+';border:1px solid '+c+'40">'+esc(t)+'</span>'; }
 function sbdg(s){ return bdg(s||"Active",SC[s]||"#2B6CC4"); }
 function waLink(p){ return p.phone?'<a href="https://wa.me/972'+p.phone.replace(/^0/,"").replace(/-/g,"")+'\" target="_blank" onclick="event.stopPropagation()" style="font-size:12px;color:#16a34a;border:1px solid #bbf7d0;border-radius:4px;padding:2px 8px;text-decoration:none;font-weight:600">'+L().wa+'</a>':""; }
 function ytUrl(n){ return "https://www.youtube.com/results?search_query="+encodeURIComponent((n||"exercise")+" physical therapy technique"); }
@@ -92,6 +92,13 @@ function apiCall(path, method, body, cb){
     })
     .catch(function(e){ if(cb) cb(e); });
 }
+
+function esc(s){
+  return String(s==null?"":s).replace(/[&<>"']/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];
+  });
+}
+function gbE(raw,isHe){ return esc(getBilingual(raw,isHe)); }
 
 function showToast(msg, type){
   var t=document.createElement("div");
@@ -464,9 +471,9 @@ function buildCalHTML(){
       H+='<div style="position:absolute;top:'+(si*SH+1)+'px;left:2px;right:2px;height:'+ht+'px;background:#2B6CC418;border-left:3px solid #2B6CC4;border-radius:4px;padding:3px 18px 2px 5px;font-size:10px;font-weight:600;color:#1a4a90;overflow:hidden;cursor:grab;box-sizing:border-box;z-index:2;touch-action:none;user-select:none" ';
       H+='onclick="event.stopPropagation()" ';
       H+='onpointerdown="calDragStart(event,'+a.id+')" ';
-      H+='title="'+nm+(a.notes?' — '+a.notes:'')+'">';
+      H+='title="'+esc(nm)+(a.notes?' — '+esc(a.notes):'')+'">';
       var calDot=(auth==="admin"&&p&&hasNewNote(p))?'<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#f97316;vertical-align:middle;margin-right:3px;flex-shrink:0"></span>':'';
-      H+='<div style="display:flex;align-items:center;gap:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3">'+calDot+'<span style="overflow:hidden;text-overflow:ellipsis">'+nm+'</span></div>';
+      H+='<div style="display:flex;align-items:center;gap:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3">'+calDot+'<span style="overflow:hidden;text-overflow:ellipsis">'+esc(nm)+'</span></div>';
       H+='<div style="font-size:9px;opacity:.6;margin-top:1px">'+a.time+' – '+endLabel+'</div>';
       H+='<span style="position:absolute;right:3px;top:3px;font-size:9px;opacity:.4;cursor:pointer;touch-action:none" onpointerdown="event.stopPropagation()" onclick="event.stopPropagation();deleteAppt('+a.id+')">&#x2715;</span>';
       H+='</div>';
@@ -488,7 +495,7 @@ function calDragStart(e,apptId){
   var el=e.currentTarget, rect=el.getBoundingClientRect();
   var ghost=document.createElement('div');
   ghost.style.cssText='position:fixed;z-index:9999;pointer-events:none;left:'+rect.left+'px;top:'+rect.top+'px;width:'+rect.width+'px;height:'+rect.height+'px;background:#2B6CC428;border-left:3px solid #2B6CC4;border-radius:4px;padding:3px 5px;font-size:10px;font-weight:600;color:#1a4a90;box-shadow:0 4px 18px rgba(43,108,196,0.35);box-sizing:border-box;opacity:.9;transform:scale(1.04)';
-  ghost.innerHTML='<div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+nm+'</div><div style="font-size:9px;opacity:.6;margin-top:1px">'+a.time+' – '+addMinutes(a.time,60)+'</div>';
+  ghost.innerHTML='<div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(nm)+'</div><div style="font-size:9px;opacity:.6;margin-top:1px">'+a.time+' – '+addMinutes(a.time,60)+'</div>';
   document.body.appendChild(ghost);
   el.style.opacity='.25';
   el.setPointerCapture(e.pointerId);
@@ -708,10 +715,10 @@ function rd(){
     '<button class="btn" style="font-size:12px;background:#fff3f3;color:#e74c3c;border:1px solid rgba(231,76,60,0.3)" onclick="omRecycleBin()">🗑 Recycle Bin '+(deletedPatients.length+deletedExercises.length>0?'('+( deletedPatients.length+deletedExercises.length)+')':'')+'</button>'+
     '<button class="btn" style="font-size:12px" onclick="gv(\'p\')">'+L().va+'</button></div></div>'+
     pts.slice(0,4).map(function(p){
-      var dn=pn(p);
+      var dn=esc(pn(p));
       return '<div class="card" onclick="op('+p.id+')"><div style="display:flex;align-items:center;justify-content:space-between">'+
         '<div style="display:flex;align-items:center;gap:13px">'+av(dn)+
-        '<div><div class="pat-name">'+dn+'</div><div class="pat-sub">'+(getBilingual(p.injury,lng==="he")||"—")+'</div></div></div>'+
+        '<div><div class="pat-name">'+dn+'</div><div class="pat-sub">'+(gbE(p.injury,lng==="he")||"—")+'</div></div></div>'+
         '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">'+bdg(p.sport)+' '+sbdg(p.status)+'</div></div></div>';
     }).join("");
   loadAppts(renderCal);
@@ -745,12 +752,12 @@ function rpl(){
   var rbtn=g("rbtn_pts"); if(rbtn) rbtn.innerHTML='🗑 '+(lng==="he"?"סל מחזור":"Recycle Bin")+(binCount>0?' ('+binCount+')':'');
   var npBtn=g("pnb"); if(npBtn) npBtn.textContent='+ '+(lng==="he"?"מטופל חדש":"New Patient");
   g("pls").innerHTML=list.length?list.map(function(p){
-    var dn=pn(p);
+    var dn=esc(pn(p));
     var avHtml = p.avatarId ? '<div style="width:56px;height:56px;flex-shrink:0">'+legoSVG(AVATARS.find(function(a){return a.id===p.avatarId;})||AVATARS[0],56)+'</div>' : av(dn,56);
     var dotHtml = hasNewNote(p) ? '<div style="width:10px;height:10px;border-radius:50%;background:#f97316;flex-shrink:0;box-shadow:0 0 0 2px #fff,0 0 0 3px #f97316" title="New note"></div>' : '';
     return '<div class="card" onclick="op('+p.id+')"><div style="display:flex;align-items:center;justify-content:space-between">'+
       '<div style="display:flex;align-items:center;gap:13px">'+avHtml+
-      '<div><div class="pat-name" style="display:flex;align-items:center;gap:7px">'+dn+dotHtml+'</div><div class="pat-sub">'+(getBilingual(p.injury,lng==="he")||"—")+' &middot; '+(p.age||"—")+'</div></div></div>'+
+      '<div><div class="pat-name" style="display:flex;align-items:center;gap:7px">'+dn+dotHtml+'</div><div class="pat-sub">'+(gbE(p.injury,lng==="he")||"—")+' &middot; '+(p.age||"—")+'</div></div></div>'+
       '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">'+bdg(spName(p.sport))+' '+sbdg(p.status)+'</div></div></div>';
   }).join(""):'<div style="color:#4a6a8a;text-align:center;padding:32px 0;font-size:14px">No patients found</div>';
 }
@@ -785,10 +792,10 @@ function rs(){
     '<div>&#127939; Sports: <strong style="color:#d97706">'+Object.keys(pts.reduce(function(a,p){ a[p.sport]=1; return a; },{})).length+'</strong></div></div></div>'+
     '<div class="panel"><div class="st" style="margin-bottom:10px">'+L().fl+'</div>'+
     ([].concat(lds,drp)).map(function(p){
-      var dn=pn(p);
+      var dn=esc(pn(p));
       return '<div class="xcard" style="cursor:pointer" onclick="op('+p.id+')"><div style="display:flex;align-items:center;justify-content:space-between">'+
         '<div style="display:flex;align-items:center;gap:10px">'+av(dn)+
-        '<div><div class="pat-name">'+dn+'</div><div class="pat-sub">'+p.sport+' &middot; '+(p.sessions||0)+' sessions</div></div></div>'+
+        '<div><div class="pat-name">'+dn+'</div><div class="pat-sub">'+esc(p.sport)+' &middot; '+(p.sessions||0)+' sessions</div></div></div>'+
         '<div style="display:flex;gap:6px;align-items:center">'+sbdg(p.status)+' '+waLink(p)+'</div></div></div>';
     }).join("")+(([].concat(lds,drp)).length===0?'<div style="color:#4a6a8a;font-size:14px">No follow-ups needed.</div>':"")+
     '<div style="background:rgba(43,108,196,0.07);border:1px solid rgba(43,108,196,0.2);border-radius:9px;padding:13px 16px;margin-top:12px;font-size:13px;color:#1a2535;line-height:2.2">'+
@@ -821,7 +828,7 @@ function rpd(){
   g("phd").innerHTML=
     '<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">'+
     '<div style="display:flex;align-items:center;gap:18px">'+adminPatientAv(p,86)+'<div>'+
-    '<div style="font-size:22px;font-weight:800;color:#1a3a6e">'+pn(p)+'</div>'+
+    '<div style="font-size:22px;font-weight:800;color:#1a3a6e">'+esc(pn(p))+'</div>'+
     '<div style="display:flex;align-items:center;gap:7px;margin-top:6px;flex-wrap:wrap">'+bdg(p.sport)+' '+sbdg(p.status)+
     (p.age?'<span style="font-size:12px;color:#4a6a8a">'+p.age+'y</span>':"")+
     '<span style="font-size:11px;color:#4a6a8a;border:1px solid rgba(43,108,196,0.25);border-radius:4px;padding:2px 8px">PIN: '+(p.pin||(lng==="he"?"לא זמין – יש לאפס":"unavailable – reset needed"))+'</span>'+
@@ -830,8 +837,8 @@ function rpd(){
     '<button class="btn" style="font-size:12px" onclick="dprint('+p.id+')">'+L().pdf+'</button>'+
     '<button class="btn" style="font-size:12px" onclick="om(\'ep\')">'+L().ed+'</button>'+
     '<button class="btn btnd" style="font-size:12px" onclick="dp('+p.id+')">'+L().dl+'</button></div></div>'+
-    (getBilingual(p.injury,lng==="he")?'<div style="margin-top:13px;background:rgba(43,108,196,0.08);border-radius:8px;padding:11px 15px;border-left:3px solid #2B6CC4"><div style="font-size:11px;color:#2B6CC4;font-weight:700;text-transform:uppercase;margin-bottom:3px">'+L().ij+'</div><div style="font-size:14px;color:#1a2535">'+getBilingual(p.injury,lng==="he")+'</div></div>':"")+
-    (getBilingual(p.notes,lng==="he")?'<div style="margin-top:8px;background:rgba(0,168,107,0.07);border-radius:8px;padding:11px 15px;border-left:3px solid #00a86b"><div style="font-size:11px;color:#00a86b;font-weight:700;text-transform:uppercase;margin-bottom:3px">'+(lng==="he"?"המטרה שלי":"My Goal")+'</div><div style="font-size:14px;color:#1a2535">'+getBilingual(p.notes,lng==="he")+'</div></div>':"");
+    (gbE(p.injury,lng==="he")?'<div style="margin-top:13px;background:rgba(43,108,196,0.08);border-radius:8px;padding:11px 15px;border-left:3px solid #2B6CC4"><div style="font-size:11px;color:#2B6CC4;font-weight:700;text-transform:uppercase;margin-bottom:3px">'+L().ij+'</div><div style="font-size:14px;color:#1a2535">'+gbE(p.injury,lng==="he")+'</div></div>':"")+
+    (gbE(p.notes,lng==="he")?'<div style="margin-top:8px;background:rgba(0,168,107,0.07);border-radius:8px;padding:11px 15px;border-left:3px solid #00a86b"><div style="font-size:11px;color:#00a86b;font-weight:700;text-transform:uppercase;margin-bottom:3px">'+(lng==="he"?"המטרה שלי":"My Goal")+'</div><div style="font-size:14px;color:#1a2535">'+gbE(p.notes,lng==="he")+'</div></div>':"");
   var isHeLng=lng==="he";
   g("ptbs").innerHTML=[["ex",L().ex,(p.exercises||[]).length],["fu",L().fu,(p.followUps||[]).length],["cl",L().cl,null],["hi",isHeLng?"היסטוריה":"History",(p.workoutHistory||[]).length]].map(function(t){
     return '<button class="nb'+(ctab===t[0]?" on":"")+'" onclick="sct(\''+t[0]+'\')">'+t[1]+(t[2]!==null?' <span style="background:rgba(255,255,255,0.25);border-radius:9px;padding:1px 7px;font-size:11px">'+t[2]+'</span>':"")+' </button>';
@@ -1668,7 +1675,7 @@ function rfu(){
     (!(p.followUps||[]).length?'<div style="color:#4a6a8a;font-size:14px;padding:14px 0">'+L().nf+'</div>':"")+
     (p.followUps||[]).map(function(f){
       return '<div class="xcard"><div style="font-size:12px;color:#2B6CC4;font-weight:600;margin-bottom:4px">'+f.date+'</div>'+
-        '<div style="font-size:14px;color:#1a2535;line-height:1.7">'+f.note+'</div></div>';
+        '<div style="font-size:14px;color:#1a2535;line-height:1.7">'+esc(f.note)+'</div></div>';
     }).join("");
 }
 
@@ -2136,8 +2143,8 @@ function showFirstTimeWelcome(p){
     legoSVG(AVATARS.find(function(a){return a.id===cur.avatarId;})||AVATARS[0],64)+
     '<div style="font-size:11px;color:#2B6CC4;font-weight:600;margin-top:4px">'+(isHe?"לחץ לשינוי":"Tap to change")+'</div></div></div>'+
     '<div class="g2" style="gap:10px;margin-bottom:14px">'+
-    '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"שם מלא בעברית":"שם מלא בעברית")+'</label><input class="inp" id="wn_he" dir="rtl" placeholder="שם בעברית" value="'+(p.nameHe||'')+'"></div>'+
-    '<div style="grid-column:1/-1"><label class="lbl">Full Name in English</label><input class="inp" id="wn_en" placeholder="English name" value="'+(p.name||'')+'"></div>'+
+    '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"שם מלא בעברית":"שם מלא בעברית")+'</label><input class="inp" id="wn_he" dir="rtl" placeholder="שם בעברית" value="'+esc(p.nameHe||'')+'"></div>'+
+    '<div style="grid-column:1/-1"><label class="lbl">Full Name in English</label><input class="inp" id="wn_en" placeholder="English name" value="'+esc(p.name||'')+'"></div>'+
     '<div><label class="lbl">'+(isHe?"גיל":"Age")+'</label><input class="inp" id="w_age" type="number" value="'+(p.age||'')+'"></div>'+
     '<div><label class="lbl">'+(isHe?"ספורט":"Sport")+'</label>'+
     '<select class="inp" id="w_sport_sel" onchange="toggleWelcomeSport(this.value)">'+
@@ -2147,10 +2154,10 @@ function showFirstTimeWelcome(p){
     '</select>'+
     '<input class="inp" id="w_sport_other" placeholder="'+(isHe?"כתוב ספורט...":"Type sport...")+'" value="'+(getAllSports().indexOf(p.sport)<0?p.sport:'')+'" style="margin-top:5px;display:'+(getAllSports().indexOf(p.sport)<0&&p.sport?'block':'none')+'"></div>'+
     (function(){ var wiB=parseBilingual(p.injury||""),wgB=parseBilingual(p.notes||"");
-    return '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"פציעה/מצב":"Injury/Condition")+' (EN)</label><input class="inp" id="w_injury_en" value="'+wiB.en+'"></div>'+
-    '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"פציעה/מצב":"Injury/Condition")+' (עברית)</label><input class="inp" id="w_injury_he" dir="rtl" value="'+wiB.he+'"></div>'+
-    '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"המטרה שלי":"My Goal")+' (EN)</label><input class="inp" id="w_goal_en" value="'+wgB.en+'"></div>'+
-    '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"המטרה שלי":"My Goal")+' (עברית)</label><input class="inp" id="w_goal_he" dir="rtl" value="'+wgB.he+'"></div>'; })()+
+    return '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"פציעה/מצב":"Injury/Condition")+' (EN)</label><input class="inp" id="w_injury_en" value="'+esc(wiB.en)+'"></div>'+
+    '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"פציעה/מצב":"Injury/Condition")+' (עברית)</label><input class="inp" id="w_injury_he" dir="rtl" value="'+esc(wiB.he)+'"></div>'+
+    '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"המטרה שלי":"My Goal")+' (EN)</label><input class="inp" id="w_goal_en" value="'+esc(wgB.en)+'"></div>'+
+    '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"המטרה שלי":"My Goal")+' (עברית)</label><input class="inp" id="w_goal_he" dir="rtl" value="'+esc(wgB.he)+'"></div>'; })()+
     '</div>'+
     '<button class="btn" style="width:100%;padding:12px;font-size:15px;font-weight:700" onclick="saveWelcome()">'+
     (isHe?"כניסה לתוכנית שלי ➜":"Enter My Program ➜")+'</button>';
@@ -2246,13 +2253,13 @@ function showPatientProfile(){
     '<input class="inp" id="pp_sport" placeholder="'+(isHe?"כתוב ספורט":"Type sport")+'" value="'+(getAllSports().indexOf(p.sport)<0&&p.sport?p.sport:'')+'" style="margin-top:5px;display:'+(getAllSports().indexOf(p.sport)<0&&p.sport?'block':'none')+'" id="pp_sport_other"></div>'+
     (function(){ var iB=parseBilingual(p.injury||""),nB=parseBilingual(p.notes||"");
     return '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"פציעה/מצב":"Injury/Condition")+' (EN)</label>'+
-    '<input class="inp" id="pp_injury_en" value="'+iB.en+'"></div>'+
+    '<input class="inp" id="pp_injury_en" value="'+esc(iB.en)+'"></div>'+
     '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"פציעה/מצב":"Injury/Condition")+' (עברית)</label>'+
-    '<input class="inp" id="pp_injury_he" dir="rtl" value="'+iB.he+'"></div>'+
+    '<input class="inp" id="pp_injury_he" dir="rtl" value="'+esc(iB.he)+'"></div>'+
     '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"המטרה שלי":"My Goal")+' (EN)</label>'+
-    '<input class="inp" id="pp_goal_en" value="'+nB.en+'"></div>'+
+    '<input class="inp" id="pp_goal_en" value="'+esc(nB.en)+'"></div>'+
     '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"המטרה שלי":"My Goal")+' (עברית)</label>'+
-    '<input class="inp" id="pp_goal_he" dir="rtl" value="'+nB.he+'"></div>'; })()+
+    '<input class="inp" id="pp_goal_he" dir="rtl" value="'+esc(nB.he)+'"></div>'; })()+
     '</div>'+
     '<div style="display:flex;gap:8px">'+
     '<button class="btn btnd" onclick="cm()" style="flex:1">'+(isHe?"ביטול":"Cancel")+'</button>'+
@@ -2380,18 +2387,18 @@ function renderWorkoutExercises(exercises, plan, day, isHe){
 function renderPatientView(p){
   g("psh").innerHTML=
     '<div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;margin-bottom:16px;padding:14px 0 10px">'+legoAv(p,90)+
-    '<div><div style="font-size:22px;font-weight:800;color:#1a3a6e;margin-top:4px">'+pn(p)+'</div>'+
+    '<div><div style="font-size:22px;font-weight:800;color:#1a3a6e;margin-top:4px">'+esc(pn(p))+'</div>'+
     '<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:center">'+
     bdg(spName(p.sport))+
     (p.age?'<span style="background:#f0f5ff;color:#2B6CC4;border-radius:5px;padding:2px 8px;font-size:12px;font-weight:600;border:1px solid rgba(43,108,196,0.2)">'+(lng==="he"?"גיל":"Age")+' '+p.age+'</span>':"")+
     (p.pin?'<span style="background:#f0f5ff;color:#2B6CC4;border-radius:5px;padding:2px 8px;font-size:12px;font-weight:600;border:1px solid rgba(43,108,196,0.2)">'+(lng==="he"?"קוד PIN":"PIN")+': '+p.pin+'</span>':"")+
     '</div></div></div>'+
-    (getBilingual(p.injury,lng==="he")?'<div style="background:rgba(43,108,196,0.08);border-radius:8px;padding:11px 15px;border-left:3px solid #2B6CC4;margin-bottom:8px">'+
+    (gbE(p.injury,lng==="he")?'<div style="background:rgba(43,108,196,0.08);border-radius:8px;padding:11px 15px;border-left:3px solid #2B6CC4;margin-bottom:8px">'+
     '<div style="font-size:11px;color:#2B6CC4;font-weight:700;text-transform:uppercase;margin-bottom:3px">'+L().ij+'</div>'+
-    '<div style="font-size:14px;color:#1a2535">'+getBilingual(p.injury,lng==="he")+'</div></div>':"")+
-    (getBilingual(p.notes,lng==="he")?'<div style="background:rgba(0,168,107,0.07);border-radius:8px;padding:11px 15px;border-left:3px solid #00a86b">'+
+    '<div style="font-size:14px;color:#1a2535">'+gbE(p.injury,lng==="he")+'</div></div>':"")+
+    (gbE(p.notes,lng==="he")?'<div style="background:rgba(0,168,107,0.07);border-radius:8px;padding:11px 15px;border-left:3px solid #00a86b">'+
     '<div style="font-size:11px;color:#00a86b;font-weight:700;text-transform:uppercase;margin-bottom:3px">'+(lng==="he"?"המטרה שלי":"My Goal")+'</div>'+
-    '<div style="font-size:14px;color:#1a2535">'+getBilingual(p.notes,lng==="he")+'</div></div>':"");
+    '<div style="font-size:14px;color:#1a2535">'+gbE(p.notes,lng==="he")+'</div></div>':"");
   var isHe = lng==="he";
   var plans = p.workoutPlans||[];
   var totalPrograms = plans.length;
@@ -2490,7 +2497,7 @@ function renderPatientView(p){
 
   g("psfu").innerHTML=(p.followUps||[]).length?(p.followUps||[]).map(function(f){
     return '<div class="xcard"><div style="font-size:12px;color:#2B6CC4;font-weight:600;margin-bottom:4px">'+f.date+'</div>'+
-      '<div style="font-size:14px;color:#1a2535;line-height:1.7">'+f.note+'</div></div>';
+      '<div style="font-size:14px;color:#1a2535;line-height:1.7">'+esc(f.note)+'</div></div>';
   }).join(""):'<div style="color:#4a6a8a;font-size:14px;padding:14px 0">'+L().nf+'</div>';
 
   // History tab
@@ -2507,7 +2514,7 @@ function renderPatientView(p){
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">'+
         '<span style="font-size:10px;font-weight:700;color:#2B6CC4">'+(isHe?"הערה שלי":"My note")+'</span>'+
         '<button onclick="patientEditNote('+i+')" style="background:none;border:none;cursor:pointer;font-size:11px;color:#2B6CC4;padding:0;font-weight:600">✏️ '+(isHe?"ערוך":"Edit")+'</button>'+
-        '</div>'+h.note+'</div>'
+        '</div>'+esc(h.note)+'</div>'
       : '<button onclick="patientEditNote('+i+')" style="margin-top:8px;width:100%;padding:6px;border:1px dashed #c0d0e8;border-radius:6px;background:#f8fbff;color:#2B6CC4;font-size:12px;cursor:pointer;font-weight:600">+ '+(isHe?"הוסף הערה":"Add a note")+'</button>';
     return '<div class="xcard" style="margin-bottom:10px">'+
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'+
@@ -2516,7 +2523,7 @@ function renderPatientView(p){
       exRows+
       noteSection+
       (h.adminReply?'<div style="font-size:12px;color:#1a2535;margin-top:6px;padding:6px 9px;background:#f0fff5;border-radius:6px;border-left:3px solid #00a86b">'+
-        '<div style="font-size:10px;font-weight:700;color:#00a86b;margin-bottom:2px">'+(isHe?"תגובת המטפל":"Therapist reply")+'</div>'+h.adminReply+'</div>':'')+
+        '<div style="font-size:10px;font-weight:700;color:#00a86b;margin-bottom:2px">'+(isHe?"תגובת המטפל":"Therapist reply")+'</div>'+esc(h.adminReply)+'</div>':'')+
       '</div>';
   }).join(""):'<div style="color:#4a6a8a;font-size:14px;padding:14px 0;text-align:center">'+(isHe?"אין היסטוריה עדיין — סיים את האימון הראשון שלך!":"No history yet — complete your first workout!")+'</div>';
 
@@ -2542,7 +2549,7 @@ function patientEditNote(idx){
   c.innerHTML=
     '<div style="font-size:17px;font-weight:800;color:#1a3a6e;margin-bottom:6px">✏️ '+(isHe?"הערה לאימון":"Workout Note")+'</div>'+
     '<div style="font-size:12px;color:#4a6a8a;margin-bottom:14px">'+h.date+' · ⏱ '+h.time+'</div>'+
-    '<textarea id="pat-note-edit" style="width:100%;padding:10px;border:1px solid #d1d9e0;border-radius:8px;font-size:14px;min-height:110px;box-sizing:border-box;resize:vertical" placeholder="'+(isHe?"כתוב הערה על האימון...":"Write a note about this workout...")+'">'+( h.note||"")+'</textarea>'+
+    '<textarea id="pat-note-edit" style="width:100%;padding:10px;border:1px solid #d1d9e0;border-radius:8px;font-size:14px;min-height:110px;box-sizing:border-box;resize:vertical" placeholder="'+(isHe?"כתוב הערה על האימון...":"Write a note about this workout...")+'">'+esc(h.note||"")+'</textarea>'+
     '<div style="display:flex;gap:8px;margin-top:14px">'+
     '<button class="btn" style="flex:2;background:#2B6CC4;color:#fff;padding:11px" onclick="patientSaveNote('+idx+')">'+(isHe?"שמור":"Save")+'</button>'+
     '<button class="btn" style="flex:1;background:#f1f5f9;color:#1a3a6e;padding:11px" onclick="cm()">'+(isHe?"ביטול":"Cancel")+'</button>'+
@@ -2764,7 +2771,7 @@ function renderPatientAppts(){
         +'<div style="flex:1">'
         +'<div style="font-size:13px;font-weight:700;color:'+(dim?"#6a8aaa":"#1a3a6e")+'">'+dLabel+'</div>'
         +'<div style="font-size:12px;color:'+(dim?"#8aaabf":"#2B6CC4")+';margin-top:2px;font-weight:600">'+a.time+' – '+end+'</div>'
-        +(a.notes?'<div style="font-size:11px;color:#6a8aaa;margin-top:2px">'+a.notes+'</div>':"")
+        +(a.notes?'<div style="font-size:11px;color:#6a8aaa;margin-top:2px">'+esc(a.notes)+'</div>':"")
         +'</div>'
         +(a.date===today?'<div style="font-size:10px;font-weight:700;color:#fff;background:#2B6CC4;border-radius:5px;padding:2px 7px">'+(isHe?"היום":"Today")+'</div>':"")
         +'</div>';
@@ -2799,18 +2806,18 @@ function om(m, editId){
     var _iB=parseBilingual(p.injury||""), _nB=parseBilingual(p.notes||"");
     c.innerHTML='<div style="font-size:17px;font-weight:800;margin-bottom:18px;color:#1a3a6e">'+(m==="ap"?Lx.npt:Lx.ept)+'</div>'+
       '<div class="g2" style="gap:11px;margin-bottom:11px">'+
-      '<div style="grid-column:1/-1"><label class="lbl">'+Lx.nm+'</label><input class="inp" id="fn" value="'+(p.name||"")+'"></div>'+
-      '<div style="grid-column:1/-1"><label class="lbl">'+Lx.nmhe+'</label><input class="inp" id="fnhe" value="'+(p.nameHe||"")+'" dir="rtl" placeholder="\u05e9\u05dd \u05d1\u05e2\u05d1\u05e8\u05d9\u05ea"></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">'+Lx.nm+'</label><input class="inp" id="fn" value="'+esc(p.name||"")+'"></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">'+Lx.nmhe+'</label><input class="inp" id="fnhe" value="'+esc(p.nameHe||"")+'" dir="rtl" placeholder="\u05e9\u05dd \u05d1\u05e2\u05d1\u05e8\u05d9\u05ea"></div>'+
       '<div><label class="lbl">'+Lx.ag+'</label><input class="inp" id="fa" type="number" value="'+(p.age||"")+'"></div>'+
-      '<div><label class="lbl">'+Lx.ph+'</label><input class="inp" id="fph" value="'+(p.phone||"")+'"></div>'+
-      '<div style="grid-column:1/-1"><label class="lbl">'+Lx.ij+' (EN)</label><input class="inp" id="fij_en" value="'+_iB.en+'"></div>'+
-      '<div style="grid-column:1/-1"><label class="lbl">'+Lx.ij+' (עברית)</label><input class="inp" id="fij_he" dir="rtl" value="'+_iB.he+'"></div>'+
+      '<div><label class="lbl">'+Lx.ph+'</label><input class="inp" id="fph" value="'+esc(p.phone||"")+'"></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">'+Lx.ij+' (EN)</label><input class="inp" id="fij_en" value="'+esc(_iB.en)+'"></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">'+Lx.ij+' (עברית)</label><input class="inp" id="fij_he" dir="rtl" value="'+esc(_iB.he)+'"></div>'+
       '<div><label class="lbl">'+Lx.pi+'</label><input class="inp" id="fpi" maxlength="4" value="'+(p.pin||"")+'" placeholder="1234"></div>'+
       '<div><label class="lbl">'+Lx.st+'</label><select class="inp" id="fst">'+ST.map(function(s){ return '<option'+(p.status===s?" selected":"")+'>'+s+'</option>'; }).join("")+'</select></div>'+
       '<div style="grid-column:1/-1"><label class="lbl">'+Lx.sp+'</label><select class="inp" id="fsp"><option value="">'+Lx.ss+'</option>'+getAllSports().map(function(s,i){ var allHe=getAllSportsHe(); var label=lng==="he"&&allHe[i]?allHe[i]:s; return '<option value="'+s+'"'+(p.sport===s?" selected":"")+'>'+label+'</option>'; }).join("")+'</select>'+
       '<div style="margin-top:5px"><button type="button" onclick="omManageSports()" style="font-size:11px;color:#2B6CC4;background:none;border:none;cursor:pointer;text-decoration:underline">⚙️ '+(lng==="he"?"נהל רשימת ספורט":"Manage sports list")+'</button></div></div>'+
-      '<div style="grid-column:1/-1"><label class="lbl">'+(lng==="he"?"המטרה שלי":"My Goal")+' (EN)</label><textarea class="inp" id="fno_en" style="height:54px">'+_nB.en+'</textarea></div>'+
-      '<div style="grid-column:1/-1"><label class="lbl">'+(lng==="he"?"המטרה שלי":"My Goal")+' (עברית)</label><textarea class="inp" id="fno_he" dir="rtl" style="height:54px">'+_nB.he+'</textarea></div></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">'+(lng==="he"?"המטרה שלי":"My Goal")+' (EN)</label><textarea class="inp" id="fno_en" style="height:54px">'+esc(_nB.en)+'</textarea></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">'+(lng==="he"?"המטרה שלי":"My Goal")+' (עברית)</label><textarea class="inp" id="fno_he" dir="rtl" style="height:54px">'+esc(_nB.he)+'</textarea></div></div>'+
       '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btnd" onclick="cm()">'+Lx.ca+'</button><button class="btn" onclick="sp2()">'+Lx.sa+'</button></div>';
   } else if(m==="ae"){
     // Find exercise in plan day first, then flat exercises
@@ -3821,7 +3828,7 @@ function omWorkoutHistory(patientId){
   var c=g("MC");
   c.innerHTML=
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'+
-    '<span style="font-size:17px;font-weight:800;color:#1a3a6e">📋 '+pn(p)+' — '+(isHe?"היסטוריית אימונים":"Workout History")+'</span>'+
+    '<span style="font-size:17px;font-weight:800;color:#1a3a6e">📋 '+esc(pn(p))+' — '+(isHe?"היסטוריית אימונים":"Workout History")+'</span>'+
     '<button onclick="cm()" style="background:rgba(0,0,0,0.08);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:16px">✕</button></div>'+
     (hist.length?
       '<div style="max-height:450px;overflow-y:auto">'+
@@ -3839,7 +3846,7 @@ function omWorkoutHistory(patientId){
             return '<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0;color:#4a6a8a">'+
               '<span>'+n+'</span><span style="font-weight:600;color:#2B6CC4">'+e.sets+' × '+e.reps+'</span></div>';
           }).join("")+
-          (h.note?'<div style="font-size:12px;color:#4a6a8a;margin-top:6px;padding:6px 8px;background:#f8f8f8;border-radius:6px;font-style:italic">💬 '+h.note+'</div>':'')+
+          (h.note?'<div style="font-size:12px;color:#4a6a8a;margin-top:6px;padding:6px 8px;background:#f8f8f8;border-radius:6px;font-style:italic">💬 '+esc(h.note)+'</div>':'')+
           '</div>';
       }).join("")+'</div>'
       :'<div style="color:#4a6a8a;padding:20px;text-align:center">'+(isHe?"אין היסטוריה עדיין":"No workout history yet")+'</div>'
@@ -3887,11 +3894,11 @@ function rht(){
       var noteBlock=h.note?
         '<div style="margin-top:8px;padding:8px 10px;background:#f0f5ff;border-radius:7px;border-left:3px solid #2B6CC4">'+
         '<div style="font-size:11px;font-weight:700;color:#2B6CC4;margin-bottom:3px">'+(isHe?"הערת המטופל":"Patient note")+'</div>'+
-        '<div style="font-size:13px;color:#1a2535;line-height:1.6">'+h.note+'</div></div>':'';
+        '<div style="font-size:13px;color:#1a2535;line-height:1.6">'+esc(h.note)+'</div></div>':'';
       var replyBlock=h.adminReply?
         '<div style="margin-top:6px;padding:8px 10px;background:#f0fff5;border-radius:7px;border-left:3px solid #00a86b">'+
         '<div style="font-size:11px;font-weight:700;color:#00a86b;margin-bottom:3px">'+(isHe?"תגובתך":"Your reply")+'</div>'+
-        '<div style="font-size:13px;color:#1a2535;line-height:1.6">'+h.adminReply+'</div>'+
+        '<div style="font-size:13px;color:#1a2535;line-height:1.6">'+esc(h.adminReply)+'</div>'+
         '<button onclick="openHistoryReply('+i+')" style="margin-top:5px;background:#e8f5ee;border:1px solid #b8ddc8;border-radius:6px;padding:2px 9px;font-size:11px;cursor:pointer;color:#00a86b">'+(isHe?"ערוך תגובה":"Edit reply")+'</button></div>':
         (h.note?'<button onclick="openHistoryReply('+i+')" style="margin-top:8px;background:#f0f5ff;border:1px solid #c8d8ee;border-radius:6px;padding:5px 13px;font-size:12px;cursor:pointer;color:#2B6CC4;font-weight:600">'+
         '💬 '+(isHe?"השב למטופל":"Reply to patient")+'</button>':'');
@@ -3915,7 +3922,7 @@ function openHistoryReply(idx){
     '<div style="font-size:17px;font-weight:800;color:#1a3a6e;margin-bottom:14px">💬 '+(isHe?"השב למטופל":"Reply to patient")+'</div>'+
     (h.note?'<div style="background:#f0f5ff;border-radius:8px;padding:10px 12px;margin-bottom:14px;border-left:3px solid #2B6CC4">'+
     '<div style="font-size:11px;font-weight:700;color:#2B6CC4;margin-bottom:3px">'+(isHe?"הערת המטופל · ":"Patient note · ")+h.date+'</div>'+
-    '<div style="font-size:13px;color:#1a2535">'+h.note+'</div></div>':'')+
+    '<div style="font-size:13px;color:#1a2535">'+esc(h.note)+'</div></div>':'')+
     '<textarea id="reply-text" '+iS+' style="height:110px;resize:vertical" placeholder="'+(isHe?"כתוב תגובה...":"Write your reply...")+'">'+
     (h.adminReply||'')+'</textarea>'+
     '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">'+
@@ -4137,6 +4144,14 @@ function callClaude(prompt, maxTokens, cb){
 
 function ais(){
   if(!cur) return;
+  if(true){
+    g("MC").innerHTML='<div style="font-size:16px;font-weight:700;margin-bottom:12px;color:#1a3a6e">'+L().ai+'</div>'+
+      '<div style="background:rgba(231,76,60,0.07);border:1px solid rgba(231,76,60,0.2);border-radius:10px;padding:16px;font-size:14px;color:#1a2535;line-height:1.7">'+
+      (lng==="he"?"\u05ea\u05db\u05d5\u05e0\u05ea \u05d4-AI \u05de\u05d5\u05e9\u05d1\u05ea\u05ea \u05d6\u05de\u05e0\u05d9\u05ea \u05db\u05d3\u05d9 \u05dc\u05d4\u05d2\u05df \u05e2\u05dc \u05e4\u05e8\u05d8\u05d9\u05d5\u05ea \u05d4\u05de\u05d8\u05d5\u05e4\u05dc\u05d9\u05dd \u2014 \u05e9\u05dc\u05d9\u05d7\u05ea \u05de\u05d9\u05d3\u05e2 \u05e8\u05e4\u05d5\u05d0\u05d9 \u05dc\u05e9\u05d9\u05e8\u05d5\u05ea \u05e6\u05d3-\u05e9\u05dc\u05d9\u05e9\u05d9 \u05d3\u05d5\u05e8\u05e9\u05ea \u05d4\u05e1\u05db\u05dd \u05e2\u05d9\u05d1\u05d5\u05d3 \u05e0\u05ea\u05d5\u05e0\u05d9\u05dd (DPA) \u05e9\u05e2\u05d3\u05d9\u05d9\u05df \u05dc\u05d0 \u05e7\u05d9\u05d9\u05dd.":
+      "The AI feature is temporarily disabled to protect patient privacy \u2014 sending medical data to a third-party AI service requires a data processing agreement that is not yet in place.")+
+      '</div><div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn" onclick="cm()">OK</button></div>';
+    g("MB").classList.add("on"); return;
+  }
   if(!AI_KEY){
     g("MC").innerHTML='<div style="font-size:16px;font-weight:700;margin-bottom:12px;color:#1a3a6e">'+L().ai+'</div>'+
       '<div style="background:rgba(43,108,196,0.07);border:1px solid rgba(43,108,196,0.2);border-radius:10px;padding:16px;font-size:14px;color:#1a2535;line-height:1.9">'+
@@ -4145,7 +4160,7 @@ function ais(){
     g("MB").classList.add("on"); return;
   }
   g("MC").innerHTML='<div style="font-size:16px;font-weight:700;margin-bottom:4px;color:#1a3a6e">'+L().ai+'</div>'+
-    '<div style="font-size:13px;color:#4a6a8a;margin-bottom:18px">'+cur.sport+' &middot; '+(getBilingual(cur.injury,false)||"general")+'</div>'+
+    '<div style="font-size:13px;color:#4a6a8a;margin-bottom:18px">'+esc(cur.sport)+' &middot; '+(gbE(cur.injury,false)||"general")+'</div>'+
     '<div style="display:flex;align-items:center;justify-content:center;padding:32px;color:#4a6a8a;font-size:14px"><span class="spb"></span>'+L().gn+'</div>';
   g("MB").classList.add("on");
   callClaude("Sports physio expert. Patient sport:"+cur.sport+", injury:"+(getBilingual(cur.injury,false)||"general")+", notes:"+(getBilingual(cur.notes,false)||"none")+", current exercises:"+(cur.exercises||[]).map(function(e){ return e.name; }).join(",")||"none"+". Suggest 3 rehab exercises. ONLY JSON array no markdown: [{\"name\":\"\",\"sets\":3,\"reps\":\"\",\"desc\":\"\",\"tips\":\"\"}]",800,function(err,txt){
@@ -4154,7 +4169,7 @@ function ais(){
       var list=JSON.parse(txt.replace(/```json|```/g,"").trim());
       window._ail=list;
       g("MC").innerHTML='<div style="font-size:16px;font-weight:700;margin-bottom:4px;color:#1a3a6e">'+L().ai+'</div>'+
-        '<div style="font-size:13px;color:#4a6a8a;margin-bottom:14px">'+cur.sport+' &middot; '+(getBilingual(cur.injury,false)||"general")+'</div>'+
+        '<div style="font-size:13px;color:#4a6a8a;margin-bottom:14px">'+esc(cur.sport)+' &middot; '+(gbE(cur.injury,false)||"general")+'</div>'+
         list.map(function(e){ return '<div class="xcard" style="border-color:rgba(43,108,196,0.3)"><div style="font-weight:700;font-size:15px;color:#1a3a6e;margin-bottom:3px">'+e.name+'</div>'+
           '<div style="font-size:13px;color:#4a6a8a;margin-bottom:2px">'+e.sets+' sets &times; '+e.reps+'</div>'+
           (e.desc?'<div style="font-size:13px;color:#1a2535;margin-bottom:2px">'+e.desc+'</div>':"")+
@@ -4175,6 +4190,8 @@ function aall(){
 
 function aiev(){
   var btn=g("evb"); if(!cur) return;
+  if(btn) btn.textContent=(lng==="he"?"AI \u05de\u05d5\u05e9\u05d1\u05ea \u05d6\u05de\u05e0\u05d9\u05ea":"AI temporarily disabled");
+  return;
   if(!AI_KEY){ if(btn) btn.textContent="Add API key first"; return; }
   if(btn){ btn.disabled=true; btn.innerHTML='<span class="spb"></span>'+L().gn; }
   callClaude("Expert sports physiotherapist. Clinical evaluation:\nName:"+cur.name+", Sport:"+cur.sport+", Age:"+(cur.age||"?")+", Injury:"+(getBilingual(cur.injury,false)||"none")+", Notes:"+(getBilingual(cur.notes,false)||"none")+", Sessions:"+(cur.sessions||0)+"\nProvide:\n1. CLINICAL ASSESSMENT\n2. DIFFERENTIAL DIAGNOSIS\n3. REHAB PROTOCOL (Phase 1 Acute / Phase 2 Sub-acute / Phase 3 Functional / Phase 4 Return to Sport)\n4. MANUAL THERAPY\n5. RED FLAGS\n6. PROGNOSIS\n7. SPORT-SPECIFIC for "+cur.sport+"\nEvidence-based. Clear headers.",2000,function(err,txt){
@@ -4241,7 +4258,7 @@ function dprint(id){
   }
 
   var h='<!DOCTYPE html><html><head><meta charset="utf-8">'+
-    '<title>ElitePhysio — '+p.name+'</title>'+
+    '<title>ElitePhysio — '+esc(p.name)+'</title>'+
     '<style>'+
     '@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap");'+
     '*{box-sizing:border-box;margin:0;padding:0}'+
@@ -4298,21 +4315,21 @@ function dprint(id){
     '</div></div>'+
     // Patient card
     '<div class="patient-card">'+
-    '<div class="patient-name info-item"><label>Patient</label><span>'+(p.name||p.nameHe)+'</span></div>'+
-    '<div class="info-item"><label>Sport / Activity</label><span>'+(p.sport||"—")+'</span></div>'+
-    '<div class="info-item"><label>Age</label><span>'+(p.age||"—")+'</span></div>'+
-    '<div class="info-item"><label>Status</label><span>'+(p.status||"Active")+'</span></div>'+
-    '<div class="info-item"><label>Condition</label><span>'+(getBilingual(p.injury,false)||"—")+'</span></div>'+
+    '<div class="patient-name info-item"><label>Patient</label><span>'+esc(p.name||p.nameHe)+'</span></div>'+
+    '<div class="info-item"><label>Sport / Activity</label><span>'+esc(p.sport||"—")+'</span></div>'+
+    '<div class="info-item"><label>Age</label><span>'+esc(p.age||"—")+'</span></div>'+
+    '<div class="info-item"><label>Status</label><span>'+esc(p.status||"Active")+'</span></div>'+
+    '<div class="info-item"><label>Condition</label><span>'+(gbE(p.injury,false)||"—")+'</span></div>'+
     '<div class="info-item"><label>Sessions</label><span>'+(p.sessions||0)+'</span></div>'+
     '</div>'+
-    (getBilingual(p.notes,false)?'<div class="notes"><strong>Clinical Notes:</strong> '+getBilingual(p.notes,false)+'</div>':"")+
+    (getBilingual(p.notes,false)?'<div class="notes"><strong>Clinical Notes:</strong> '+gbE(p.notes,false)+'</div>':"")+
     // Exercise plans
     planSections+
     // Follow-ups
     ((p.followUps||[]).length?
     '<div style="margin-bottom:26px"><div class="plan-header">Progress Notes</div>'+
     (p.followUps||[]).map(function(f){
-      return '<div class="fu"><div class="fu-date">'+f.date+'</div><div class="fu-note">'+f.note+'</div></div>';
+      return '<div class="fu"><div class="fu-date">'+esc(f.date)+'</div><div class="fu-note">'+esc(f.note)+'</div></div>';
     }).join("")+'</div>':"")+
     // Footer
     '<div class="foot">'+

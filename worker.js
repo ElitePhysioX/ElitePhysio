@@ -182,6 +182,57 @@ async function attachPinForDisplay(patient, secret){
   return Object.assign({}, patient, { pin });
 }
 
+// ── Clinical-data encryption (injury, notes, eval, follow-ups, workout history) ──
+// These columns hold real medical/clinical content (sensitive information under
+// Israeli privacy law) and must not sit in plaintext in Supabase. Stored format:
+// "encf$<ivHex>$<ciphertextHex>" — the worker is the only place able to encrypt
+// or decrypt them, using a key derived from SESSION_SECRET. Plain JSON in, plain
+// JSON out for callers; encryption is fully transparent at the API boundary.
+
+const CLINICAL_FIELDS = ["injury","notes","eval","follow_ups","workout_history"];
+
+async function clinicalKey(secret){
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("clinical-data-encryption-key:" + secret));
+  return crypto.subtle.importKey("raw", digest, { name:"AES-GCM" }, false, ["encrypt","decrypt"]);
+}
+
+async function encryptField(value, secret){
+  if(value === undefined || value === null || value === "") return value;
+  const key = await clinicalKey(secret);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({ name:"AES-GCM", iv }, key, new TextEncoder().encode(JSON.stringify(value)));
+  return "encf$" + bufToHex(iv.buffer) + "$" + bufToHex(ct);
+}
+
+// Transparently passes through values that aren't in our encrypted format
+// (e.g. legacy plaintext rows from before this change) so nothing breaks.
+async function decryptField(stored, secret){
+  if(typeof stored !== "string" || !stored.startsWith("encf$")) return stored;
+  const parts = stored.split("$");
+  if(parts.length !== 3) return stored;
+  try{
+    const key = await clinicalKey(secret);
+    const pt = await crypto.subtle.decrypt({ name:"AES-GCM", iv: hexToBuf(parts[1]) }, key, hexToBuf(parts[2]));
+    return JSON.parse(new TextDecoder().decode(pt));
+  }catch(e){ return stored; }
+}
+
+async function decryptClinicalFields(patient, secret){
+  if(!patient) return patient;
+  const out = Object.assign({}, patient);
+  for(const f of CLINICAL_FIELDS){
+    if(out[f] !== undefined) out[f] = await decryptField(out[f], secret);
+  }
+  return out;
+}
+
+async function encryptClinicalFields(update, secret){
+  for(const f of CLINICAL_FIELDS){
+    if(update[f] !== undefined) update[f] = await encryptField(update[f], secret);
+  }
+  return update;
+}
+
 function getBearer(request){
   return (request.headers.get("Authorization")||"").replace(/^Bearer\s+/i, "");
 }
@@ -254,7 +305,8 @@ export default {
         }
         if(!match) return json({ ok: false, error: "Not found" }, 401);
         const token = await signToken({ role:"patient", id: match.id, exp: Date.now()+TOKEN_TTL_MS }, SESSION_SECRET);
-        return json({ ok: true, token, patient: await attachPinForDisplay(match, SESSION_SECRET) });
+        const outPatient = await decryptClinicalFields(await attachPinForDisplay(match, SESSION_SECRET), SESSION_SECRET);
+        return json({ ok: true, token, patient: outPatient });
       }
 
       // ── Patient session restore: token proves identity, no client-supplied id trusted ──
@@ -262,7 +314,10 @@ export default {
         const id = await requirePatient(request, SESSION_SECRET);
         if(!id) return json({ ok:false }, 401);
         const rows = await sbFetch(SB_KEY, "patients?select=*&id=eq."+id);
-        if(Array.isArray(rows) && rows.length>0) return json({ ok:true, patient: await attachPinForDisplay(rows[0], SESSION_SECRET) });
+        if(Array.isArray(rows) && rows.length>0){
+          const patient = await decryptClinicalFields(await attachPinForDisplay(rows[0], SESSION_SECRET), SESSION_SECRET);
+          return json({ ok:true, patient });
+        }
         return json({ ok:false }, 404);
       }
 
@@ -281,6 +336,7 @@ export default {
         if(avatarId!==undefined) update.avatar_id=avatarId;
         if(firstLoginDone!==undefined) update.first_login_done=firstLoginDone;
         if(pin) update.pin = await encryptPin(String(pin), SESSION_SECRET);
+        await encryptClinicalFields(update, SESSION_SECRET);
         await sbFetch(SB_KEY, "patients?id=eq."+id, "PATCH", update);
         return json({ ok: true });
       }
@@ -304,7 +360,8 @@ export default {
         const id = await requirePatient(request, SESSION_SECRET);
         if(!id) return json({ ok:false, error:"Unauthorized" }, 401);
         const { workoutHistory } = body;
-        await sbFetch(SB_KEY, "patients?id=eq."+id, "PATCH", { workout_history: workoutHistory||[] });
+        const encryptedHistory = await encryptField(workoutHistory||[], SESSION_SECRET);
+        await sbFetch(SB_KEY, "patients?id=eq."+id, "PATCH", { workout_history: encryptedHistory });
         return json({ ok: true });
       }
 
@@ -314,7 +371,10 @@ export default {
         const id = path.split("/")[3];
         if(!/^\d+$/.test(id)) return json({ error:"Invalid id" }, 400);
         const rows = await sbFetch(SB_KEY, "patients?select=*&id=eq."+id);
-        if(Array.isArray(rows) && rows.length>0) return json({ ok:true, patient: await attachPinForDisplay(rows[0], SESSION_SECRET) });
+        if(Array.isArray(rows) && rows.length>0){
+          const patient = await decryptClinicalFields(await attachPinForDisplay(rows[0], SESSION_SECRET), SESSION_SECRET);
+          return json({ ok:true, patient });
+        }
         return json({ ok:false }, 404);
       }
 
@@ -322,20 +382,23 @@ export default {
       if(path === "/api/patients" && request.method === "GET"){
         if(!await requireAdmin(request, SESSION_SECRET)) return json({ error:"Unauthorized" }, 401);
         const rows = await sbFetch(SB_KEY, "patients?select=*&order=id.asc");
-        const withPins = Array.isArray(rows) ? await Promise.all(rows.map(r => attachPinForDisplay(r, SESSION_SECRET))) : rows;
-        return json(withPins);
+        const out = Array.isArray(rows) ? await Promise.all(rows.map(async r =>
+          decryptClinicalFields(await attachPinForDisplay(r, SESSION_SECRET), SESSION_SECRET)
+        )) : rows;
+        return json(out);
       }
 
       // ── Save patient (admin only) ──
       if(path === "/api/patients" && request.method === "POST"){
         if(!await requireAdmin(request, SESSION_SECRET)) return json({ error:"Unauthorized" }, 401);
-        // Encrypt the PIN server-side (reversibly) so plaintext never lands in the DB,
-        // while still letting admin/patient view it later
+        // Encrypt the PIN and clinical fields server-side (reversibly) so plaintext
+        // medical data never lands in the DB, while still letting admin/patient view it
         const toSave = Object.assign({}, body);
         if(toSave.pin) toSave.pin = await encryptPin(String(toSave.pin), SESSION_SECRET);
         // Editing an existing patient with no/blank PIN in the payload must never
         // clobber their real stored PIN with an empty value via the upsert merge
         else if(toSave.id) delete toSave.pin;
+        await encryptClinicalFields(toSave, SESSION_SECRET);
         await sbFetch(SB_KEY, "patients", "POST", toSave);
         return json({ ok: true });
       }
