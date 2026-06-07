@@ -49,6 +49,12 @@ function bufToHex(buf){
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,"0")).join("");
 }
 
+function hexToBuf(hex){
+  const bytes = new Uint8Array(hex.length/2);
+  for(let i=0;i<bytes.length;i++) bytes[i] = parseInt(hex.substr(i*2,2), 16);
+  return bytes;
+}
+
 async function hmacKey(secret){
   return crypto.subtle.importKey(
     "raw", new TextEncoder().encode(secret),
@@ -96,13 +102,6 @@ async function sha256Hex(str){
   return bufToHex(digest);
 }
 
-async function hashSecret(plain){
-  const saltBytes = crypto.getRandomValues(new Uint8Array(16));
-  const salt = bufToHex(saltBytes.buffer);
-  const hash = await sha256Hex(salt + ":" + plain);
-  return "sha256$" + salt + "$" + hash;
-}
-
 // Returns true/false. Also tolerates legacy plaintext values that haven't
 // been migrated yet (so existing patients aren't locked out); callers should
 // re-hash and persist on a successful legacy match.
@@ -117,6 +116,70 @@ async function verifySecret(stored, plain){
   }
   // Legacy plaintext value
   return { ok: timingSafeEqual(String(stored), String(plain)), legacy:true };
+}
+
+// ── PIN encryption (reversible — admin and the patient need to view the PIN) ──
+// PINs are short, low-entropy 4-digit codes used only to log in to a low-risk
+// patient portal, so unlike the admin password (hashed, never displayed) we
+// store them with AES-GCM using a key derived from SESSION_SECRET. This keeps
+// raw PINs out of the database (and out of Supabase's reach) while still
+// letting the worker decrypt them for display to the admin and to the patient
+// who owns them. Stored format: "enc$<ivHex>$<ciphertextHex>"
+
+async function pinKey(secret){
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("pin-encryption-key:" + secret));
+  return crypto.subtle.importKey("raw", digest, { name:"AES-GCM" }, false, ["encrypt","decrypt"]);
+}
+
+async function encryptPin(plain, secret){
+  const key = await pinKey(secret);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({ name:"AES-GCM", iv }, key, new TextEncoder().encode(String(plain)));
+  return "enc$" + bufToHex(iv.buffer) + "$" + bufToHex(ct);
+}
+
+// Decrypts a stored PIN for display. Returns null if it isn't in the
+// encrypted format (e.g. an old sha256$ hash that predates this change and
+// can't be reversed — it will be re-encrypted automatically on next login).
+async function decryptPin(stored, secret){
+  if(typeof stored !== "string" || !stored.startsWith("enc$")) return null;
+  const parts = stored.split("$");
+  if(parts.length !== 3) return null;
+  try{
+    const key = await pinKey(secret);
+    const pt = await crypto.subtle.decrypt({ name:"AES-GCM", iv: hexToBuf(parts[1]) }, key, hexToBuf(parts[2]));
+    return new TextDecoder().decode(pt);
+  }catch(e){ return null; }
+}
+
+// Verifies an entered PIN against any stored format (encrypted, hashed, or
+// legacy plaintext) and reports whether it should be re-encrypted afterwards
+// so every account converges on the recoverable "enc$" format over time.
+async function verifyPin(stored, plain, secret){
+  if(!stored) return { ok:false, migrate:false };
+  if(typeof stored === "string" && stored.startsWith("enc$")){
+    const decrypted = await decryptPin(stored, secret);
+    return { ok: decrypted !== null && timingSafeEqual(decrypted, String(plain)), migrate:false };
+  }
+  const { ok } = await verifySecret(stored, plain);
+  return { ok, migrate: ok };
+}
+
+// Returns the PIN in plaintext for display purposes (admin view / patient's
+// own profile). Falls back to null when the stored value can't be decrypted
+// (legacy one-way hash that hasn't been migrated yet — resolves itself on the
+// patient's next login).
+async function pinForDisplay(stored, secret){
+  if(typeof stored !== "string") return null;
+  if(stored.startsWith("enc$")) return decryptPin(stored, secret);
+  if(stored.startsWith("sha256$")) return null;
+  return stored; // legacy plaintext
+}
+
+async function attachPinForDisplay(patient, secret){
+  if(!patient) return patient;
+  const pin = await pinForDisplay(patient.pin, secret);
+  return Object.assign({}, patient, { pin });
 }
 
 function getBearer(request){
@@ -177,20 +240,21 @@ export default {
 
         let match = null;
         for(const p of candidates){
-          const { ok, legacy } = await verifySecret(p.pin, pin);
+          const { ok, migrate } = await verifyPin(p.pin, pin, SESSION_SECRET);
           if(ok){
             match = p;
-            if(legacy){
-              // Migrate plaintext PIN to a salted hash on first successful login
-              const newHash = await hashSecret(pin);
-              await sbFetch(SB_KEY, "patients?id=eq."+p.id, "PATCH", { pin: newHash });
+            if(migrate){
+              // Convert legacy plaintext/hashed PIN to recoverable encrypted form
+              const reencrypted = await encryptPin(pin, SESSION_SECRET);
+              await sbFetch(SB_KEY, "patients?id=eq."+p.id, "PATCH", { pin: reencrypted });
+              match = Object.assign({}, p, { pin: reencrypted });
             }
             break;
           }
         }
         if(!match) return json({ ok: false, error: "Not found" }, 401);
         const token = await signToken({ role:"patient", id: match.id, exp: Date.now()+TOKEN_TTL_MS }, SESSION_SECRET);
-        return json({ ok: true, token, patient: match });
+        return json({ ok: true, token, patient: await attachPinForDisplay(match, SESSION_SECRET) });
       }
 
       // ── Patient session restore: token proves identity, no client-supplied id trusted ──
@@ -198,7 +262,7 @@ export default {
         const id = await requirePatient(request, SESSION_SECRET);
         if(!id) return json({ ok:false }, 401);
         const rows = await sbFetch(SB_KEY, "patients?select=*&id=eq."+id);
-        if(Array.isArray(rows) && rows.length>0) return json({ ok:true, patient:rows[0] });
+        if(Array.isArray(rows) && rows.length>0) return json({ ok:true, patient: await attachPinForDisplay(rows[0], SESSION_SECRET) });
         return json({ ok:false }, 404);
       }
 
@@ -216,7 +280,7 @@ export default {
         if(notes!==undefined) update.notes=notes;
         if(avatarId!==undefined) update.avatar_id=avatarId;
         if(firstLoginDone!==undefined) update.first_login_done=firstLoginDone;
-        if(pin) update.pin = await hashSecret(String(pin));
+        if(pin) update.pin = await encryptPin(String(pin), SESSION_SECRET);
         await sbFetch(SB_KEY, "patients?id=eq."+id, "PATCH", update);
         return json({ ok: true });
       }
@@ -250,7 +314,7 @@ export default {
         const id = path.split("/")[3];
         if(!/^\d+$/.test(id)) return json({ error:"Invalid id" }, 400);
         const rows = await sbFetch(SB_KEY, "patients?select=*&id=eq."+id);
-        if(Array.isArray(rows) && rows.length>0) return json({ ok:true, patient: rows[0] });
+        if(Array.isArray(rows) && rows.length>0) return json({ ok:true, patient: await attachPinForDisplay(rows[0], SESSION_SECRET) });
         return json({ ok:false }, 404);
       }
 
@@ -258,15 +322,17 @@ export default {
       if(path === "/api/patients" && request.method === "GET"){
         if(!await requireAdmin(request, SESSION_SECRET)) return json({ error:"Unauthorized" }, 401);
         const rows = await sbFetch(SB_KEY, "patients?select=*&order=id.asc");
-        return json(rows);
+        const withPins = Array.isArray(rows) ? await Promise.all(rows.map(r => attachPinForDisplay(r, SESSION_SECRET))) : rows;
+        return json(withPins);
       }
 
       // ── Save patient (admin only) ──
       if(path === "/api/patients" && request.method === "POST"){
         if(!await requireAdmin(request, SESSION_SECRET)) return json({ error:"Unauthorized" }, 401);
-        // Hash the PIN server-side so plaintext never lands in the DB
+        // Encrypt the PIN server-side (reversibly) so plaintext never lands in the DB,
+        // while still letting admin/patient view it later
         const toSave = Object.assign({}, body);
-        if(toSave.pin) toSave.pin = await hashSecret(String(toSave.pin));
+        if(toSave.pin) toSave.pin = await encryptPin(String(toSave.pin), SESSION_SECRET);
         await sbFetch(SB_KEY, "patients", "POST", toSave);
         return json({ ok: true });
       }
