@@ -150,6 +150,27 @@ function showPolicyModal(tab){
     '</div>';
   g("MB").classList.add("on");
 }
+function consentEvidenceHTML(p){
+  var isHe=lng==="he";
+  var c=p&&p.consent;
+  var title=isHe?"📋 הוכחת הסכמה לאיסוף מידע":"📋 Consent Evidence";
+  if(!c||!c.given){
+    return '<div style="grid-column:1/-1;margin-bottom:11px"><label class="lbl">'+title+'</label>'+
+      '<div style="font-size:12px;color:#9aa;background:rgba(0,0,0,0.04);border-radius:8px;padding:10px 12px">'+
+      (isHe?"המטופל/ת טרם אישר/ה את תנאי השימוש במידע":"Patient has not yet given consent")+'</div></div>';
+  }
+  var rows=[
+    [isHe?"תאריך ושעה (שרת)":"Recorded at (server)", c.recordedAt?new Date(c.recordedAt).toLocaleString():"—"],
+    [isHe?"כתובת IP":"IP address", c.ip||"—"],
+    [isHe?"מכשיר/דפדפן":"Device / browser", c.userAgent||"—"],
+    [isHe?"שפת ההסכמה":"Consent language", c.lang||"—"],
+    [isHe?"גרסת נוסח ההסכמה":"Consent text version", c.version||"—"]
+  ];
+  return '<div style="grid-column:1/-1;margin-bottom:11px"><label class="lbl">'+title+'</label>'+
+    '<div style="font-size:12px;line-height:1.9;color:#1a2535;background:rgba(43,108,196,0.05);border:1px solid rgba(43,108,196,0.15);border-radius:8px;padding:10px 12px">'+
+    rows.map(function(r){ return '<div><b>'+esc(r[0])+':</b> '+esc(String(r[1]))+'</div>'; }).join("")+
+    '</div></div>';
+}
 
 function showToast(msg, type){
   var t=document.createElement("div");
@@ -183,7 +204,8 @@ function fromRow(r){
     workoutHistory:r.workout_history||[],
     workoutPlans:r.workout_plans||[],
     avatarId:r.avatar_id||0,
-    firstLoginDone:r.first_login_done||false
+    firstLoginDone:r.first_login_done||false,
+    consent:r.consent||null
   };
   // Migrate old flat exercises into default plan if no plans exist
   if(p.workoutPlans.length===0 && p.exercises && p.exercises.length>0){
@@ -1777,6 +1799,10 @@ function rpv(){
   if(!p.firstLoginDone){
     renderPatientView(p);
     setTimeout(function(){ showFirstTimeWelcome(p); },300);
+  } else if(!(p.consent && p.consent.given)){
+    // Existing patient (pre-dates the consent feature) — show a standalone consent gate
+    renderPatientView(p);
+    setTimeout(function(){ showConsentGate(p); },300);
   } else {
     renderPatientView(p);
   }
@@ -1810,6 +1836,37 @@ function saveWelcome(){
     notes:cur.notes, avatarId:cur.avatarId, firstLoginDone:true,
     consent:consent
   },function(){});
+  cm(); rpv();
+}
+
+// Standalone consent gate for existing patients who logged in before the consent feature existed
+function showConsentGate(p){
+  var isHe=lng==="he";
+  var c=g("MC");
+  c.innerHTML='<div style="font-size:17px;font-weight:800;margin-bottom:14px;color:#1a3a6e">'+
+    (isHe?"🔒 עדכון מדיניות פרטיות":"🔒 Privacy Policy Update")+'</div>'+
+    '<div style="font-size:13px;line-height:1.7;color:#4a6a8a;margin-bottom:14px">'+
+    (isHe?"לפני שתמשיך/י, אנא אשר/י את הסכמתך לאופן שבו המידע שלך נאסף ונשמר:":
+    "Before you continue, please confirm your consent to how your data is collected and stored:")+'</div>'+
+    '<label style="display:flex;align-items:flex-start;gap:8px;font-size:11.5px;color:#4a6a8a;line-height:1.5;margin-bottom:16px;cursor:pointer;text-align:'+(isHe?'right':'left')+'">'+
+    '<input type="checkbox" id="cg_consent" onchange="g(\'cg_btn\').disabled=!this.checked" style="margin-top:2px;flex-shrink:0">'+
+    '<span>'+(isHe?
+      'אני מאשר/ת ש-ElitePhysio תאחסן ותשתמש במידע האישי והרפואי שלי (כגון פציעה, הערות והתקדמות) אך ורק לצורך הטיפול והמעקב שלי, בהתאם לחוק זכויות החולה וחוק הגנת הפרטיות בישראל, וכי המידע לא יועבר לצד שלישי ללא הסכמתי. ('
+      :'I agree that ElitePhysio may store and use my personal and medical information (e.g. injury, notes, progress) solely for my treatment and tracking, in accordance with Israeli patient-rights and privacy laws, and that it won\'t be shared with third parties without my consent. (')+
+    '<a href="#" onclick="event.preventDefault();event.stopPropagation();showPolicyModal();" style="color:#2B6CC4;text-decoration:underline">'+(isHe?'קרא עוד':'read more')+'</a>)</span>'+
+    '</label>'+
+    '<button class="btn" id="cg_btn" disabled style="width:100%;padding:12px;font-size:15px;font-weight:700" onclick="saveConsentOnly()">'+
+    (isHe?"אישור והמשך ➜":"Confirm & Continue ➜")+'</button>';
+  g("MB").classList.add("on");
+}
+function saveConsentOnly(){
+  var isHe=lng==="he";
+  if(!g("cg_consent")||!g("cg_consent").checked){alert(isHe?"יש לאשר את תנאי השימוש במידע כדי להמשיך":"Please confirm your consent to continue");return;}
+  var consent={ given:true, lang:lng, version:CONSENT_VERSION };
+  cur.consent=consent;
+  pts=pts.map(function(p){return p.id===cur.id?cur:p;});
+  lsave();
+  apiCall("patient-save-profile","POST",{ id:cur.id, consent:consent },function(){});
   cm(); rpv();
 }
 
@@ -2895,6 +2952,7 @@ function om(m, editId){
       '<div style="margin-top:5px"><button type="button" onclick="omManageSports()" style="font-size:11px;color:#2B6CC4;background:none;border:none;cursor:pointer;text-decoration:underline">⚙️ '+(lng==="he"?"נהל רשימת ספורט":"Manage sports list")+'</button></div></div>'+
       '<div style="grid-column:1/-1"><label class="lbl">'+(lng==="he"?"המטרה שלי":"My Goal")+' (EN)</label><textarea class="inp" id="fno_en" style="height:54px">'+esc(_nB.en)+'</textarea></div>'+
       '<div style="grid-column:1/-1"><label class="lbl">'+(lng==="he"?"המטרה שלי":"My Goal")+' (עברית)</label><textarea class="inp" id="fno_he" dir="rtl" style="height:54px">'+esc(_nB.he)+'</textarea></div></div>'+
+      (m==="ep"?consentEvidenceHTML(p):'')+
       '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btnd" onclick="cm()">'+Lx.ca+'</button><button class="btn" onclick="sp2()">'+Lx.sa+'</button></div>';
   } else if(m==="ae"){
     // Find exercise in plan day first, then flat exercises
