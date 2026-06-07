@@ -751,9 +751,9 @@ function rpl(){
     return '<div class="card" onclick="op('+p.id+')"><div style="display:flex;align-items:center;justify-content:space-between">'+
       '<div style="display:flex;align-items:center;gap:13px">'+avHtml+
       '<div><div class="pat-name" style="display:flex;align-items:center;gap:7px">'+dn+dotHtml+'</div><div class="pat-sub">'+(getBilingual(p.injury,lng==="he")||"—")+' &middot; '+(p.age||"—")+'</div></div></div>'+
-      '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;align-items:center">'+
+      '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">'+
       '<span style="font-size:11px;color:#4a6a8a;border:1px solid rgba(43,108,196,0.25);border-radius:4px;padding:2px 8px">PIN: '+(p.pin||(lng==="he"?"לא זמין":"unavailable"))+'</span>'+
-      bdg(spName(p.sport))+' '+sbdg(p.status)+'</div></div></div>';
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">'+bdg(spName(p.sport))+' '+sbdg(p.status)+'</div></div></div></div>';
   }).join(""):'<div style="color:#4a6a8a;text-align:center;padding:32px 0;font-size:14px">No patients found</div>';
 }
 
