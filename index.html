@@ -60,32 +60,36 @@
     <div style="background:#fff;border-radius:18px;padding:26px 24px;box-shadow:0 8px 32px rgba(13,34,72,0.15);margin-bottom:14px">
       <div id="l-welcome" style="font-size:19px;font-weight:700;color:#1a3a6e;margin-bottom:4px"></div>
       <div id="l-intro" style="font-size:13px;color:#4a6a8a;margin-bottom:20px"></div>
+      <form autocomplete="on" onsubmit="plog();return false">
       <div style="margin-bottom:12px">
         <div id="l-yn" class="lbl" style="color:#4a6a8a"></div>
-        <input class="inp" id="pnm" placeholder="Full name" onkeydown="if(event.key==='Enter')plog()">
+        <input class="inp" id="pnm" name="username" autocomplete="username" placeholder="Full name" onkeydown="if(event.key==='Enter')plog()">
       </div>
       <div style="margin-bottom:18px">
         <div id="l-yp" class="lbl" style="color:#4a6a8a"></div>
-        <input class="inp" id="ppi" type="password" maxlength="4" placeholder="PIN code" onkeydown="if(event.key==='Enter')plog()">
+        <input class="inp" id="ppi" name="password" type="password" autocomplete="current-password" maxlength="4" placeholder="PIN code" onkeydown="if(event.key==='Enter')plog()">
       </div>
       <div id="le2" style="color:#e05050;font-size:13px;margin-bottom:10px;display:none"></div>
-      <button class="btn" style="width:100%;padding:12px;font-size:15px" onclick="plog()">
+      <button class="btn" type="submit" style="width:100%;padding:12px;font-size:15px" onclick="plog()">
         <span id="l-enter"></span>
       </button>
       <div style="margin-top:12px;text-align:center">
-        <button id="l-admin-btn" onclick="toggleAdmin()" style="background:none;border:none;color:#4a6a8a;font-size:12px;cursor:pointer;letter-spacing:.5px;text-decoration:underline"></button>
+        <button id="l-admin-btn" type="button" onclick="toggleAdmin()" style="background:none;border:none;color:#4a6a8a;font-size:12px;cursor:pointer;letter-spacing:.5px;text-decoration:underline"></button>
       </div>
+      </form>
     </div>
 
     <!-- Admin Box -->
     <div id="admin-box" class="hid" style="background:#1a2e50;border-radius:14px;padding:20px 24px;box-shadow:0 8px 32px rgba(13,34,72,0.25);margin-top:0px">
       <div id="l-al" class="lbl" style="color:rgba(255,255,255,0.7);margin-bottom:8px"></div>
-      <input class="inp" id="apw" type="password" placeholder="Password" style="background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.15);color:#fff;margin-bottom:14px" onkeydown="if(event.key==='Enter')alog()">
+      <form autocomplete="on" onsubmit="alog();return false">
+      <input class="inp" id="apw" name="password" type="password" autocomplete="current-password" placeholder="Password" style="background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.15);color:#fff;margin-bottom:14px" onkeydown="if(event.key==='Enter')alog()">
       <div id="le1" style="color:#fca5a5;font-size:13px;margin-bottom:8px;display:none"></div>
       <div style="display:flex;gap:8px">
-        <button class="btn btng" style="padding:10px 16px;font-size:18px" onclick="toggleAdmin()">&#8592;</button>
-        <button class="btn" style="flex:1;padding:10px" onclick="alog()">Enter</button>
+        <button class="btn btng" type="button" style="padding:10px 16px;font-size:18px" onclick="toggleAdmin()">&#8592;</button>
+        <button class="btn" type="submit" style="flex:1;padding:10px" onclick="alog()">Enter</button>
       </div>
+      </form>
     </div>
 
     <!-- Language flags - using flag images -->
