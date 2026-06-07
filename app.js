@@ -71,13 +71,15 @@ function waLink(p){ return p.phone?'<a href="https://wa.me/972'+p.phone.replace(
 function ytUrl(n){ return "https://www.youtube.com/results?search_query="+encodeURIComponent((n||"exercise")+" physical therapy technique"); }
 
 // ── Secure API ──
+// ADMIN_TOKEN / PATIENT_TOKEN hold short-lived, server-signed session tokens
+// (never the raw password or a guessable id) — sent as Bearer auth on every call.
 var ADMIN_TOKEN = "";
-var SB_URL = "https://akovtufhkfnjrzqvzdyv.supabase.co";
-var SB_KEY = ""; // loaded from worker at runtime
+var PATIENT_TOKEN = "";
 
 function apiCall(path, method, body, cb){
   var opts = { method: method||"GET", headers: { "Content-Type":"application/json" } };
-  if(ADMIN_TOKEN) opts.headers["Authorization"] = "Bearer "+ADMIN_TOKEN;
+  var _tok = ADMIN_TOKEN || PATIENT_TOKEN;
+  if(_tok) opts.headers["Authorization"] = "Bearer "+_tok;
   if(body) opts.body = JSON.stringify(body);
   fetch("/api/"+path, opts)
     .then(function(r){
@@ -137,39 +139,23 @@ function fromRow(r){
   return p;
 }
 
+// All patient-data access goes through the worker (which holds the DB key
+// and enforces the admin session token) — the browser never talks to
+// Supabase directly, and never sees the database key.
 function sbLoad(cb){
-  if(!SB_KEY){ if(cb) cb(); return; }
-  fetch(SB_URL+"/rest/v1/patients?select=*&order=id.asc&id=neq.0", { headers: sbHeaders() })
-    .then(function(r){ return r.json(); })
-    .then(function(rows){
-      if(Array.isArray(rows)){
-        pts = rows.filter(function(r){ return r.name!=="__system__"; }).map(fromRow);
-        try{ localStorage.setItem(SK, JSON.stringify(pts)); }catch(e){}
-      }
-      if(cb) cb();
-    })
-    .catch(function(){ if(cb) cb(); });
+  if(!ADMIN_TOKEN){ if(cb) cb(); return; }
+  apiCall("patients","GET",null,function(err,rows){
+    if(!err && Array.isArray(rows)){
+      pts = rows.filter(function(r){ return r.name!=="__system__"; }).map(fromRow);
+      try{ localStorage.setItem(SK, JSON.stringify(pts)); }catch(e){}
+    }
+    if(cb) cb();
+  });
 }
-
-function sbHeaders(){
-  return { "Content-Type":"application/json", "apikey":SB_KEY, "Authorization":"Bearer "+SB_KEY };
-}
-
 
 function sbSave(p){
-  if(!SB_KEY) return;
-  fetch(SB_URL+"/rest/v1/patients", {
-    method:"POST",
-    headers: Object.assign({}, sbHeaders(), {"Prefer":"resolution=merge-duplicates"}),
-    body: JSON.stringify(toRow(p))
-  }).catch(function(){});
-}
-
-function sbDelete(id){
-  if(!SB_KEY) return;
-  fetch(SB_URL+"/rest/v1/patients?id=eq."+id, {
-    method:"DELETE", headers: sbHeaders()
-  }).catch(function(){});
+  if(!ADMIN_TOKEN) return;
+  apiCall("patients","POST",toRow(p),function(){});
 }
 
 // ── Storage ──
@@ -306,12 +292,11 @@ function ss2(s){ g("LS").classList.toggle("hid",s!=="l"); g("AS").classList.togg
 function alog(){
   var pw = g("apw").value;
   apiCall("admin-login","POST",{password:pw},function(err,d){
-    if(!err && d && d.ok){
-      ADMIN_TOKEN = pw;
-      SB_KEY = d.sbKey||"";
+    if(!err && d && d.ok && d.token){
+      ADMIN_TOKEN = d.token;
       auth="admin"; g("apw").value="";
       setL("he");
-      sessionStorage.setItem("ep_session", JSON.stringify({auth:"admin", token:pw, sbKey:SB_KEY, lng:"he"}));
+      sessionStorage.setItem("ep_session", JSON.stringify({auth:"admin", token:ADMIN_TOKEN, lng:"he"}));
       loadFuRead(); loadWhNoteMap();
       syncCustomLib();
       ss2("a");
@@ -337,18 +322,19 @@ function plog(){
   var name=g("pnm").value.trim(), pin=g("ppi").value.trim();
   if(!name||!pin) return;
   apiCall("patient-login","POST",{name:name,pin:pin},function(err,d){
-    if(!err && d && d.ok && d.patient){
+    if(!err && d && d.ok && d.patient && d.token){
       var p=fromRow(d.patient);
+      PATIENT_TOKEN = d.token;
       pts=[p]; lsave();
       auth=p.id; cur=p; ptab="ex"; g("ppi").value="";
-      sessionStorage.setItem("ep_session", JSON.stringify({auth:p.id, ptab:"ex", lng:lng}));
+      sessionStorage.setItem("ep_session", JSON.stringify({auth:p.id, token:PATIENT_TOKEN, ptab:"ex", lng:lng}));
       ss2("p"); rpv();
     } else {
       g("le2").textContent=L().le; g("le2").style.display="block";
     }
   });
 }
-function dout(){ auth=null; cur=null; ADMIN_TOKEN=""; SB_KEY=""; sessionStorage.removeItem("ep_session"); ss2("l"); g("le2").style.display="none"; g("le1").style.display="none"; }
+function dout(){ auth=null; cur=null; ADMIN_TOKEN=""; PATIENT_TOKEN=""; sessionStorage.removeItem("ep_session"); ss2("l"); g("le2").style.display="none"; g("le1").style.display="none"; }
 
 // ── Navigation ──
 function gv(v){
@@ -815,15 +801,17 @@ function op(id, source){
   navSource = source || (g("vd")&&!g("vd").classList.contains("hid") ? "d" : "p");
   cur=pts.find(function(p){ return p.id===id; }); ctab="ex"; gv("pat"); rpd();
   if(auth==="admin"){ markNotesRead(id); rpl(); }
-  // Fetch fresh data from Supabase in background to get latest workout history
-  apiCall("patient-login-by-id","POST",{id:id},function(err,d){
-    if(!err && d && d.ok && d.patient){
-      var fresh=fromRow(d.patient);
-      pts=pts.map(function(p){ return p.id===id?fresh:p; });
-      cur=fresh; lsave(); rpd();
-      if(auth==="admin"){ markNotesRead(id); rpl(); }
-    }
-  });
+  // Fetch fresh data in background to get latest workout history (admin only)
+  if(auth==="admin"){
+    apiCall("admin-patient/"+id,"GET",null,function(err,d){
+      if(!err && d && d.ok && d.patient){
+        var fresh=fromRow(d.patient);
+        pts=pts.map(function(p){ return p.id===id?fresh:p; });
+        cur=fresh; lsave(); rpd();
+        markNotesRead(id); rpl();
+      }
+    });
+  }
 }
 
 // ── Patient Detail (Admin) ──
@@ -4354,26 +4342,32 @@ if(_sess && _sess.auth){
   lng = _sess.lng || "he";
   if(auth === "admin"){
     ADMIN_TOKEN = _sess.token || "";
-    SB_KEY = _sess.sbKey || "";
-    ss2("a"); setL(lng); gv("d");
-    if(SB_KEY) sbLoad(function(){ rd(); });
+    if(!ADMIN_TOKEN){ dout(); }
+    else{
+      ss2("a"); setL(lng); gv("d");
+      sbLoad(function(){ rd(); });
+    }
   } else {
-    // Patient session - fetch fresh data from Supabase via worker
-    ss2("p"); setL(lng);
-    var _cachedP = pts.find(function(p){ return p.id === auth; });
-    if(_cachedP){ cur=_cachedP; rpv(); }
-    // Always fetch fresh from server to get latest exercises
-    apiCall("patient-login-by-id","POST",{id:auth},function(err,d){
-      if(!err && d && d.ok && d.patient){
-        var p=fromRow(d.patient);
-        // Restore avatarId from session if not yet saved to server
-        if(!p.avatarId && _sess.avatarId) p.avatarId=_sess.avatarId;
-        pts=[p]; lsave(); cur=p; rpv();
-      } else if(!_cachedP){
-        // No cache and no server data - back to login
-        dout();
-      }
-    });
+    // Patient session - the server verifies our signed token and returns
+    // only the matching patient; we never tell it which id we want.
+    PATIENT_TOKEN = _sess.token || "";
+    if(!PATIENT_TOKEN){ dout(); }
+    else{
+      ss2("p"); setL(lng);
+      var _cachedP = pts.find(function(p){ return p.id === auth; });
+      if(_cachedP){ cur=_cachedP; rpv(); }
+      apiCall("patient-session","POST",null,function(err,d){
+        if(!err && d && d.ok && d.patient){
+          var p=fromRow(d.patient);
+          // Restore avatarId from session if not yet saved to server
+          if(!p.avatarId && _sess.avatarId) p.avatarId=_sess.avatarId;
+          pts=[p]; lsave(); cur=p; rpv();
+        } else if(!_cachedP){
+          // No cache and no valid server session - back to login
+          dout();
+        }
+      });
+    }
   }
 } else {
   ss2("l");
