@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ElitePhysio — Progress Concepts (Mockup)</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter','Heebo',system-ui,sans-serif;font-size:14px;color:#1a2535;background:#e8f0f8;min-height:100vh}
+body::before{content:"";position:fixed;inset:0;z-index:-1;
+  background:radial-gradient(ellipse 90% 55% at 15% 5%,rgba(43,108,196,0.18) 0%,transparent 55%),
+  radial-gradient(ellipse 70% 45% at 88% 85%,rgba(91,155,213,0.14) 0%,transparent 50%);
+  background-color:#e8f0f8}
+.page{max-width:640px;margin:0 auto;padding:24px 16px}
+h1{color:#1a3a6e;font-size:20px;margin-bottom:4px}
+.sub{color:#4a6a8a;font-size:13px;margin-bottom:22px}
+.label{font-size:12px;color:#4a6a8a;text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin:26px 0 8px}
+.card{background:rgba(255,255,255,0.9);border:1px solid rgba(43,108,196,0.18);
+  border-radius:14px;padding:18px 20px;margin-bottom:6px;box-shadow:0 2px 12px rgba(43,108,196,.08)}
+
+/* 1. Journey map */
+.journey{display:flex;align-items:center;justify-content:space-between;position:relative;padding:10px 0}
+.journey::before{content:"";position:absolute;top:24px;left:24px;right:24px;height:4px;background:rgba(43,108,196,.15);border-radius:2px;z-index:0}
+.journey-fill{position:absolute;top:24px;left:24px;height:4px;background:linear-gradient(90deg,#2B6CC4,#4a90d9);border-radius:2px;z-index:0;width:38%}
+.step{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:8px;flex:1}
+.dot{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;border:3px solid #fff;box-shadow:0 2px 8px rgba(43,108,196,.2)}
+.dot.done{background:linear-gradient(135deg,#2B6CC4,#4a90d9);color:#fff}
+.dot.now{background:#fff;border-color:#2B6CC4;color:#2B6CC4;box-shadow:0 0 0 5px rgba(43,108,196,.15)}
+.dot.todo{background:#fff;border-color:rgba(43,108,196,.25);color:#9bb3cf}
+.step-lbl{font-size:11px;text-align:center;color:#4a6a8a;font-weight:600;max-width:70px}
+.step.now .step-lbl{color:#1a3a6e;font-weight:700}
+
+/* 2. Weekly streak */
+.streak-row{display:flex;align-items:center;gap:14px}
+.streak-flame{font-size:32px}
+.streak-text b{color:#1a3a6e;font-size:16px}
+.streak-text div{color:#4a6a8a;font-size:12px;margin-top:2px}
+.bar-bg{background:rgba(43,108,196,.12);border-radius:6px;height:10px;overflow:hidden;margin-top:10px}
+.bar-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,#2B6CC4,#4a90d9)}
+.dayrow{display:flex;gap:6px;margin-top:12px}
+.dchip{flex:1;text-align:center;font-size:11px;font-weight:700;border-radius:8px;padding:8px 0;color:#9bb3cf;background:rgba(43,108,196,.08)}
+.dchip.done{background:linear-gradient(135deg,#2B6CC4,#4a90d9);color:#fff}
+.dchip.today{border:2px solid #2B6CC4;color:#2B6CC4;background:#fff}
+
+/* 3. Achievement toast */
+.ach{display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,rgba(43,108,196,.08),rgba(74,144,217,.12));border:1px solid rgba(43,108,196,.25)}
+.ach-icon{font-size:28px;background:#fff;border-radius:50%;width:50px;height:50px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(43,108,196,.18);flex-shrink:0}
+.ach b{color:#1a3a6e;font-size:14px}
+.ach div.d{color:#4a6a8a;font-size:12px;margin-top:2px}
+
+/* 4. Snapshot card */
+.snap-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px}
+.snap-item{background:rgba(232,240,248,.6);border-radius:10px;padding:12px 14px}
+.snap-item .num{font-size:20px;font-weight:800;color:#1a3a6e}
+.snap-item .lbl2{font-size:11px;color:#4a6a8a;text-transform:uppercase;letter-spacing:.6px;font-weight:600;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>🩺 Progress Concepts — Visual Mockup</h1>
+  <div class="sub">Static preview of how progress/engagement features could look on the patient's screen. Built with your app's existing colors &amp; card style.</div>
+
+  <div class="label">1 · Journey / Treatment Roadmap</div>
+  <div class="card">
+    <div class="journey">
+      <div class="journey-fill"></div>
+      <div class="step"><div class="dot done">✓</div><div class="step-lbl">Getting Started</div></div>
+      <div class="step now"><div class="dot now">●</div><div class="step-lbl">Building Strength</div></div>
+      <div class="step"><div class="dot todo">3</div><div class="step-lbl">Almost There</div></div>
+      <div class="step"><div class="dot todo">4</div><div class="step-lbl">Back to Sport</div></div>
+    </div>
+  </div>
+
+  <div class="label">2 · Weekly Adherence &amp; Streak</div>
+  <div class="card">
+    <div class="streak-row">
+      <div class="streak-flame">🔥</div>
+      <div class="streak-text">
+        <b>5-day streak — keep it up!</b>
+        <div>4 of 5 sessions done this week</div>
+      </div>
+    </div>
+    <div class="bar-bg"><div class="bar-fill" style="width:80%"></div></div>
+    <div class="dayrow">
+      <div class="dchip done">Mon</div>
+      <div class="dchip done">Tue</div>
+      <div class="dchip done">Wed</div>
+      <div class="dchip done">Thu</div>
+      <div class="dchip today">Fri</div>
+      <div class="dchip">Sat</div>
+      <div class="dchip">Sun</div>
+    </div>
+  </div>
+
+  <div class="label">3 · Achievement Moment (appears after logging a session)</div>
+  <div class="card ach">
+    <div class="ach-icon">⭐</div>
+    <div>
+      <b>10 sessions logged!</b>
+      <div class="d">Great consistency — you're building real momentum in your recovery.</div>
+    </div>
+  </div>
+
+  <div class="label">4 · "How Am I Doing" Snapshot</div>
+  <div class="card">
+    <div class="snap-grid">
+      <div class="snap-item"><div class="num">12 / 20</div><div class="lbl2">Sessions Completed</div></div>
+      <div class="snap-item"><div class="num">Phase 2</div><div class="lbl2">Current Stage</div></div>
+      <div class="snap-item"><div class="num">5 days</div><div class="lbl2">To Next Checkpoint</div></div>
+      <div class="snap-item"><div class="num">↑ Improving</div><div class="lbl2">Pain Trend</div></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
