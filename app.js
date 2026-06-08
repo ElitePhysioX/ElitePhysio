@@ -1334,7 +1334,7 @@ function _msRow(m,i,clrs,bgs,isHe,editable,plan){
   var wLabel=isHe?('שב\' '+(wFrom===wTo?wFrom:wFrom+'–'+wTo)):('Wk '+(wFrom===wTo?wFrom:wFrom+'–'+wTo));
   var sel=editable&&msReo&&msReoSel===i;
   var dateStr=_msTargetDate(plan,wTo);
-  var dateLbl=dateStr?('<span style="font-size:11px;font-weight:600;color:'+clr+';margin-'+(isHe?'right':'left')+':8px;white-space:nowrap">'+(isHe?'עד תאריך '+dateStr:'to achieve by '+dateStr)+'</span>'):'';
+  var dateLbl=dateStr?('<span style="flex-shrink:0;font-size:11px;font-weight:600;color:'+clr+';white-space:nowrap;min-width:118px;text-align:'+(isHe?'left':'right')+'">'+(isHe?'עד תאריך '+dateStr:'to achieve by '+dateStr)+'</span>'):'';
   return '<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:7px;transition:all 0.15s'+(sel?';outline:2px solid #2B6CC4;border-radius:9px;padding:4px;background:rgba(43,108,196,0.04)':'')+'">'+
     (editable&&msReo?
       '<div onclick="msReoSelect('+i+')" style="cursor:pointer;flex-shrink:0;display:flex;align-items:center;padding-top:2px">'+
@@ -1342,7 +1342,8 @@ function _msRow(m,i,clrs,bgs,isHe,editable,plan){
       (sel?'<div style="width:8px;height:8px;border-radius:50%;background:#fff"></div>':'')+
       '</div></div>':'')+
     '<div style="flex-shrink:0;background:'+clr+';color:#fff;border-radius:6px;padding:4px 7px;font-size:10px;font-weight:700;line-height:1.3;min-width:42px;text-align:center;margin-top:2px">'+wLabel+'</div>'+
-    '<div style="flex:1;background:'+bg+';border-left:3px solid '+clr+';border-radius:0 8px 8px 0;padding:8px 11px;font-size:13px;color:#1a2535;line-height:1.5">'+(txt||('<span style="color:#9ab;font-style:italic">'+(isHe?'ללא טקסט':'No text')+'</span>'))+dateLbl+'</div>'+
+    '<div style="flex:1;display:flex;align-items:baseline;justify-content:space-between;gap:10px;background:'+bg+';border-left:3px solid '+clr+';border-radius:0 8px 8px 0;padding:8px 11px;font-size:13px;color:#1a2535;line-height:1.5">'+
+    '<span>'+(txt||('<span style="color:#9ab;font-style:italic">'+(isHe?'ללא טקסט':'No text')+'</span>'))+'</span>'+dateLbl+'</div>'+
     '</div>';
 }
 function renderMilestones(plan,isHe){
