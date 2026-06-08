@@ -1334,7 +1334,7 @@ function _msRow(m,i,clrs,bgs,isHe,editable,plan){
   var wLabel=isHe?('שב\' '+(wFrom===wTo?wFrom:wFrom+'–'+wTo)):('Wk '+(wFrom===wTo?wFrom:wFrom+'–'+wTo));
   var sel=editable&&msReo&&msReoSel===i;
   var dateStr=_msTargetDate(plan,wTo);
-  var dateLbl=dateStr?('<div style="font-size:11px;font-weight:600;color:'+clr+';margin-top:4px">'+(isHe?'עד תאריך '+dateStr:'to achieve by '+dateStr)+'</div>'):'';
+  var dateLbl=dateStr?('<span style="font-size:11px;font-weight:600;color:'+clr+';margin-'+(isHe?'right':'left')+':8px;white-space:nowrap">'+(isHe?'עד תאריך '+dateStr:'to achieve by '+dateStr)+'</span>'):'';
   return '<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:7px;transition:all 0.15s'+(sel?';outline:2px solid #2B6CC4;border-radius:9px;padding:4px;background:rgba(43,108,196,0.04)':'')+'">'+
     (editable&&msReo?
       '<div onclick="msReoSelect('+i+')" style="cursor:pointer;flex-shrink:0;display:flex;align-items:center;padding-top:2px">'+
