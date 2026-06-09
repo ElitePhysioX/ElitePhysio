@@ -1764,9 +1764,44 @@ function rfu(){
     '<button class="btn" style="font-size:12px" onclick="om(\'af\')">'+L().an+'</button></div>'+
     (!(p.followUps||[]).length?'<div style="color:#4a6a8a;font-size:14px;padding:14px 0">'+L().nf+'</div>':"")+
     (p.followUps||[]).map(function(f){
-      return '<div class="xcard"><div style="font-size:12px;color:#2B6CC4;font-weight:600;margin-bottom:4px">'+f.date+'</div>'+
+      return '<div class="xcard" style="position:relative">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'+
+        '<div style="font-size:12px;color:#2B6CC4;font-weight:600">'+f.date+'</div>'+
+        '<div style="display:flex;gap:5px">'+
+        '<button onclick="editFu('+f.id+')" style="background:#e8f0fb;border:none;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:12px;color:#1a3a6e" title="Edit">✏️</button>'+
+        '<button onclick="delFu('+f.id+')" style="background:#e74c3c;border:none;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:12px;color:#fff;font-weight:700" title="Delete">✕</button>'+
+        '</div></div>'+
         '<div style="font-size:14px;color:#1a2535;line-height:1.7">'+esc(f.note)+'</div></div>';
     }).join("");
+}
+
+function delFu(fid){
+  if(!confirm("Delete this follow-up note?")) return;
+  cur.followUps=(cur.followUps||[]).filter(function(f){ return f.id!==fid; });
+  pts=pts.map(function(p){ return p.id===cur.id?cur:p; }); sv(); rfu();
+}
+
+function editFu(fid){
+  var f=(cur.followUps||[]).find(function(x){ return x.id===fid; }); if(!f) return;
+  var c=g("MC");
+  c.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'+
+    '<span style="font-size:16px;font-weight:800;color:#1a3a6e">✏️ Edit Follow-up</span>'+
+    '<button onclick="cm()" style="background:rgba(0,0,0,0.08);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:16px;line-height:1">✕</button></div>'+
+    '<label class="lbl">Date</label><input class="inp" id="efu_date" type="date" value="'+f.date+'" style="margin-bottom:10px">'+
+    '<label class="lbl">Note</label><textarea class="inp" id="efu_note" style="height:90px;margin-bottom:14px">'+esc(f.note)+'</textarea>'+
+    '<div style="display:flex;gap:8px;justify-content:flex-end">'+
+    '<button class="btn btnd" onclick="cm()">Cancel</button>'+
+    '<button class="btn" onclick="saveEditFu('+fid+')">Save</button></div>';
+  g("MB").classList.add("on");
+}
+
+function saveEditFu(fid){
+  var date=g("efu_date").value, note=g("efu_note").value.trim();
+  if(!note){ alert("Note cannot be empty."); return; }
+  cur.followUps=(cur.followUps||[]).map(function(f){
+    return f.id===fid ? Object.assign({},f,{date:date,note:note}) : f;
+  });
+  pts=pts.map(function(p){ return p.id===cur.id?cur:p; }); sv(); cm(); rfu();
 }
 
 // ── Clinical Tab ──
