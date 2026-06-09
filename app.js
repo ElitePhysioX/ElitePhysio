@@ -1836,6 +1836,7 @@ function saveWelcome(){
     notes:cur.notes, avatarId:cur.avatarId, firstLoginDone:true,
     consent:consent
   },function(){});
+  _wDraftClear(cur);
   cm(); rpv();
 }
 
@@ -2257,9 +2258,23 @@ function toggleWelcomeSport(v){
   var other=g("w_sport_other"); if(other) other.style.display=v==="__other__"?"block":"none";
 }
 
+function _wDraftKey(p){ return "ep_wdraft_"+(p&&p.id||""); }
+function _wDraftSave(){
+  if(!cur) return;
+  var d={};
+  ["wn_he","wn_en","w_age","w_injury_en","w_injury_he","w_goal_en","w_goal_he"].forEach(function(id){ var el=g(id); if(el) d[id]=el.value; });
+  var sel=g("w_sport_sel"); if(sel) d.w_sport_sel=sel.value;
+  var oth=g("w_sport_other"); if(oth) d.w_sport_other=oth.value;
+  try{ localStorage.setItem(_wDraftKey(cur),JSON.stringify(d)); }catch(e){}
+}
+function _wDraftLoad(p){
+  try{ return JSON.parse(localStorage.getItem(_wDraftKey(p))||"null"); }catch(e){ return null; }
+}
+function _wDraftClear(p){ try{ localStorage.removeItem(_wDraftKey(p)); }catch(e){} }
 function showFirstTimeWelcome(p){
   var isHe=lng==="he";
   if(!cur.avatarId) cur.avatarId=AVATARS[Math.floor(Math.random()*AVATARS.length)].id;
+  var draft=_wDraftLoad(p);
   var c=g("MC");
   c.innerHTML=
     '<div style="text-align:center;margin-bottom:18px">'+
@@ -2272,21 +2287,26 @@ function showFirstTimeWelcome(p){
     legoSVG(AVATARS.find(function(a){return a.id===cur.avatarId;})||AVATARS[0],64)+
     '<div style="font-size:11px;color:#2B6CC4;font-weight:600;margin-top:4px">'+(isHe?"לחץ לשינוי":"Tap to change")+'</div></div></div>'+
     '<div class="g2" style="gap:10px;margin-bottom:14px">'+
-    '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"שם מלא בעברית":"שם מלא בעברית")+'</label><input class="inp" id="wn_he" dir="rtl" placeholder="שם בעברית" value="'+esc(p.nameHe||'')+'"></div>'+
-    '<div style="grid-column:1/-1"><label class="lbl">Full Name in English</label><input class="inp" id="wn_en" placeholder="English name" value="'+esc(p.name||'')+'"></div>'+
-    '<div><label class="lbl">'+(isHe?"גיל":"Age")+'</label><input class="inp" id="w_age" type="number" value="'+(p.age||'')+'"></div>'+
-    '<div><label class="lbl">'+(isHe?"ספורט":"Sport")+'</label>'+
-    '<select class="inp" id="w_sport_sel" onchange="toggleWelcomeSport(this.value)">'+
-    '<option value="">-- '+(isHe?"בחר ספורט":"Select sport")+' --</option>'+
-    getAllSports().map(function(s,i){ var allHe=getAllSportsHe(); var label=isHe&&allHe[i]?allHe[i]:s; return '<option value="'+s+'"'+(p.sport===s?" selected":"")+'>'+label+'</option>'; }).join("")+
-    '<option value="__other__">'+(isHe?"אחר (הכנס ידנית)":"Other (type manually)")+'</option>'+
-    '</select>'+
-    '<input class="inp" id="w_sport_other" placeholder="'+(isHe?"כתוב ספורט...":"Type sport...")+'" value="'+(getAllSports().indexOf(p.sport)<0?p.sport:'')+'" style="margin-top:5px;display:'+(getAllSports().indexOf(p.sport)<0&&p.sport?'block':'none')+'"></div>'+
-    (function(){ var wiB=parseBilingual(p.injury||""),wgB=parseBilingual(p.notes||"");
-    return '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"פציעה/מצב":"Injury/Condition")+' (EN)</label><input class="inp" id="w_injury_en" value="'+esc(wiB.en)+'"></div>'+
-    '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"פציעה/מצב":"Injury/Condition")+' (עברית)</label><input class="inp" id="w_injury_he" dir="rtl" value="'+esc(wiB.he)+'"></div>'+
-    '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"המטרה שלי":"My Goal")+' (EN)</label><input class="inp" id="w_goal_en" value="'+esc(wgB.en)+'"></div>'+
-    '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"המטרה שלי":"My Goal")+' (עברית)</label><input class="inp" id="w_goal_he" dir="rtl" value="'+esc(wgB.he)+'"></div>'; })()+
+    (function(){
+      var wiB=parseBilingual(p.injury||""),wgB=parseBilingual(p.notes||"");
+      var dSportSel=draft&&draft.w_sport_sel!==undefined?draft.w_sport_sel:p.sport;
+      var dSportOth=draft&&draft.w_sport_other!==undefined?draft.w_sport_other:(getAllSports().indexOf(p.sport)<0?p.sport:'');
+      var showOth=dSportSel==='__other__'||(getAllSports().indexOf(dSportSel)<0&&dSportSel);
+      return '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"שם מלא בעברית":"שם מלא בעברית")+'</label><input class="inp" id="wn_he" dir="rtl" placeholder="שם בעברית" oninput="_wDraftSave()" value="'+esc(draft&&draft.wn_he!==undefined?draft.wn_he:p.nameHe||'')+'"></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">Full Name in English</label><input class="inp" id="wn_en" placeholder="English name" oninput="_wDraftSave()" value="'+esc(draft&&draft.wn_en!==undefined?draft.wn_en:p.name||'')+'"></div>'+
+      '<div><label class="lbl">'+(isHe?"גיל":"Age")+'</label><input class="inp" id="w_age" type="number" oninput="_wDraftSave()" value="'+(draft&&draft.w_age!==undefined?draft.w_age:p.age||'')+'"></div>'+
+      '<div><label class="lbl">'+(isHe?"ספורט":"Sport")+'</label>'+
+      '<select class="inp" id="w_sport_sel" onchange="_wDraftSave();toggleWelcomeSport(this.value)">'+
+      '<option value="">-- '+(isHe?"בחר ספורט":"Select sport")+' --</option>'+
+      getAllSports().map(function(s,i){ var allHe=getAllSportsHe(); var label=isHe&&allHe[i]?allHe[i]:s; return '<option value="'+s+'"'+(dSportSel===s?" selected":"")+'>'+label+'</option>'; }).join("")+
+      '<option value="__other__"'+(dSportSel==='__other__'?" selected":"")+'>'+(isHe?"אחר (הכנס ידנית)":"Other (type manually)")+'</option>'+
+      '</select>'+
+      '<input class="inp" id="w_sport_other" placeholder="'+(isHe?"כתוב ספורט...":"Type sport...")+'" oninput="_wDraftSave()" value="'+esc(dSportOth)+'" style="margin-top:5px;display:'+(showOth?'block':'none')+'"></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"פציעה/מצב":"Injury/Condition")+' (EN)</label><input class="inp" id="w_injury_en" oninput="_wDraftSave()" value="'+esc(draft&&draft.w_injury_en!==undefined?draft.w_injury_en:wiB.en)+'"></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"פציעה/מצב":"Injury/Condition")+' (עברית)</label><input class="inp" id="w_injury_he" dir="rtl" oninput="_wDraftSave()" value="'+esc(draft&&draft.w_injury_he!==undefined?draft.w_injury_he:wiB.he)+'"></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"המטרה שלי":"My Goal")+' (EN)</label><input class="inp" id="w_goal_en" oninput="_wDraftSave()" value="'+esc(draft&&draft.w_goal_en!==undefined?draft.w_goal_en:wgB.en)+'"></div>'+
+      '<div style="grid-column:1/-1"><label class="lbl">'+(isHe?"המטרה שלי":"My Goal")+' (עברית)</label><input class="inp" id="w_goal_he" dir="rtl" oninput="_wDraftSave()" value="'+esc(draft&&draft.w_goal_he!==undefined?draft.w_goal_he:wgB.he)+'"></div>';
+    })()+
     '</div>'+
     '<label style="display:flex;align-items:flex-start;gap:8px;font-size:11.5px;color:#4a6a8a;line-height:1.5;margin-bottom:14px;cursor:pointer;text-align:'+(isHe?'right':'left')+'">'+
     '<input type="checkbox" id="w_consent" onchange="g(\'w_enter_btn\').disabled=!this.checked" style="margin-top:2px;flex-shrink:0">'+
@@ -4510,13 +4530,18 @@ if(_sess && _sess.auth){
     else{
       ss2("p"); setL(lng);
       var _cachedP = pts.find(function(p){ return p.id === auth; });
-      if(_cachedP){ cur=_cachedP; rpv(); }
+      if(_cachedP){
+        if(!_cachedP.firstLoginDone || !(_cachedP.consent && _cachedP.consent.given)){ dout(); }
+        else{ cur=_cachedP; rpv(); }
+      }
       apiCall("patient-session","POST",null,function(err,d){
         if(!err && d && d.ok && d.patient){
           var p=fromRow(d.patient);
           // Restore avatarId from session if not yet saved to server
           if(!p.avatarId && _sess.avatarId) p.avatarId=_sess.avatarId;
-          pts=[p]; lsave(); cur=p; rpv();
+          pts=[p]; lsave();
+          if(!p.firstLoginDone || !(p.consent && p.consent.given)){ dout(); return; }
+          cur=p; rpv();
         } else if(!_cachedP){
           // No cache and no valid server session - back to login
           dout();
